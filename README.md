@@ -4,6 +4,8 @@ Modern UI Suite combines seven interface mods into one maintained package for
 Gen 1 and Gen 2: Modern Start Menu, Modern Party UI, Modern Bag UI, Modern PC
 UI, Modern Pokedex UI, Battle Info HUD, and Typed Move Colors.
 
+**[Download the latest installable release](https://github.com/piftee/gen1recomp-modern-ui-suite/releases/latest)**
+
 ## Install
 
 Disable the seven standalone versions before enabling this suite. The suite
