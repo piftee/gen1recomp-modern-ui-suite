@@ -101,7 +101,7 @@ luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/Modern-UI-Suite-v0.1.0.zip
+  -o build/Modern-UI-Suite-v0.1.1.zip
 ```
 
 On a Gen 2-capable engine checkout with a generated Gold, Silver, or Crystal

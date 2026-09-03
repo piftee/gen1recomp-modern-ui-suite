@@ -35,12 +35,19 @@ return function(mod)
     return value
   end
 
+  local function componentEnabled()
+    local enabled = mod.options and mod.options.enabled
+    if type(enabled) ~= "function" then return true end
+    local ok, value = pcall(enabled, mod.options)
+    return not ok or value ~= false
+  end
+
   -- The Gen 2 presenter below is a two-column card grid in both saved layout
   -- modes.  Navigation must therefore follow what is actually on screen;
   -- conditioning it on the older Gen 1 WIDE/GAME preference made GAME show
   -- horizontal cards while retaining vertical-only input.
   local function gridEnabled()
-    return option("battle_colors", true) ~= false
+    return componentEnabled() and option("battle_colors", true) ~= false
   end
 
   local function movePhase(screen)
@@ -482,7 +489,8 @@ return function(mod)
     menu.typedMoveColorsGeneration = 2
     menu.drawPanel = function(self)
       nativePanel(self)
-      if option("menu_colors", true) == false or not self.moveDetail then return end
+      if not componentEnabled() or option("menu_colors", true) == false
+          or not self.moveDetail then return end
       local G = love.graphics
       local width = self.modernPartyWideWidth or 160
       G.push("all")

@@ -154,6 +154,46 @@ end
 T.eq(run.loader.modOptions.modern_ui_suite["party.card_color"],
   "species_palette", "bulk disabling preserves detailed preferences")
 
+-- Typed Move Colors has process-stable patches on native controller classes.
+-- Those patches outlive the suite's hook gate, so their own presentation
+-- predicates must release the native Summary and battle chrome when the
+-- component master switch is off.
+local BattleState = require("src.battle.BattleState")
+local typedTextPatch = rawget(BattleState, "_typedMoveColorsTextPatch")
+T.eq(type(typedTextPatch and typedTextPatch.owns), "function",
+  "Typed Move Colors exposes its native battle-chrome ownership predicate")
+local nativeTextCalls = 0
+local originalTextArea = typedTextPatch and typedTextPatch.original
+if typedTextPatch then
+  typedTextPatch.original = function()
+    nativeTextCalls = nativeTextCalls + 1
+    return "native battle chrome"
+  end
+end
+local nativeTextOK, nativeTextResult = pcall(BattleState.drawTextArea, {
+  phase = "menu",
+})
+if typedTextPatch then typedTextPatch.original = originalTextArea end
+T.check(nativeTextOK and nativeTextCalls == 1
+    and nativeTextResult == "native battle chrome",
+  "disabled move colours restore the native battle command area")
+
+local SummaryMenu = require("src.ui.SummaryMenu")
+local typedSummaryPatch = rawget(SummaryMenu, "_typedMoveColorsPatch")
+T.eq(type(typedSummaryPatch and typedSummaryPatch.renderer), "function",
+  "Typed Move Colors exposes its native Summary overlay")
+local disabledSummaryTouched = false
+local summaryProbe = setmetatable({ page = 2 }, {
+  __index = function()
+    disabledSummaryTouched = true
+    return nil
+  end,
+})
+local disabledSummaryOK = typedSummaryPatch
+  and pcall(typedSummaryPatch.renderer, summaryProbe)
+T.check(disabledSummaryOK and not disabledSummaryTouched,
+  "disabled move colours do not inspect or repaint native Summary rows")
+
 T.eq(Bag.capacity(run.data), 255,
   "expanded Bag capacity remains active while Bag presentation is off")
 local expanded = { inventory = {}, bagOrder = {} }

@@ -109,8 +109,21 @@ return function(mod)
     return value
   end
 
+  -- The suite keeps this component installed so it can be toggled live. Most
+  -- registrations pass through the suite's gated hook/screen proxies, but the
+  -- process-stable class patches below intentionally sit outside those
+  -- registries. They must consult the component master switch themselves or
+  -- they can keep suppressing native battle chrome and repainting native move
+  -- rows after Disable All UI has turned the component off.
+  local function componentEnabled()
+    local enabled = mod.options and mod.options.enabled
+    if type(enabled) ~= "function" then return true end
+    local ok, value = pcall(enabled, mod.options)
+    return not ok or value ~= false
+  end
+
   local function textOnlyMode()
-    return setting("text_only", false)
+    return componentEnabled() and setting("text_only", false)
   end
 
   local function gen3BattleUIActive(game)
@@ -211,7 +224,8 @@ return function(mod)
   -- canvas, HUDs, sprites or background. This is the seam staged voxel
   -- battles need: they keep their transparent 160px scene intact.
   local function detachedGrid(battle)
-    return setting("layout", "wide") == "wide"
+    return componentEnabled()
+      and setting("layout", "wide") == "wide"
       and not textOnlyMode()
       and not engineWide(battle)
       and not gen3BattleUIActive(battle and battle.game)
@@ -287,7 +301,8 @@ return function(mod)
   end
 
   local function widePresentationOwnsPhase(battle)
-    if textOnlyMode() or not setting("battle_colors", true) then return false end
+    if not componentEnabled() or textOnlyMode()
+        or not setting("battle_colors", true) then return false end
     local phase = battle and battle.phase
     local owned = phase == "moveSelect" or phase == "mimicSelect"
       or (phase == "menu" and not battle.safari and not battle.demo)
@@ -308,7 +323,8 @@ return function(mod)
   -- and Mimic phases, then draw the same compact geometry without an opaque
   -- cleanup pass. Commands and dialogue remain renderer-owned in GAME mode.
   local function compactPresentationOwnsPhase(battle)
-    if textOnlyMode() or not setting("battle_colors", true)
+    if not componentEnabled() or textOnlyMode()
+        or not setting("battle_colors", true)
         or setting("layout", "wide") == "wide"
         or engineWide(battle) or not customBattleSurface(battle) then
       return false
@@ -325,6 +341,7 @@ return function(mod)
   -- renderers retain their existing paper-free compact surface.
   local function nativeGamePresentation(battle)
     return battle ~= nil
+      and componentEnabled()
       and not textOnlyMode()
       and setting("battle_colors", true)
       and setting("layout", "wide") ~= "wide"
@@ -333,6 +350,7 @@ return function(mod)
   end
 
   local function replacementPresentationOwnsPhase(battle)
+    if not componentEnabled() then return false end
     return widePresentationOwnsPhase(battle)
       or compactPresentationOwnsPhase(battle)
       or (nativeGamePresentation(battle) and battle.phase == "moveSelect")
@@ -880,7 +898,8 @@ return function(mod)
   inputPatch.detachedOpacity = detachedOpacity
 
   local function renderBattle(battle)
-    if textOnlyMode() or not setting("battle_colors", true) then return end
+    if not componentEnabled() or textOnlyMode()
+        or not setting("battle_colors", true) then return end
     if gen3BattleUIActive(battle and battle.game) then return end
     local phase = battle and battle.phase
     if phase ~= "moveSelect" and phase ~= "mimicSelect" then return end
@@ -1015,7 +1034,8 @@ return function(mod)
   end
 
   local function renderTextOnlyBattle(battle)
-    if not textOnlyMode() or not setting("battle_colors", true)
+    if not componentEnabled() or not textOnlyMode()
+        or not setting("battle_colors", true)
         or gen3BattleUIActive(battle and battle.game) then
       return
     end
@@ -1270,7 +1290,8 @@ return function(mod)
   -- beneath the player HUD, but may dock lower when the device bottom is
   -- already closer. Only the five chamfered cards cover the world.
   local function renderDetachedBattle(game, viewport)
-    if textOnlyMode() or not setting("battle_colors", true) then return end
+    if not componentEnabled() or textOnlyMode()
+        or not setting("battle_colors", true) then return end
     local battle = activeBattle(game)
     if not battle or not widePresentationOwnsPhase(battle) then return end
     local phase = battle.phase
@@ -1478,7 +1499,8 @@ return function(mod)
   inputPatch.gen3MoveGeometry = gen3MoveGeometry
 
   local function renderGen3BattleColors(game)
-    if textOnlyMode() or not setting("battle_colors", true)
+    if not componentEnabled() or textOnlyMode()
+        or not setting("battle_colors", true)
         or not gen3BattleUIActive(game) then return end
     local battle = activeBattle(game)
     if not (battle and battle.phase == "moveSelect"
@@ -1581,7 +1603,8 @@ return function(mod)
   end, 12000)
 
   local function renderSummary(screen)
-    if not setting("menu_colors", true) or screen.page ~= 2
+    if not componentEnabled() or not setting("menu_colors", true)
+        or screen.page ~= 2
         or not isTop(screen) then return end
     local game, mon = screen.game, screen.mon
     for i = 1, 4 do
@@ -1612,7 +1635,8 @@ return function(mod)
   end
 
   local function renderMoveLearn(screen)
-    if not setting("menu_colors", true) or not screen.selecting
+    if not componentEnabled() or not setting("menu_colors", true)
+        or not screen.selecting
         or not isTop(screen) then return end
     local rowBase = screen._typedMoveColorsUsefulInfo and 4 or 5
     local nativeInkOnly = textOnlyMode() or stagedBattleBehind(screen)
@@ -1742,7 +1766,8 @@ return function(mod)
   end
 
   listState.decorate = function(screen, game, title, items)
-    if title ~= "Which move?" or type(items) ~= "table" then return end
+    if not componentEnabled() or title ~= "Which move?"
+        or type(items) ~= "table" then return end
     local byName = {}
     for id, def in pairs(game.data and game.data.moves or {}) do
       if def.name then byName[def.name] = { id = id, type = def.type } end
@@ -1756,7 +1781,8 @@ return function(mod)
   end
 
   listState.renderer = function(screen)
-    if not setting("menu_colors", true) or not screen._typedMoveColors
+    if not componentEnabled() or not setting("menu_colors", true)
+        or not screen._typedMoveColors
         or not isTop(screen) then return end
     for row = 1, screen.rows do
       local i = screen.scroll + row
