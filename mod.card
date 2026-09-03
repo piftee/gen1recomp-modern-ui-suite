@@ -1,0 +1,33 @@
+return {
+  summary = "Seven modern Gen 1 and Gen 2 interfaces in one modular, live-configurable package.",
+  author = "ishhodaszi",
+  tags = { "ui", "quality-of-life", "cosmetic", "battle", "inventory" },
+  differences = {
+    changed = {
+      "START, party, summary, Bag, item PC, Pokemon storage and Pokedex presentation",
+      "Battle HUD information and move presentation",
+      "Bag and PC item storage limits",
+    },
+    added = {
+      "One Modern UI Suite settings hub",
+      "Seven independently switchable UI components",
+      "Live hook gating and native-screen fallbacks",
+      "Automatic import of saved settings from the standalone releases",
+      "Responsive native, widescreen and portrait layouts across Gen 1 and Gen 2",
+    },
+    known = {
+      "The seven standalone releases must be disabled while this suite is enabled",
+      "Disabling a screen component takes effect when that screen is next opened",
+      "Expanded item storage remains active when Bag presentation is disabled to protect saves",
+      "Original cartridge save export remains limited to cartridge-era inventory limits",
+      "Uses engine_internals to preserve and decorate native controllers",
+    },
+  },
+  credits = {
+    { who = "Gen1Recomp", for_ = "native mod platform, controllers, data and renderer" },
+    { who = "NikoIchu", for_ = "CC0 1-bit Pixel Icons used by the Start Menu" },
+    { who = "Haseo", for_ = "Typed Move Colors settings and Vibrant palette contribution" },
+    { who = "Game Freak", for_ = "interface and storage interaction inspiration" },
+  },
+  compat = { engine = ">=0.0.0-dev <1.0.0", modApi = 2 },
+}

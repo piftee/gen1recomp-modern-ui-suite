@@ -1,0 +1,56 @@
+{
+  "id": "modern_ui_suite",
+  "name": "Modern UI Suite",
+  "version": "0.1.0",
+  "api": 2,
+  "games": [
+    "gen1",
+    "gen2"
+  ],
+  "entry": "main.lua",
+  "profile": "content",
+  "game_version": ">=0.0.0-dev <1.0.0",
+  "category": "UI",
+  "priority": 1200,
+  "dependencies": [],
+  "optional_dependencies": [
+    "gender_mod",
+    "dv_tracker",
+    "kanto_ribbons",
+    "gen1_modern_ui",
+    "DRAMATIC_SHAPE",
+    "BATTLE_ART_VOXEL_FORK",
+    "DRAMALESS_SHAPE",
+    "CRYSTAL_251",
+    "crystal_animated_sprites_with_shiny_visuals",
+    "unique_menu_icons",
+    "HGSS_SPRITES",
+    "overworld_wild_spawns",
+    "Gold_Silver_Sprites",
+    "qol_toggles",
+    "anytime_rename",
+    "moves_manager",
+    "useful_bag",
+    "Kanto-Reforged",
+    "kanto_gear",
+    "useful_move_info",
+    "gen3_battle_ui",
+    "potato_voxel"
+  ],
+  "conflicts": [
+    "modern_start_menu_ui",
+    "modern_party_ui",
+    "modern_bag_ui",
+    "modern_pc_ui",
+    "modern_pokedex_ui",
+    "battle_info_hud",
+    "typed_move_colors"
+  ],
+  "incompatible": [],
+  "permissions": [
+    "engine_internals"
+  ],
+  "experimental": false,
+  "description": "One modular package for the modern Start, Party, Bag, PC, Pokedex, battle HUD and move-colour interfaces.",
+  "github": "piftee/gen1recomp-modern-ui-suite"
+}
