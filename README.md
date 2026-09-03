@@ -1,10 +1,50 @@
 # Modern UI Suite
 
-Modern UI Suite combines seven interface mods into one maintained package for
-Gen 1 and Gen 2: Modern Start Menu, Modern Party UI, Modern Bag UI, Modern PC
-UI, Modern Pokedex UI, Battle Info HUD, and Typed Move Colors.
+**Classic Pokémon, made clearer at a glance.**
+
+Modern UI Suite refreshes the menus and information screens throughout the
+game while keeping the character of the original handheld adventures. It uses
+the familiar pixel type, Pokémon sprites, palettes, sounds, and controls, then
+gives them more room to breathe on modern displays. The result feels less like
+a replacement interface and more like the UI the games might have grown into.
+
+The layouts respond to the space available instead of simply stretching the
+Game Boy screen. They can stay compact at the original 160×144 aspect ratio,
+spread out across a desktop window, or reorganize for a tall phone-shaped
+view. The mod changes presentation and convenience—not battles, progression,
+or the rules of the game.
 
 **[Download the latest installable release](https://github.com/piftee/gen1recomp-modern-ui-suite/releases/latest)**
+
+## What it changes
+
+- **A quicker START menu** — a compact, paged icon launcher keeps more of the
+  overworld visible and puts important context within easy reach. Gen 2 games
+  receive their proper PACK and POKéGEAR actions.
+- **A more expressive party and summary view** — responsive, type-tinted cards
+  make HP, experience, status, stats, and moves easier to scan without losing
+  the original game's visual language.
+- **A genuinely useful Bag and Item PC** — sensible pockets, item descriptions,
+  money and capacity readouts, two visual skins, and layouts suited to both
+  wide and narrow screens. Expanded storage supports 255 unique entries and
+  stacks of up to 999 items.
+- **Direct Pokémon storage management** — see the party and current Box
+  together, inspect a Pokémon before moving it, and pick up, place, reorder,
+  or swap Pokémon in one workspace.
+- **A Pokédex built for browsing** — caught and seen progress, filters, artwork,
+  and dedicated information, stats, evolution-family, and move views make the
+  Pokédex feel like a research tool rather than a long list.
+- **More informative battles** — readable colored HP bars, experience progress,
+  status, level, gender, and caught indicators add useful information while
+  preserving the battlefield and the native battle flow.
+- **Type-aware move displays** — move cards and text use their type colors
+  consistently in battle, summaries, move learning, move forgetting, Mimic,
+  and PP selection, with clearer PP and effectiveness cues where relevant.
+
+Modern UI Suite supports Red, Blue, and Yellow, plus Gold, Silver, and Crystal
+on Gen 2-capable Gen1Recomp builds. Every major feature has its own switch, so
+you can use the complete visual refresh or keep only the parts that suit your
+game. Detailed appearance and behavior options remain independent too.
 
 ## Install
 
