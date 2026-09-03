@@ -333,12 +333,11 @@ return function(mod)
     return phase == "moveSelect" or phase == "mimicSelect"
   end
 
-  -- GAME uses only the native 40-pixel control band in ordinary 2D battles.
-  -- The selected move's Power/PP card occupies its left side and the four
-  -- type-coloured move rows occupy its right side. Keeping every card at
-  -- y=104 or lower prevents large back sprites from being covered on the
-  -- narrow native canvas used by portrait/mobile layouts. Custom/transparent
-  -- renderers retain their existing paper-free compact surface.
+  -- GAME is the faithful cartridge-shaped presentation in an ordinary 2D
+  -- battle. The native TYPE/PP box, move-list frame, cursor and vertical input
+  -- remain in charge; the overlay below only replaces the four white row
+  -- interiors with type colour and redraws their native-size ink. Custom or
+  -- transparent renderers still need the paper-free compact replacement.
   local function nativeGamePresentation(battle)
     return battle ~= nil
       and componentEnabled()
@@ -353,7 +352,6 @@ return function(mod)
     if not componentEnabled() then return false end
     return widePresentationOwnsPhase(battle)
       or compactPresentationOwnsPhase(battle)
-      or (nativeGamePresentation(battle) and battle.phase == "moveSelect")
   end
 
   inputPatch.trackPresentationBattle = function(battle)
@@ -393,9 +391,9 @@ return function(mod)
   -- what produced WORLD-shaped holes, retained RGB rectangles on translucent
   -- renderers, and the stray TYPE/PP slab visible with Fancy Battle/Battle
   -- Art. The wrapper is process-stable across mod reloads, like the input
-  -- patch above. Ordinary GAME move selection suppresses its oversized native
-  -- panel before drawing the compact cards; a staged renderer's compact move
-  -- phase is replaced without painting paper into its transparent surface.
+  -- patch above. Ordinary GAME move selection deliberately retains its native
+  -- panel; only a staged renderer's compact move phase is replaced to avoid
+  -- painting paper into its transparent surface.
   local textPatch = rawget(BattleState, "_typedMoveColorsTextPatch")
   if not textPatch then
     textPatch = { original = BattleState.drawTextArea }
@@ -897,6 +895,45 @@ return function(mod)
   end
   inputPatch.detachedOpacity = detachedOpacity
 
+  local function nativeGameRowGeometry(index)
+    return {
+      x = 40, y = 96 + index * 8, w = 112, h = 8,
+      textX = 48, textWidth = 100,
+    }
+  end
+  inputPatch.nativeGameRowGeometry = nativeGameRowGeometry
+
+  local function drawNativeGameRows(battle, moves, selected)
+    love.graphics.push("all")
+    for i, move in ipairs(moves) do
+      local def = moveDef(battle.game, move)
+      if def then
+        local row = nativeGameRowGeometry(i)
+        local colors = colorsFor(battle.game, def.type)
+        local strong = setting("strength", "bold") ~= "soft"
+        local focused = i == selected
+        local face = focused and darkerTypeColor(colors[3])
+          or colors[strong and 3 or 2]
+        local foreground = colors[focused and 1 or 4]
+        setInkColor(face, detachedOpacity())
+        love.graphics.rectangle("fill", row.x, row.y, row.w, row.h)
+
+        if focused then
+          drawCodeInk(0xED, row.x, row.y, foreground)
+        elseif battle.moveSwapIndex == i then
+          drawCodeInk(0xEC, row.x, row.y, foreground)
+        end
+        -- A native row has room for every stock twelve-glyph move name at
+        -- the original integer pixel scale. Only longer translated or custom
+        -- names are cleanly clipped; no fractional scaling can distort them.
+        drawInk(def.name or move.id, row.textX, row.y,
+          row.textWidth, foreground)
+        PaletteFX.markTrueColor(row.x, row.y, row.w, row.h)
+      end
+    end
+    love.graphics.pop()
+  end
+
   local function renderBattle(battle)
     if not componentEnabled() or textOnlyMode()
         or not setting("battle_colors", true) then return end
@@ -921,10 +958,8 @@ return function(mod)
     local transparentSurface = not wide and customBattleSurface(battle)
     local nativeGame = nativeGamePresentation(battle)
     if nativeGame and phase == "moveSelect" then
-      -- The engine clips the player picture at the native selector boundary.
-      -- Restore it before painting the replacement control band so the full
-      -- sprite remains visible above y=104 and the controls stay on top below.
-      restoreDetachedPlayerPic(battle)
+      drawNativeGameRows(battle, moves, selected)
+      return
     end
     if not wide and phase == "moveSelect" and not transparentSurface
         and not nativeGame then
@@ -947,9 +982,6 @@ return function(mod)
           x, y, w, h = col == 0 and 4 or 110,
             106 + row * 18, col == 0 and 104 or 110, 16
           textX, textY, dense = x + 4, y + 4, false
-        elseif nativeGame and phase == "moveSelect" then
-          x, y, w, h = 80, 104 + (i - 1) * 10, 76, 9
-          textX, textY, dense = 84, y + 1, true
         else
           x, y, w, h = 4,
             (phase == "moveSelect" and 104 or 64) + (i - 1) * 10,
@@ -959,53 +991,14 @@ return function(mod)
         drawButton(battle.game, def.type, x, y, w, h,
           i == selected, dense,
           function(foreground)
-            if nativeGame and phase == "moveSelect" then
-              -- Preserve stock twelve-character names in the half-width
-              -- mobile column; translated names still truncate only after
-              -- reaching a readable 60% horizontal scale.
-              drawFittedInk(def.name or move.id, textX, textY,
-                w - (textX - x) - 5, foreground, 0.6)
-            else
-              drawInk(def.name or move.id, textX, textY,
-                w - (textX - x) - 5, foreground)
-            end
+            drawInk(def.name or move.id, textX, textY,
+              w - (textX - x) - 5, foreground)
           end, false, transparentSurface,
-          nativeGame and phase == "moveSelect")
+          false)
       end
     end
 
-    if nativeGame and phase == "moveSelect" then
-      local selectedMove = moves[selected]
-      local selectedDef = selectedMove and moveDef(battle.game, selectedMove)
-      local disabled = battle.player
-        and battle.player.disabledSlot == selected
-      if selectedDef then
-        -- A single control-band card keeps the useful values beside the move
-        -- rows without entering the sprite field. Its colour communicates
-        -- type, so no type label is repeated. skipClear prevents a paper
-        -- rectangle from appearing behind the chamfered corners.
-        drawButton(battle.game, selectedDef.type, 4, 104, 74, 39,
-          false, false, function(foreground)
-            if disabled then
-              drawFittedInk(Strings("disabled!"), 8, 120, 64, foreground)
-              return
-            end
-            local hasPower = type(selectedDef.power) == "number"
-              and selectedDef.power > 0
-            local maxPP = (selectedDef.pp or 0)
-              + (selectedMove.ppUps or 0)
-                * math.floor((selectedDef.pp or 0) / 5)
-            local powerLine = hasPower
-              and (Strings("POWER") .. " "
-                .. tostring(math.floor(selectedDef.power)))
-              or Strings("STATUS")
-            drawFittedInk(powerLine, 8, 112, 64, foreground)
-            drawFittedInk((Strings("PP") .. " %d/%d")
-                :format(selectedMove.pp or 0, maxPP),
-              8, 124, 64, foreground)
-          end, false, false, true)
-      end
-    elseif transparentSurface and phase == "moveSelect" then
+    if transparentSurface and phase == "moveSelect" then
       local selectedMove = moves[selected]
       local selectedDef = selectedMove and moveDef(battle.game, selectedMove)
       if selectedDef then

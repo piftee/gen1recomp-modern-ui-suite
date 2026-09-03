@@ -160,8 +160,11 @@ T.eq(run.loader.modOptions.modern_ui_suite["party.card_color"],
 -- component master switch is off.
 local BattleState = require("src.battle.BattleState")
 local typedTextPatch = rawget(BattleState, "_typedMoveColorsTextPatch")
+local typedInputPatch = rawget(BattleState, "_typedMoveColorsInputPatch")
 T.eq(type(typedTextPatch and typedTextPatch.owns), "function",
   "Typed Move Colors exposes its native battle-chrome ownership predicate")
+T.eq(type(typedInputPatch and typedInputPatch.nativeGamePresentation),
+  "function", "Typed Move Colors exposes its GAME-layout predicate")
 local nativeTextCalls = 0
 local originalTextArea = typedTextPatch and typedTextPatch.original
 if typedTextPatch then
@@ -262,6 +265,40 @@ for mask = 0, 127 do
   end
   T.check(matches, ("toggle combination %03d/127 is independent"):format(mask))
 end
+
+-- GAME means the game's own move-selection geometry with a colour pass, not
+-- a second half-width card layout. Keep the native TYPE/PP and move boxes so
+-- stock twelve-glyph names remain at their integer pixel size.
+suiteOptions["move_colors.layout"] = "game"
+local gameLayoutBattle = {
+  phase = "moveSelect", game = game, moveIndex = 1,
+  player = { curMoves = { { id = "TACKLE", pp = 35 } } },
+}
+T.eq(typedInputPatch.nativeGamePresentation(gameLayoutBattle), true,
+  "GAME selects the faithful native-list colour overlay")
+T.eq(typedInputPatch.replacementPresentationOwnsPhase(gameLayoutBattle), false,
+  "GAME no longer suppresses the native TYPE/PP and move-list boxes")
+local gameRow = typedInputPatch.nativeGameRowGeometry(1)
+T.eq(gameRow.x, 40, "GAME colour begins inside the native move-list border")
+T.eq(gameRow.y, 104, "GAME first colour row matches the native first move")
+T.eq(gameRow.w, 112, "GAME uses the complete native move-list interior")
+T.eq(gameRow.textX, 48, "GAME keeps the native move-name origin")
+T.check(gameRow.textWidth >= 96,
+  "GAME preserves room for a twelve-glyph stock move at 1x")
+
+nativeTextCalls = 0
+originalTextArea = typedTextPatch.original
+typedTextPatch.original = function()
+  nativeTextCalls = nativeTextCalls + 1
+  return "native GAME layout"
+end
+nativeTextOK, nativeTextResult = pcall(BattleState.drawTextArea,
+  gameLayoutBattle)
+typedTextPatch.original = originalTextArea
+T.check(nativeTextOK and nativeTextCalls == 1
+    and nativeTextResult == "native GAME layout",
+  "enabled GAME colours still draw the native battle menu first")
+suiteOptions["move_colors.layout"] = "wide"
 
 suiteOptions["bag.enabled"] = true
 local openModern = run.data.screens.BagMenu.new(game, {})
