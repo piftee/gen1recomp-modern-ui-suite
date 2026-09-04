@@ -135,6 +135,15 @@ return function(mod)
     return not (options and options.revampedBattleUI == false)
   end
 
+  local function gen3PokemonUIActive(game)
+    local ok, handle = pcall(mod.find, "gen3_battle_ui")
+    if not ok or not handle then return false end
+    local loader = game and game.mods
+    local options = loader and loader.modOptions
+      and loader.modOptions.gen3_battle_ui
+    return not (options and options.revampedPokemonMenu == false)
+  end
+
   local function gen1ModernUIInstalled()
     local ok, handle = pcall(mod.find, "gen1_modern_ui")
     return ok and handle ~= nil
@@ -272,6 +281,7 @@ return function(mod)
   inputPatch.navigate = WideBattle.moveGridIndex
   inputPatch.engineWide = engineWide
   inputPatch.gen3BattleUIActive = gen3BattleUIActive
+  inputPatch.gen3PokemonUIActive = gen3PokemonUIActive
   inputPatch.gen1ModernUIInstalled = gen1ModernUIInstalled
   inputPatch.detachedSurfaceFits = detachedSurfaceFits
   inputPatch.textOnlyMode = textOnlyMode
@@ -345,6 +355,7 @@ return function(mod)
       and setting("battle_colors", true)
       and setting("layout", "wide") ~= "wide"
       and not engineWide(battle)
+      and not gen3BattleUIActive(battle.game)
       and not customBattleSurface(battle)
   end
 
@@ -1186,6 +1197,60 @@ return function(mod)
     end
   end
 
+  -- Some older imported caches retain the ROM's terminal text command as a
+  -- printable suffix. The native battle renderer consumes that command, but
+  -- Gen 3 Inspired UI reads current.text directly to reconstruct its larger
+  -- finished-frame dialogue. Hide only a terminal PROMPT marker while that
+  -- renderer runs, then restore the authoritative queue item immediately so
+  -- message timing, prompts and save/runtime state remain engine-owned.
+  local GEN3_PROMPT_SUFFIXES = { "(PROMPT)", "{PROMPT}", "<PROMPT>" }
+
+  local function withoutGen3PromptSuffix(text)
+    if type(text) ~= "string" then return text end
+    local cleaned = text
+    while true do
+      local candidate = cleaned:gsub("%s+$", "")
+      local found = false
+      for _, marker in ipairs(GEN3_PROMPT_SUFFIXES) do
+        if candidate:sub(-#marker) == marker then
+          cleaned = candidate:sub(1, -#marker - 1):gsub("%s+$", "")
+          found = true
+          break
+        end
+      end
+      if not found then return cleaned end
+    end
+  end
+  inputPatch.withoutGen3PromptSuffix = withoutGen3PromptSuffix
+
+  local function withGen3BattleTextCompatibility(game, draw)
+    local battle = activeBattle(game)
+    local current = battle and battle.current
+    local source = current and current.text
+    if not (battle and battle.phase == "messages"
+        and gen3BattleUIActive(game) and type(source) == "string") then
+      return draw()
+    end
+
+    local display = withoutGen3PromptSuffix(source)
+    if display == source then return draw() end
+    current.text = display
+    local traceback = debug and debug.traceback
+      or function(err) return tostring(err) end
+    local results = { xpcall(draw, traceback) }
+    current.text = source
+    if not results[1] then error(results[2], 0) end
+    return unpack(results, 2)
+  end
+
+  -- Gen 3 UI's final dialogue links run at 10000/11000. This outer link
+  -- supplies their display-only source before either one reads current.text.
+  mod.hooks:wrap("render.hud", function(next, game, viewport)
+    return withGen3BattleTextCompatibility(game, function()
+      return next(game, viewport)
+    end)
+  end, 13000)
+
   -- Builds the detached selector in screen-space units. Width chooses the
   -- preferred integer scale, but height caps the panel at roughly the bottom
   -- third of the usable display. Faithful 1x alone uses the same geometry at
@@ -1688,6 +1753,7 @@ return function(mod)
 
   local function renderSummary(screen)
     if not componentEnabled() or not setting("menu_colors", true)
+        or gen3PokemonUIActive(screen and screen.game)
         or screen.page ~= 2
         or not isTop(screen) then return end
     local game, mon = screen.game, screen.mon
@@ -1720,6 +1786,7 @@ return function(mod)
 
   local function renderMoveLearn(screen)
     if not componentEnabled() or not setting("menu_colors", true)
+        or gen3PokemonUIActive(screen and screen.game)
         or not screen.selecting
         or not isTop(screen) then return end
     local rowBase = screen._typedMoveColorsUsefulInfo and 4 or 5

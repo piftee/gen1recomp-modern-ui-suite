@@ -65,7 +65,7 @@ return {
     key = "move_colors",
     name = "Typed Move Colors",
     short = "MOVE COLORS",
-    version = "0.4.8",
+    version = "0.4.9",
     installOrder = 4,
     files = { "main.lua", "ui.lua", "gen2.lua" },
   },

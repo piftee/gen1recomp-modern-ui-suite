@@ -33,7 +33,7 @@ local expectedVersions = {
   modern_pc_ui = "0.4.3",
   modern_pokedex_ui = "0.2.10",
   battle_info_hud = "0.9.2",
-  typed_move_colors = "0.4.8",
+  typed_move_colors = "0.4.9",
 }
 
 local exports = run.loader.exports.modern_ui_suite
@@ -822,6 +822,93 @@ local fallback = compatibility.data.screens.BagMenu.new(compatibilityGame, {})
 T.eq(fallback.usefulBagFixtureScreen, true,
   "disabling Modern Bag hands the next open to the downstream companion")
 compatibility.release()
+
+-- Gen 3 Inspired UI owns its finished-frame battle dialogue and Pokemon
+-- menu surfaces. The suite may tint Gen 3's dedicated move panel, but it
+-- must not feed terminal ROM control commands into the dialogue renderer or
+-- repaint native-coordinate Summary/MoveLearn rows over the larger screens.
+local gen3Compatibility = T.sdk.loadMods({
+  "mods/modern_ui_suite/tests/fixtures/gen3_battle_ui",
+  "mods/modern_ui_suite",
+}, { data = T.fixtures.fresh(), dev = true })
+T.eq(#gen3Compatibility.errors, 0,
+  "the suite loads beside the Gen 3 UI compatibility fixture")
+T.eq(gen3Compatibility.loader.order[1], "gen3_battle_ui",
+  "Gen 3 UI establishes its presentation before the suite adapter")
+
+local gen3Stack = { states = {} }
+function gen3Stack:top() return self.states[#self.states] end
+local gen3Game = {
+  data = gen3Compatibility.data,
+  save = { options = {}, party = {}, player = { name = "RED" } },
+  mods = gen3Compatibility.loader,
+  stack = gen3Stack,
+}
+local gen3Battle = {
+  game = gen3Game,
+  phase = "messages",
+  current = {},
+  shown = {},
+}
+gen3Stack.states = { gen3Battle }
+
+for _, marker in ipairs({ "(PROMPT)", "{PROMPT}", "<PROMPT>" }) do
+  local source = "Wild PIDGEY\nappeared!" .. marker
+  gen3Battle.current.text = source
+  gen3Game.gen3FixtureMessage = nil
+  local ok, err = pcall(Runtime.call, "render.hud", function() end,
+    gen3Game, { width = 1280, height = 720 })
+  T.check(ok, "Gen 3 dialogue compatibility draws: " .. tostring(err))
+  T.eq(gen3Game.gen3FixtureMessage, "Wild PIDGEY\nappeared!",
+    marker .. " is hidden from Gen 3's player-facing dialogue")
+  T.eq(gen3Battle.current.text, source,
+    marker .. " remains intact in the engine-owned battle queue")
+end
+local spacedSource = "Deliberate trailing space  "
+gen3Battle.current.text = spacedSource
+gen3Game.gen3FixtureMessage = nil
+Runtime.call("render.hud", function() end,
+  gen3Game, { width = 1280, height = 720 })
+T.eq(gen3Game.gen3FixtureMessage, spacedSource,
+  "ordinary message whitespace is unchanged when no control marker exists")
+
+local gen3TypedInput = rawget(BattleState, "_typedMoveColorsInputPatch")
+gen3Battle.phase = "moveSelect"
+gen3Battle.player = { curMoves = {} }
+gen3Battle.wideLayout = function() return false end
+T.eq(gen3TypedInput.nativeGamePresentation(gen3Battle), false,
+  "Gen 3 battle UI bypasses the native GAME-row class interception")
+
+local MoveLearnMenu = require("src.ui.MoveLearnMenu")
+local gen3MovePatch = rawget(MoveLearnMenu, "_typedMoveColorsPatch")
+local gen3SummaryPatch = rawget(SummaryMenu, "_typedMoveColorsPatch")
+local gen3Paints = 0
+local realGen3Mark = PaletteFX.markTrueColor
+PaletteFX.markTrueColor = function() gen3Paints = gen3Paints + 1 end
+local gen3Learner = setmetatable({
+  game = gen3Game, selecting = true, index = 1,
+  mon = { moves = { { id = "TACKLE", pp = 35 } } },
+}, MoveLearnMenu)
+gen3Stack.states = { gen3Battle, gen3Learner }
+local gen3LearnOK, gen3LearnErr = pcall(gen3MovePatch.renderer, gen3Learner)
+T.check(gen3LearnOK,
+  "Gen 3 move-learning ownership check: " .. tostring(gen3LearnErr))
+T.eq(gen3Paints, 0,
+  "the suite does not overlay fixed native rows on Gen 3 move learning")
+
+local gen3Summary = setmetatable({
+  game = gen3Game, page = 2,
+  mon = { moves = { { id = "TACKLE", pp = 35 } } },
+}, SummaryMenu)
+gen3Stack.states = { gen3Battle, gen3Summary }
+local gen3SummaryOK, gen3SummaryErr =
+  pcall(gen3SummaryPatch.renderer, gen3Summary)
+PaletteFX.markTrueColor = realGen3Mark
+T.check(gen3SummaryOK,
+  "Gen 3 Summary ownership check: " .. tostring(gen3SummaryErr))
+T.eq(gen3Paints, 0,
+  "the suite does not overlay fixed native rows on Gen 3 Summary")
+gen3Compatibility.release()
 
 local conflict = T.sdk.loadMods({
   "mods/modern_bag_ui", "mods/modern_ui_suite",

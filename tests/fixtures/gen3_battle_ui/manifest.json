@@ -1,0 +1,15 @@
+{
+  "id": "gen3_battle_ui",
+  "name": "Gen 3 Inspired UI fixture",
+  "version": "1.3.2",
+  "api": 2,
+  "entry": "main.lua",
+  "profile": "overhaul",
+  "category": "UI",
+  "game_version": ">=0.0.0-0 <2.0.0",
+  "priority": 100,
+  "permissions": ["engine_internals"],
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": []
+}

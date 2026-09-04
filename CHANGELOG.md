@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.10 - 2026-09-04
+
+- Fixed literal `(PROMPT)` control markers appearing in Gen 3 Inspired UI
+  battle dialogue. The compatibility adapter now supplies a display-only
+  clean message while leaving the engine's queue and prompt timing unchanged.
+- Fixed overlapping move names and cursors on Gen 3 UI's in-battle move-
+  replacement screen. Typed Move Colors now yields Summary and move-learning
+  surfaces when Gen 3's Pokemon presentation owns them.
+
 ## 0.1.9 - 2026-09-04
 
 - Restored visibly distinct Start Menu placement choices. **LEFT** and

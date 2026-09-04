@@ -1,5 +1,7 @@
 tests/modern_ui_suite_test.lua
 tests/preview_driver.lua
 tests/fixtures/
+tests/fixtures/gen3_battle_ui/main.lua
+tests/fixtures/gen3_battle_ui/manifest.json
 .gitignore
 .github/

@@ -12,7 +12,7 @@ loaded from the legacy directories.
 | Modern PC UI | 0.4.3 |
 | Modern Pokedex UI | 0.2.10 |
 | Battle Info HUD | 0.9.2 |
-| Typed Move Colors | 0.4.8 |
+| Typed Move Colors | 0.4.9 |
 
 All component code is MIT licensed. The Start Menu icon atlas also contains
 CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
