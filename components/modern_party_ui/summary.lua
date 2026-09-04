@@ -17,7 +17,6 @@ return function(mod, genderExports, compatibility)
 
   local SCREEN_H = 144
   local HEADER_H = 16
-  local FOOTER_Y = 136
   local WHITE, LIGHT, DARK, BLACK = 1, 170 / 255, 85 / 255, 0
   local dvTracker = compatibility and compatibility.dvTracker == true
   local kantoRibbons = compatibility and compatibility.kantoRibbons == true
@@ -118,27 +117,76 @@ return function(mod, genderExports, compatibility)
       math.max(160, math.floor(width / scale)))
   end
 
-  local function uiSize()
+  -- A portrait PartyMenu owns a taller logical surface so all six cards fit
+  -- without shrinking. Summary is pushed above that menu; forcing its canvas
+  -- back to 160x144 made Renderer discard and recreate the UI canvas twice,
+  -- exposing its white allocation clear for one frame when Summary closed.
+  -- Inherit the exact parent surface while the party remains underneath.
+  local function parentPartySurface(summary)
+    if not (setting("responsive", true) and type(summary) == "table") then
+      return nil
+    end
+    if faithfulRatioActive() then return nil end
+    local stack = summary.game and summary.game.stack
+    local states = stack and stack.states
+    if type(states) ~= "table" then return nil end
+
+    local summaryIndex
+    for index = #states, 1, -1 do
+      if states[index] == summary then
+        summaryIndex = index
+        break
+      end
+    end
+    if not summaryIndex then return nil end
+
+    for index = summaryIndex - 1, 1, -1 do
+      local candidate = states[index]
+      if candidate and candidate.modernPartyUI
+          and type(candidate.uiSize) == "function" then
+        local ok, width, height = pcall(candidate.uiSize, candidate)
+        width, height = tonumber(width), tonumber(height)
+        if ok and width and height and width >= 160 and height >= SCREEN_H then
+          summary.modernSummaryParentSurface = "modern_party_ui"
+          return math.floor(width), math.floor(height)
+        end
+      end
+    end
+    return nil
+  end
+
+  local function responsiveSize(summary)
+    local width, height = parentPartySurface(summary)
+    if width then return width, height end
     return responsiveWidth(), SCREEN_H
   end
 
+  local function uiSize(summary)
+    return responsiveSize(summary)
+  end
+
   local function layoutFor(summary)
-    local width = responsiveWidth()
+    local width, height = responsiveSize(summary)
     local renderer = summary and summary.game and summary.game.renderer
     if setting("responsive", true) and not faithfulRatioActive()
         and renderer and renderer.uiSize then
-      width = select(1, renderer:uiSize()) or width
+      local rendererW, rendererH = renderer:uiSize()
+      width, height = rendererW or width, rendererH or height
     end
     width = math.max(160, math.floor(width))
+    height = math.max(SCREEN_H, math.floor(height))
+    local footerY = height - 8
     local railW = math.min(88, math.max(64, math.floor(width * 0.31)))
     local mainX = railW + 4
     local mainW = width - mainX - 2
     return {
       width = width,
+      height = height,
+      footerY = footerY,
       railX = 2, railY = HEADER_H + 2, railW = railW,
-      railH = FOOTER_Y - HEADER_H - 4,
+      railH = footerY - HEADER_H - 4,
       mainX = mainX, mainY = HEADER_H + 2, mainW = mainW,
-      mainH = FOOTER_Y - HEADER_H - 4,
+      mainH = footerY - HEADER_H - 4,
       moveColumns = mainW >= 144 and 2 or 1,
     }
   end
@@ -271,12 +319,12 @@ return function(mod, genderExports, compatibility)
 
   local function drawBackdrop(layout)
     gray(WHITE)
-    love.graphics.rectangle("fill", 0, 0, layout.width, SCREEN_H)
+    love.graphics.rectangle("fill", 0, 0, layout.width, layout.height)
     if setting("pattern", "grid") ~= "grid" then return end
     gray(LIGHT)
-    for x = -SCREEN_H, layout.width, 16 do
-      love.graphics.line(x, 0, x + SCREEN_H, SCREEN_H)
-      love.graphics.line(x + SCREEN_H, 0, x, SCREEN_H)
+    for x = -layout.height, layout.width, 16 do
+      love.graphics.line(x, 0, x + layout.height, layout.height)
+      love.graphics.line(x + layout.height, 0, x, layout.height)
     end
   end
 
@@ -1078,7 +1126,7 @@ return function(mod, genderExports, compatibility)
 
   local function drawFooter(summary, layout)
     gray(DARK)
-    love.graphics.rectangle("fill", 0, FOOTER_Y, layout.width, 8)
+    love.graphics.rectangle("fill", 0, layout.footerY, layout.width, 8)
     local hint
     if summary.page == 1 then
       hint = "A/B MOVES"
@@ -1096,7 +1144,7 @@ return function(mod, genderExports, compatibility)
       hint = "A/B BACK"
     end
     drawText(hint, (layout.width - Font.width(hint)) / 2,
-      FOOTER_Y, layout.width - 8, WHITE)
+      layout.footerY, layout.width - 8, WHITE)
   end
 
   -- Party-icon packs publish true-colour rectangles after drawing each icon.
@@ -1139,7 +1187,7 @@ return function(mod, genderExports, compatibility)
     local base = basePalette(summary)
     local primary = primaryPalette(summary)
     local zones = { {
-      colors = base, x = 0, y = 0, w = layout.width, h = SCREEN_H,
+      colors = base, x = 0, y = 0, w = layout.width, h = layout.height,
     }, {
       colors = primary, x = layout.railX, y = layout.railY,
       w = layout.railW, h = layout.railH,
@@ -1255,6 +1303,9 @@ return function(mod, genderExports, compatibility)
       end
       summary.modernPartySummary = true
       summary.modernSummaryLayout = "responsive_cards"
+      summary.modernSummaryLayoutInfo = function(self)
+        return layoutFor(self)
+      end
       summary.modernSummaryPages = summaryPageCount
       -- Kanto Ribbons reads pageCount to locate the last controller page.
       -- Publish the composed total even when DV Tracker itself does not.

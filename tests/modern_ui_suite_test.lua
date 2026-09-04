@@ -27,8 +27,8 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.17",
-  modern_party_ui = "0.4.8",
+  modern_start_menu_ui = "0.1.18",
+  modern_party_ui = "0.4.9",
   modern_bag_ui = "0.5.0",
   modern_pc_ui = "0.4.3",
   modern_pokedex_ui = "0.2.10",
@@ -436,6 +436,71 @@ T.check(phosphorOK,
   "Phosphor's controller overlay never reads sandboxed love.system")
 T.same({ phosphorWidth, phosphorHeight }, { 160, 144 },
   "Phosphor's portrait overlay keeps the native START surface")
+
+local positionKeys = { "left", "mid_left", "center", "mid_right", "right" }
+local compactPositionXs = {}
+for index, position in ipairs(positionKeys) do
+  suiteOptions["start_menu.position"] = position
+  compactPositionXs[index] = startPresentation.layoutFor(modernStart).panelX
+end
+T.same(compactPositionXs, { 0, 16, 28, 40, 56 },
+  "all five compact START positions retain visibly distinct docks")
+T.eq(compactPositionXs[1], 0,
+  "LEFT reaches the true logical screen edge")
+T.eq(compactPositionXs[5] + startPresentation.PANEL_W, 160,
+  "RIGHT reaches the opposite logical screen edge")
+suiteOptions["start_menu.position"] = "right"
+
+-- Party uses a tall portrait surface on phones. A Summary pushed above it
+-- must inherit that exact canvas so backing out cannot release and recreate
+-- the render target with a visible white allocation clear.
+do
+  local oldPixelDimensions = love.graphics.getPixelDimensions
+  love.graphics.getPixelDimensions = function() return 390, 844 end
+  local mon = {
+    species = "FIXMON_A", nickname = "LEAF", level = 12, exp = 1728,
+    hp = 35,
+    stats = { hp = 35, attack = 20, defense = 18, speed = 16, special = 22 },
+    moves = {},
+  }
+  game.save.party = { mon }
+  stack.states = {}
+  local party = run.data.screens.PartyMenu.new(game, {})
+  stack:push(party)
+  local partyW, partyH = party:uiSize()
+  local summary = run.data.screens.SummaryMenu.new(game, mon)
+  stack:push(summary)
+  local summaryW, summaryH = summary:uiSize()
+  T.same({ summaryW, summaryH }, { partyW, partyH },
+    "portrait Summary inherits the active Party render surface")
+  T.eq(summary.modernSummaryParentSurface, "modern_party_ui",
+    "Summary identifies its parent surface for transition diagnostics")
+  game.renderer = { uiSize = function() return summaryW, summaryH end }
+  local summaryLayout = summary:modernSummaryLayoutInfo()
+  T.eq(summaryLayout.height, partyH,
+    "portrait Summary fills the inherited Party canvas")
+  T.eq(summaryLayout.footerY, partyH - 8,
+    "portrait Summary keeps its footer at the inherited canvas bottom")
+  local summaryZones = summary:sgbPalettes(game) or {}
+  T.eq(summaryZones[1] and summaryZones[1].h, partyH,
+    "portrait Summary palette covers the inherited Party canvas")
+  local summaryDrawOK, summaryDrawError = pcall(summary.draw, summary)
+  T.check(summaryDrawOK,
+    "portrait Summary draws across the inherited Party canvas: "
+      .. tostring(summaryDrawError))
+  summary.page = 2
+  input.pressed.b = true
+  summary:update(0)
+  input.pressed.b = nil
+  T.eq(stack:top(), party,
+    "backing out of Summary returns directly to the existing Party screen")
+  T.same({ party:uiSize() }, { summaryW, summaryH },
+    "the Summary-to-Party return keeps one continuous render surface")
+  stack.states = {}
+  game.save.party = {}
+  game.renderer = nil
+  love.graphics.getPixelDimensions = oldPixelDimensions
+end
 
 suiteOptions["start_menu.enabled"] = false
 local nativeStart = StartMenu.new(game)

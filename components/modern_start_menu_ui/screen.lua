@@ -410,6 +410,17 @@ return function(mod, icons)
     local position = selectedPosition()
     local panelX = PANEL_MARGIN
       + math.floor(travel * (POSITION_RATIOS[position] or 1) + 0.5)
+    -- LEFT and RIGHT are edge docks, not merely the outer two stops inside
+    -- the four-pixel safe area used by the three intermediate placements.
+    -- Keeping that inset on every choice made the edge modes look identical
+    -- to MID-L/MID-R on a phone. The shell already carries its own black
+    -- boundary, so it can safely meet the logical surface edge while the
+    -- intermediate choices retain their balanced spacing.
+    if position == "left" then
+      panelX = 0
+    elseif position == "right" then
+      panelX = width - PANEL_W
+    end
     local panelY = PANEL_MARGIN
     if height >= PORTRAIT_MIN_H then
       panelY = math.floor((availableHeight - PANEL_H) / 2)

@@ -6,8 +6,8 @@ loaded from the legacy directories.
 
 | Component | Imported version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.17 |
-| Modern Party UI | 0.4.8 |
+| Modern Start Menu UI | 0.1.18 |
+| Modern Party UI | 0.4.9 |
 | Modern Bag UI | 0.5.0 |
 | Modern PC UI | 0.4.3 |
 | Modern Pokedex UI | 0.2.10 |

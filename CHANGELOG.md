@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9 - 2026-09-04
+
+- Restored visibly distinct Start Menu placement choices. **LEFT** and
+  **RIGHT** now dock to the true logical screen edges while **MID-L**,
+  **CENTER**, and **MID-R** retain their inset positions.
+- Fixed the one-frame white flash when returning from a Pokemon's Party stats
+  on portrait phones. Summary now preserves and fills the Party screen's
+  active render surface instead of reallocating a 160x144 canvas.
+
 ## 0.1.8 - 2026-09-04
 
 - Fixed suite menu cursors inheriting a fast **Overworld Speed** setting.

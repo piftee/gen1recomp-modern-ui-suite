@@ -4,7 +4,7 @@ return {
     key = "start_menu",
     name = "Modern Start Menu",
     short = "START",
-    version = "0.1.17",
+    version = "0.1.18",
     installOrder = 5,
     files = { "main.lua", "screen.lua", "settings.lua", "icons.lua" },
     assets = { "assets/start_menu_icons.png" },
@@ -15,7 +15,7 @@ return {
     key = "party",
     name = "Modern Party UI",
     short = "PARTY",
-    version = "0.4.8",
+    version = "0.4.9",
     installOrder = 3,
     files = {
       "main.lua", "screen.lua", "summary.lua", "party_tools.lua",
