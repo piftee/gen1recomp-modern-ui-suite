@@ -20,8 +20,11 @@ return function(mod)
       } },
     { key = "opacity", label = "BATTLE OPACITY", type = "choice",
       default = "100", choices = {
-        { "100%", "100" }, { "85%", "85" },
-        { "70%", "70" }, { "55%", "55" },
+        -- The stock options font has no percent glyph. The row label already
+        -- supplies the unit, so plain numbers render deliberately on both
+        -- generations instead of logging a missing-glyph warning.
+        { "100", "100" }, { "85", "85" },
+        { "70", "70" }, { "55", "55" },
       } },
     { key = "text_only", label = "TEXT ONLY", type = "toggle",
       default = false },

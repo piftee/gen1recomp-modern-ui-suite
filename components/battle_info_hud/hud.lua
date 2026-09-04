@@ -589,7 +589,11 @@ return function(mod)
       local originalTracking = crystal.withBattleHudTracking
       crystal.withBattleHudTracking = function(battle, draw, ...)
         local activeGenderApi = genderCompatibility(battle and battle.game)
-        if setting() and activeGenderApi and type(draw) == "function" then
+        -- Gender Mod and Crystal 251 are alternative presentation providers.
+        -- Let Gender Mod remain the single owner even when this component's
+        -- own HUD decoration is disabled; returning Crystal's text marker in
+        -- that state produces the overlapping before/after-level pair.
+        if activeGenderApi and type(draw) == "function" then
           return draw(...)
         end
         return originalTracking(battle, draw, ...)
@@ -749,9 +753,34 @@ return function(mod)
     mod.log:info("removed neutral Gender Mod marker from battle HUD")
   end
 
+  local function installGenderVisibilityGuard(hud)
+    if hud.battleInfoHudResolvedVisibilityV1 then return end
+
+    local function wrap(name)
+      local original = hud[name]
+      if type(original) ~= "function" then return end
+      hud[name] = function(battle, ...)
+        -- A successful catch clears the battle HUD before the nickname and
+        -- PC-transfer messages. Voxel renderers still ask Gender Mod to build
+        -- their offscreen HUD texture during those modal frames, so its looser
+        -- visibility predicate otherwise leaves two isolated glyphs behind.
+        if battle and (battle.blankForAskName or battle.result == "caught") then
+          return false
+        end
+        return original(battle, ...)
+      end
+    end
+
+    wrap("enemyHudVisible")
+    wrap("playerHudVisible")
+    hud.battleInfoHudResolvedVisibilityV1 = true
+    mod.log:info("matched Gender Mod visibility to resolved battle HUDs")
+  end
+
   local function installGenderBridge(game)
     local genderApi, hud = genderCompatibility(game)
     if not hud then return end
+    installGenderVisibilityGuard(hud)
     if hud.battleInfoHudCoordinatesV10 then
       installNeutralGenderGuard(hud)
       installCrystalGenderBridge(game, genderApi, hud)
@@ -1053,7 +1082,9 @@ return function(mod)
     end
   end
 
-  mod.events:on("game.ready", function(ev)
+  local onReady = type(mod.events.always) == "function"
+    and mod.events.always or mod.events.on
+  onReady(mod.events, "game.ready", function(ev)
     installGenderBridge(ev and ev.game)
     installDramaticBridges(ev and ev.game)
   end)

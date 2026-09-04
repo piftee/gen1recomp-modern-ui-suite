@@ -6,7 +6,7 @@ return function(mod, settings, state, components)
   local OptionsMenu = require("src.ui.OptionsMenu")
 
   local function labelFor(row, component)
-    return tostring(row.label or row.key or component.name)
+    return settings:detailLabel(component, row)
   end
 
   local function optionValue(component, row)

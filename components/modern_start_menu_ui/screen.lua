@@ -320,8 +320,10 @@ return function(mod, icons)
   -- renderer's fit-scale input and lets the external/mobile compositor shrink
   -- both the world and the menu a second time. Keep the native surface while
   -- touch controls are visible or configured, including the controllerHidden
-  -- state used by a Pocket Taco. A connected mobile gamepad is the fallback
-  -- for host overlays that hide the built-in touch artwork altogether.
+  -- state used by a Pocket Taco. Phosphor's iOS overlay disables the engine's
+  -- touch artwork and arrives as a joystick, so use the sandbox-safe battery
+  -- facade (plus portrait geometry when battery state is unavailable) to
+  -- recognize that fallback. Sandboxed mods must never probe love.system.
   local function mobileOverlayActive()
     if TouchControls then
       local okVisible, visible = pcall(TouchControls.visible, TouchControls)
@@ -330,14 +332,21 @@ return function(mod, icons)
         return true
       end
     end
-    local osName = love.system and love.system.getOS
-      and love.system.getOS() or nil
-    if (osName == "Android" or osName == "iOS")
-        and love.joystick and love.joystick.getJoysticks then
-      local okPads, pads = pcall(love.joystick.getJoysticks)
-      if okPads and type(pads) == "table" and #pads > 0 then return true end
+    if not (love.joystick and love.joystick.getJoysticks) then return false end
+    local okPads, pads = pcall(love.joystick.getJoysticks)
+    if not (okPads and type(pads) == "table" and #pads > 0) then return false end
+
+    local state
+    if mod and mod.device and type(mod.device.powerInfo) == "function" then
+      local okPower, reported = pcall(mod.device.powerInfo, mod.device)
+      if okPower then state = reported end
     end
-    return false
+    if state == "battery" or state == "charging" or state == "charged" then
+      return true
+    end
+
+    local pixelWidth, pixelHeight = displayPixels()
+    return pixelHeight > pixelWidth
   end
 
   local function responsiveSize(menu)

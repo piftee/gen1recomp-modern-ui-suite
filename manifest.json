@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.2",
+  "version": "0.1.8",
   "api": 2,
   "games": [
     "gen1",
@@ -35,7 +35,8 @@
     "kanto_gear",
     "useful_move_info",
     "gen3_battle_ui",
-    "potato_voxel"
+    "potato_voxel",
+    "STADIUM2_IMPORTER"
   ],
   "conflicts": [
     "modern_start_menu_ui",

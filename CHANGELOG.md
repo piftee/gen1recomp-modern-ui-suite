@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.1.8 - 2026-09-04
+
+- Fixed suite menu cursors inheriting a fast **Overworld Speed** setting.
+  Start, Party, Summary, Bag, item and Pokemon PC, Pokedex, and their child
+  prompts now consistently follow **Menu Speed** without changing battles or
+  ordinary overworld play.
+
+## 0.1.7 - 2026-09-04
+
+- Fixed the Start Menu crash in Phosphor on iPhone when Phosphor's controller
+  overlay is enabled. The overlay fallback now uses sandbox-safe device and
+  display signals instead of the blocked `love.system` module.
+
+## 0.1.6 - 2026-09-04
+
+- Fixed doubled move names and cursors in the Gen 1 GAME battle layout when a
+  localization moves the native move-list columns left for longer strings.
+- Colours are now applied while the native row is drawn, so translated names
+  retain the localization's coordinates and the stock layout stays unchanged.
+
+## 0.1.5 - 2026-09-04
+
+- Preserved active Stadium 2 battle scenes in Gold, Silver, and Crystal. The
+  Battle Info HUD now yields its stock widescreen compositor to the captured
+  3D presenter instead of replacing the arena with a centred 2D capture.
+
+## 0.1.4 - 2026-09-04
+
+- Added a Start-button Bag sorting menu with ascending and descending category
+  and item-name orders. Category sorting keeps each pocket's internal order.
+- Fixed Voxel battle gender rendering when Gender Mod and Crystal 251 are both
+  enabled: one coloured marker now owns each level instead of overlapping a
+  second black symbol.
+- Kept that provider arbitration active under **Disable All UI**, without
+  enabling any Modern UI presentation, and removed the isolated gender glyphs
+  from caught-mon nickname and PC-transfer frames.
+
+## 0.1.3 - 2026-09-03
+
+- Shortened flat-manager and component-page labels so every setting fits the
+  original 160x144 options layout on Gen 1 and Gen 2.
+- Removed unsupported percent glyphs from battle-opacity value labels.
+- Added a live options sweep that reaches all 31 persisted settings, the Start
+  icon action, and all 77 advertised values through the real menu controller.
+- Added reusable suite adapters and focused Party fixtures for complete visual
+  regression coverage of all seven embedded components.
+- Fixed the native Gen 2 proof so its settings smoke restores the Start Menu
+  master toggle before the screen matrix runs.
+
 ## 0.1.0 - 2026-09-03
 
 - Combined seven current Modern UI components into one package.

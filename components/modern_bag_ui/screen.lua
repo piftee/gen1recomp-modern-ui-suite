@@ -12,6 +12,7 @@ return function(mod, compatibility)
   local Assets = require("src.render.Assets")
   local Font = require("src.render.Font")
   local ItemEffects = require("src.inventory.ItemEffects")
+  local Menu = require("src.ui.Menu")
   local PaletteFX = require("src.render.PaletteFX")
   local Strings = require("src.core.Strings")
   local Theme = require("src.ui.Theme")
@@ -793,6 +794,114 @@ return function(mod, compatibility)
     end
   end
 
+  local function categoryRanks(menu)
+    local ranks = {}
+    local nextRank = 1
+    for _, pocket in ipairs(pocketsFor(menu)) do
+      if pocket.key ~= "all" and ranks[pocket.key] == nil then
+        ranks[pocket.key] = nextRank
+        nextRank = nextRank + 1
+      end
+    end
+    return ranks, nextRank
+  end
+
+  -- Sort the canonical Bag order in place so quantities, item ownership and
+  -- every native item action remain untouched. Category sorts deliberately
+  -- preserve the player's existing order inside each pocket; this makes the
+  -- operation useful as a quick grouping command without destroying a
+  -- carefully arranged medicine or TM list.
+  local function sortBag(menu, kind, descending)
+    if listConfig(menu) then return false end
+    local save = menu.game and menu.game.save
+    local store = save and save.inventory
+    if type(store) ~= "table" then return false end
+
+    local selected = selectedId(menu)
+    local entries = {}
+    for index, id in ipairs(orderedIds(menu, store)) do
+      if store[id] and not Bag.isBadge(id) then
+        local def = menu.game.data.items[id] or {}
+        entries[#entries + 1] = {
+          id = id,
+          original = index,
+          name = tostring(def.name or id):lower(),
+          category = categoryFor(menu.game, id),
+        }
+      end
+    end
+
+    local ranks, unknownRank = categoryRanks(menu)
+    table.sort(entries, function(a, b)
+      if kind == "category" then
+        local av = ranks[a.category] or unknownRank
+        local bv = ranks[b.category] or unknownRank
+        if av ~= bv then
+          if descending then return av > bv end
+          return av < bv
+        end
+        return a.original < b.original
+      end
+      if a.name ~= b.name then
+        if descending then return a.name > b.name end
+        return a.name < b.name
+      end
+      if descending then return a.id > b.id end
+      return a.id < b.id
+    end)
+
+    local order = save.bagOrder
+    if type(order) ~= "table" then
+      order = {}
+      save.bagOrder = order
+    end
+    for index = #order, 1, -1 do order[index] = nil end
+    for index, entry in ipairs(entries) do order[index] = entry.id end
+    menu.modernBagSwapId = nil
+    rebuildPocket(menu, selected)
+    return true
+  end
+
+  local function openSortMenu(menu)
+    if listConfig(menu) then return false end
+    menu.modernBagSwapId = nil
+    local choices = {
+      { label = Strings("CATEGORY ASC"), kind = "category" },
+      { label = Strings("CATEGORY DESC"), kind = "category",
+        descending = true },
+      { label = Strings("NAMES A-Z"), kind = "name" },
+      { label = Strings("NAMES Z-A"), kind = "name", descending = true },
+    }
+    local rows = {}
+    for index, choice in ipairs(choices) do
+      local kind, descending = choice.kind, choice.descending
+      rows[index] = {
+        label = choice.label,
+        onSelect = function()
+          sortBag(menu, kind, descending)
+        end,
+      }
+    end
+
+    -- Menu's rows are bottom-anchored, so the slightly taller box leaves a
+    -- dedicated heading band without introducing a second menu controller.
+    local sortMenu = Menu.new(menu.game, rows, {
+      tx = 2, ty = 3, tw = 16, th = 9, rowStep = 1.5,
+      startCloses = true,
+    })
+    sortMenu.modernBagSortMenu = true
+    local drawRows = sortMenu.draw
+    sortMenu.draw = function(self)
+      drawRows(self)
+      love.graphics.setColor(0, 0, 0, 1)
+      Font.draw(Strings("SORT BY"), (self.tx + 1) * 8,
+        (self.ty + 1) * 8)
+      love.graphics.setColor(1, 1, 1, 1)
+    end
+    menu.game.stack:push(sortMenu)
+    return true
+  end
+
   local function pocketCounts(menu)
     local counts = { all = 0, items = 0, medicine = 0, balls = 0,
       machines = 0, key = 0, berries = 0 }
@@ -1247,7 +1356,7 @@ return function(mod, compatibility)
         line1 = Strings("CHOOSE NEW POSITION")
         line2 = Strings("A PLACE  B BACK")
       else
-        line1 = Strings("L/R CHANGE POCKET")
+        line1 = Strings("L/R POCKET START SORT")
         line2 = Strings("A USE  B BACK")
       end
       line1 = fitText(line1, layout.width - 8)
@@ -1263,9 +1372,9 @@ return function(mod, compatibility)
     if swapId(menu) then
       message = Strings("CHOOSE A NEW POSITION")
     elseif layout.wide then
-      message = Strings("L/R POCKET  A SELECT  B BACK")
+      message = Strings("L/R POCKET  START SORT  A SELECT  B BACK")
     else
-      message = Strings("L/R POCKET  B BACK")
+      message = Strings("START SORT  B BACK")
     end
     message = fitText(message, layout.width - 8)
     drawText(message, (layout.width - Font.width(message)) / 2,
@@ -1689,6 +1798,9 @@ return function(mod, compatibility)
     elseif input:wasPressed("right") then
       switchPocket(menu, 1)
       return
+    elseif not listConfig(menu) and input:wasPressed("start") then
+      openSortMenu(menu)
+      return
     end
     -- ListMenu closes an empty list on A as a legacy convenience. Pocket
     -- tabs remain open instead, so the player can continue browsing them.
@@ -1956,6 +2068,8 @@ return function(mod, compatibility)
       menu.modernBagLayoutInfo = function() return layoutFor(menu) end
       menu.modernBagSwitchPocket = switchPocket
       menu.modernBagRefresh = rebuildPocket
+      menu.modernBagSort = sortBag
+      menu.modernBagOpenSort = openSortMenu
       rebuildPocket(menu)
       return menu
     end,

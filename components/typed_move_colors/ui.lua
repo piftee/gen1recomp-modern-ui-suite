@@ -400,6 +400,14 @@ return function(mod)
     rawset(BattleState, "_typedMoveColorsTextPatch", textPatch)
     BattleState.drawTextArea = function(self, ...)
       if textPatch.owns and textPatch.owns(self) then return end
+      -- Faithful GAME rows are coloured while the native renderer is
+      -- producing them. This lets a localization/layout mod move the native
+      -- move-name and cursor columns without leaving the old ink exposed to
+      -- the left of a separately positioned post-overlay.
+      if textPatch.nativeRows and textPatch.nativeRows(self)
+          and textPatch.drawNativeRows then
+        return textPatch.drawNativeRows(self, textPatch.original, ...)
+      end
       return textPatch.original(self, ...)
     end
   end
@@ -895,44 +903,126 @@ return function(mod)
   end
   inputPatch.detachedOpacity = detachedOpacity
 
-  local function nativeGameRowGeometry(index)
+  local function nativeGameRowGeometry(index, textX)
+    textX = math.floor(tonumber(textX) or 48)
+    local x = math.max(0, math.min(144, textX - 8))
     return {
-      x = 40, y = 96 + index * 8, w = 112, h = 8,
-      textX = 48, textWidth = 100,
+      x = x, y = 96 + index * 8, w = 152 - x, h = 8,
+      textX = textX, textWidth = math.max(0, 152 - textX),
     }
   end
   inputPatch.nativeGameRowGeometry = nativeGameRowGeometry
 
-  local function drawNativeGameRows(battle, moves, selected)
-    love.graphics.push("all")
-    for i, move in ipairs(moves) do
-      local def = moveDef(battle.game, move)
-      if def then
-        local row = nativeGameRowGeometry(i)
-        local colors = colorsFor(battle.game, def.type)
-        local strong = setting("strength", "bold") ~= "soft"
-        local focused = i == selected
-        local face = focused and darkerTypeColor(colors[3])
-          or colors[strong and 3 or 2]
-        local foreground = colors[focused and 1 or 4]
-        setInkColor(face, detachedOpacity())
-        love.graphics.rectangle("fill", row.x, row.y, row.w, row.h)
-
-        if focused then
-          drawCodeInk(0xED, row.x, row.y, foreground)
-        elseif battle.moveSwapIndex == i then
-          drawCodeInk(0xEC, row.x, row.y, foreground)
-        end
-        -- A native row has room for every stock twelve-glyph move name at
-        -- the original integer pixel scale. Only longer translated or custom
-        -- names are cleanly clipped; no fractional scaling can distort them.
-        drawInk(def.name or move.id, row.textX, row.y,
-          row.textWidth, foreground)
-        PaletteFX.markTrueColor(row.x, row.y, row.w, row.h)
-      end
+  local function nativeRowIndex(y, count)
+    y = tonumber(y)
+    if not y then return nil end
+    local index = (y - 96) / 8
+    if index ~= math.floor(index) or index < 1 or index > count then
+      return nil
     end
-    love.graphics.pop()
+    return index
   end
+
+  -- Draw each GAME row at the exact origin used by the native renderer. The
+  -- stock engine prints names at x=48 and the hand at x=40; long-name mods
+  -- commonly move both 32 pixels left. Intercepting those glyph calls keeps
+  -- the native box, TYPE/PP panel and vertical input authoritative while the
+  -- coloured fill and ink follow either geometry with no doubled prefix.
+  local function drawNativeGameRows(battle, drawOriginal, ...)
+    local moves = battle and battle.player and battle.player.curMoves
+    if type(moves) ~= "table" then return drawOriginal(battle, ...) end
+
+    local selected = battle.moveIndex
+    local originalDraw, originalDrawCode = Font.draw, Font.drawCode
+    local rows, args = {}, { ... }
+    local traceback = debug and debug.traceback
+      or function(err) return tostring(err) end
+
+    local function rowStyle(index)
+      local def = moveDef(battle.game, moves[index])
+      if not def then return nil end
+      local colors = colorsFor(battle.game, def.type)
+      local strong = setting("strength", "bold") ~= "soft"
+      local focused = index == selected
+      return {
+        face = focused and darkerTypeColor(colors[3])
+          or colors[strong and 3 or 2],
+        foreground = colors[focused and 1 or 4],
+      }
+    end
+
+    local function ensureRow(index, textX)
+      if rows[index] then return rows[index] end
+      local style = rowStyle(index)
+      if not style then return nil end
+      local row = nativeGameRowGeometry(index, textX)
+      row.foreground = style.foreground
+      rows[index] = row
+      love.graphics.push("all")
+      setInkColor(style.face, detachedOpacity())
+      love.graphics.rectangle("fill", row.x, row.y, row.w, row.h)
+      love.graphics.pop()
+      PaletteFX.markTrueColor(row.x, row.y, row.w, row.h)
+      return row
+    end
+
+    local function withForeground(color, draw)
+      love.graphics.push("all")
+      local shader = shaderForInk()
+      if shader then
+        love.graphics.setShader(shader)
+        love.graphics.setColor(rgb(color))
+      else
+        love.graphics.setColor(0, 0, 0, 1)
+      end
+      local results = { xpcall(draw, traceback) }
+      love.graphics.pop()
+      if not results[1] then error(results[2], 0) end
+      return unpack(results, 2)
+    end
+
+    Font.draw = function(value, x, y, ...)
+      local callArgs = { ... }
+      local index = nativeRowIndex(y, #moves)
+      local def = index and moveDef(battle.game, moves[index])
+      local label = def and tostring(def.name or moves[index].id or "")
+      if not (index and label == tostring(value or "")) then
+        return originalDraw(value, x, y, unpack(callArgs))
+      end
+      local row = ensureRow(index, x)
+      if not row then
+        return originalDraw(value, x, y, unpack(callArgs))
+      end
+      return withForeground(row.foreground, function()
+        return originalDraw(value, x, y, unpack(callArgs))
+      end)
+    end
+
+    Font.drawCode = function(code, x, y, ...)
+      local callArgs = { ... }
+      local index = (code == 0xED or code == 0xEC)
+        and nativeRowIndex(y, #moves) or nil
+      if not index then
+        return originalDrawCode(code, x, y, unpack(callArgs))
+      end
+      local row = ensureRow(index, (tonumber(x) or 40) + 8)
+      if not row then
+        return originalDrawCode(code, x, y, unpack(callArgs))
+      end
+      return withForeground(row.foreground, function()
+        return originalDrawCode(code, x, y, unpack(callArgs))
+      end)
+    end
+
+    local results = { xpcall(function()
+      return drawOriginal(battle, unpack(args))
+    end, traceback) }
+    Font.draw, Font.drawCode = originalDraw, originalDrawCode
+    if not results[1] then error(results[2], 0) end
+    return unpack(results, 2)
+  end
+  textPatch.nativeRows = nativeGamePresentation
+  textPatch.drawNativeRows = drawNativeGameRows
 
   local function renderBattle(battle)
     if not componentEnabled() or textOnlyMode()
@@ -958,7 +1048,8 @@ return function(mod)
     local transparentSurface = not wide and customBattleSurface(battle)
     local nativeGame = nativeGamePresentation(battle)
     if nativeGame and phase == "moveSelect" then
-      drawNativeGameRows(battle, moves, selected)
+      -- Native GAME rows were coloured in-place by the drawTextArea wrapper,
+      -- using the actual name/cursor origin chosen by the active renderer.
       return
     end
     if not wide and phase == "moveSelect" and not transparentSurface

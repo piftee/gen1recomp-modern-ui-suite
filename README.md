@@ -26,8 +26,9 @@ or the rules of the game.
   the original game's visual language.
 - **A genuinely useful Bag and Item PC** — sensible pockets, item descriptions,
   money and capacity readouts, two visual skins, and layouts suited to both
-  wide and narrow screens. Expanded storage supports 255 unique entries and
-  stacks of up to 999 items.
+  wide and narrow screens. Press Start to sort the Bag by pocket category or
+  item name in either direction. Expanded storage supports 255 unique entries
+  and stacks of up to 999 items.
 - **Direct Pokémon storage management** — see the party and current Box
   together, inspect a Pokémon before moving it, and pick up, place, reorder,
   or swap Pokémon in one workspace.
@@ -36,7 +37,8 @@ or the rules of the game.
   Pokédex feel like a research tool rather than a long list.
 - **More informative battles** — readable colored HP bars, experience progress,
   status, level, gender, and caught indicators add useful information while
-  preserving the battlefield and the native battle flow.
+  preserving the battlefield and the native battle flow. On Gen 2, an active
+  Stadium 2 battle keeps ownership of its complete 3D scene.
 - **Type-aware move displays** — move cards and text use their type colors
   consistently in battle, summaries, move learning, move forgetting, Mimic,
   and PP selection, with clearer PP and effectiveness cues where relevant.
@@ -101,7 +103,16 @@ luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/Modern-UI-Suite-v0.1.2.zip
+  -o build/Modern-UI-Suite-v0.1.8.zip
+```
+
+The live settings sweep opens every component page, drives all 31 persisted
+rows through all 77 advertised values, and captures each state:
+
+```sh
+SHOT_DIR=/tmp/modern-ui-suite-options \
+POKEPORT_DRIVER=mods/modern_ui_suite/tests/options_preview_driver.lua \
+POKEPORT_IDENTITY=modern-ui-suite-options POKEPORT_VERSION=red love .
 ```
 
 On a Gen 2-capable engine checkout with a generated Gold, Silver, or Crystal

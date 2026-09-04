@@ -11,6 +11,42 @@ return function(parent, components)
     Settings.byId[component.id] = component
   end
 
+  -- The manager renders schemas through the same 160x144 four-row option
+  -- boxes as the in-game menu.  Prefixing every imported label verbatim made
+  -- otherwise useful names such as "MOVE COLORS BATTLE OPACITY" run through
+  -- the right border.  Keep component pages concise (their title already
+  -- supplies the context), and use short, unambiguous labels in the flat
+  -- manager schema.
+  local MANAGER_PREFIX = {
+    start_menu = "START",
+    party = "PARTY",
+    bag = "BAG",
+    pc = "PC",
+    pokedex = "DEX",
+    battle_hud = "HUD",
+    move_colors = "MOVE",
+  }
+  local MANAGER_DETAIL = {
+    start_menu = {
+      theme = "THEME", position = "POSITION", clock = "CLOCK",
+    },
+    party = {
+      card_color = "CARD COLOR", animate_icons = "ANIMATION",
+      sprite_source = "ICONS", hp_text = "HP DISPLAY", exp_text = "EXP",
+      exp_strip = "EXP STRIP", empty_slots = "EMPTY", pattern = "BACKDROP",
+      responsive = "WIDE", rename_style = "RENAME",
+    },
+    bag = { skin = "SKIN" },
+    pokedex = {
+      responsive = "WIDE", pattern = "BACKDROP", theme = "COLOURS",
+    },
+    move_colors = {
+      battle_colors = "BATTLE", layout = "LAYOUT", effect_hints = "EFFECT",
+      menu_colors = "MENUS", strength = "TINT", opacity = "OPACITY",
+      text_only = "TEXT ONLY",
+    },
+  }
+
   local function copy(value, seen)
     if type(value) ~= "table" then return value end
     seen = seen or {}
@@ -45,6 +81,26 @@ return function(parent, components)
       end
     end
     return schema
+  end
+
+  function Settings:detailLabel(component, row)
+    component = componentFor(self, component)
+    local label = tostring(row.label or row.key or component.name)
+    -- These prefixes are useful when the standalone mod owns the page, but
+    -- duplicate the suite component title in this nested page.
+    label = label:gsub("^START MENU ", ""):gsub("^POKEDEX ", "")
+    return label
+  end
+
+  function Settings:managerLabel(component, row)
+    component = componentFor(self, component)
+    local prefix = MANAGER_PREFIX[component.key] or component.short
+    if not row then return prefix .. " ENABLED" end
+    local details = MANAGER_DETAIL[component.key] or {}
+    local detail = details[row.key] or self:detailLabel(component, row)
+    -- Do not repeat a component prefix already present in a fallback label.
+    if detail:sub(1, #prefix + 1) == prefix .. " " then return detail end
+    return prefix .. " " .. detail
   end
 
   function Settings:get(component, key)
@@ -197,7 +253,7 @@ return function(parent, components)
     for _, component in ipairs(self.components) do
       schema[#schema + 1] = {
         key = self:keyFor(component, "__enabled"),
-        label = component.short .. " ENABLED",
+        label = self:managerLabel(component),
         type = "toggle",
         default = true,
       }
@@ -207,9 +263,7 @@ return function(parent, components)
         if source.key ~= component.enabledOption then
           local row = copy(source)
           row.key = self:keyFor(component, source.key)
-          local label = tostring(source.label or source.key)
-          label = label:gsub("^START MENU ", ""):gsub("^POKEDEX ", "")
-          row.label = component.short .. " " .. label
+          row.label = self:managerLabel(component, source)
           schema[#schema + 1] = row
         end
       end

@@ -58,6 +58,13 @@ return function(parent, settings, state, component)
     emit = function(_, name, payload)
       return parent.events:emit(name, payload)
     end,
+    -- Compatibility shims sometimes have to remain installed while a visual
+    -- component is switched off.  They do not draw that component; they keep
+    -- two third-party providers from painting the same native surface.  Keep
+    -- this explicit so ordinary component lifecycle listeners stay gated.
+    always = function(_, name, callback, priority)
+      return parent.events:on(name, callback, priority)
+    end,
   }
 
   api.hooks = {

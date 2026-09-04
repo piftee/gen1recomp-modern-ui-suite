@@ -125,6 +125,9 @@ return function(game)
   U.tap(game, "a")
   check(game.stack:top() == page,
     "a suite setting changes without closing its Gen 2 component page")
+  U.tap(game, "a")
+  check(visible[1].value() == "ON",
+    "the Gen 2 settings smoke restores the component before screen proofs")
   clear()
 
   game.save.player = game.save.player or {}

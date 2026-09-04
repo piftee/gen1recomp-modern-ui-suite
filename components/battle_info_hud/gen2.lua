@@ -114,7 +114,63 @@ return function(mod)
     printInkPx(screen.message or "", 8, y + 8)
   end
 
+  -- A full-window battle presenter may already have wrapped the Gen 2 class
+  -- before this component decorates the individual screen.  The suite keeps
+  -- that function in classicGen2BattleWidescreen below; when Stadium owns the
+  -- live fight, call it instead of replacing its 3D scene with our stock
+  -- centred capture.  Query at draw time because Stadium can be installed at
+  -- boot but become active only after its model cache and battle session are
+  -- ready.
+  local function companionApi(id)
+    if type(mod.find) ~= "function" then return false end
+    local okHandle, handle = pcall(mod.find, id)
+    return okHandle and handle and handle.exports or nil
+  end
+
+  local function external3DBattleActive(screen)
+    local api = companionApi("STADIUM2_IMPORTER")
+
+    if type(api) == "table"
+        and type(api.getActiveBattleScene) == "function" then
+      local okScene, scene = pcall(api.getActiveBattleScene)
+      if okScene and type(scene) == "table" then
+        return scene.screen == nil or scene.screen == screen
+          or (screen and scene.battle == screen.battle)
+      end
+    end
+    if type(api) == "table" and type(api.battleStatus) == "function" then
+      local okStatus, status = pcall(api.battleStatus)
+      if okStatus and type(status) == "table" and status.active == true then
+        return true
+      end
+    end
+
+    -- Battle Art publishes a generation-neutral staged-scene descriptor.
+    -- Its current Gen 2 adapter can either own the scene itself or use the
+    -- Stadium canvas as its world pass, so respect that ownership contract as
+    -- well as Stadium's direct session API.
+    api = companionApi("BATTLE_ART_VOXEL_FORK")
+    local stage = type(api) == "table" and api.battleStage
+    if type(stage) == "table" and type(stage.state) == "function" then
+      local expected = screen and (screen.battle or screen)
+      local okState, state = pcall(stage.state, expected)
+      local ownership = okState and type(state) == "table"
+        and state.ownership or nil
+      if type(state) == "table" and state.staged == true
+          and type(ownership) == "table" and ownership.arena == true then
+        return true
+      end
+    end
+    return false
+  end
+
   local function drawWideBattle(screen, winW, winH)
+    if external3DBattleActive(screen)
+        and type(screen.classicGen2BattleWidescreen) == "function" then
+      screen.modernBattleYieldedTo3D = true
+      return screen.classicGen2BattleWidescreen(screen, winW, winH)
+    end
+    screen.modernBattleYieldedTo3D = nil
     local G = love.graphics
     local scale = math.max(1, math.floor(math.min(winH / 144, winW / 160)))
     local width = math.max(160, math.min(640, math.floor(winW / scale)))

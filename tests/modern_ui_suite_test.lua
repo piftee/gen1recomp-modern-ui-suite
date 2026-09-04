@@ -27,12 +27,12 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.16",
+  modern_start_menu_ui = "0.1.17",
   modern_party_ui = "0.4.8",
-  modern_bag_ui = "0.4.10",
+  modern_bag_ui = "0.5.0",
   modern_pc_ui = "0.4.3",
   modern_pokedex_ui = "0.2.10",
-  battle_info_hud = "0.9.0",
+  battle_info_hud = "0.9.2",
   typed_move_colors = "0.4.8",
 }
 
@@ -57,14 +57,20 @@ local schema = run.loader.optionSchemas.modern_ui_suite or {}
 T.eq(#schema, 31,
   "seven master toggles and all 24 detailed preferences share one schema")
 local schemaByKey = {}
-for _, row in ipairs(schema) do schemaByKey[row.key] = row end
+for _, row in ipairs(schema) do
+  schemaByKey[row.key] = row
+  T.check(#tostring(row.label or "") <= 16,
+    row.key .. " has a 160x144-safe manager label: " .. tostring(row.label))
+end
 for _, key in ipairs(componentKeys) do
   local row = schemaByKey[key .. ".enabled"]
   T.check(type(row) == "table", key .. " has a namespaced master toggle")
   T.eq(row and row.default, true, key .. " is on by default")
 end
-T.eq(schemaByKey["battle_hud.enabled"].label, "BATTLE HUD ENABLED",
-  "Battle HUD's former enabled option is its single suite master toggle")
+T.eq(schemaByKey["battle_hud.enabled"].label, "HUD ENABLED",
+  "Battle HUD's former enabled option is one concise suite master toggle")
+T.eq(schemaByKey["move_colors.opacity"].label, "MOVE OPACITY",
+  "flat manager labels keep their component context without overflowing")
 T.eq(run.loader.optionSchemas.modern_party_ui, nil,
   "embedded components do not leak standalone option schemas")
 
@@ -92,6 +98,46 @@ local game = {
   writeOptions = function() writes = writes + 1 return true end,
 }
 
+-- The engine normally treats an unmarked menu above the overworld as a
+-- transparent overlay for per-category GAME SPEED. Every suite-owned menu
+-- must instead use MENU SPEED, including child prompts whose own state is
+-- unmarked. A newer gameplay boundary above an old menu must still win.
+local speedOptions = {
+  speedOverworld = 100,
+  speedBattle = 20,
+  speedMenu = 2,
+}
+local function resolvedSpeed(states, options)
+  local speedGame = {
+    save = { options = options or speedOptions },
+    stack = { states = states },
+  }
+  return Runtime.call("core.logic_speed", function()
+    return speedGame.save.options.speedOverworld or 4
+  end, speedGame)
+end
+
+local suiteMenuMarkers = {
+  "modernStartMenuUI", "modernBagUI", "modernPCUI",
+  "modernPartyUI", "modernPartySummary", "modernPartyNaming",
+  "modernPokedexUI", "modernPokedexEntry", "modernDexSearchOpen",
+}
+for _, marker in ipairs(suiteMenuMarkers) do
+  T.eq(resolvedSpeed({ { isOverworld = true }, { [marker] = true } }), 2,
+    marker .. " uses MENU SPEED over a fast overworld")
+end
+T.eq(resolvedSpeed({
+  { isOverworld = true }, { modernPokedexUI = true }, {},
+}), 2, "an unmarked child prompt inherits its suite menu's speed")
+T.eq(resolvedSpeed({
+  { modernPokedexUI = true }, { isBattle = true },
+}), 100, "a newer gameplay boundary ignores a stale suite menu below it")
+T.eq(resolvedSpeed({ { isOverworld = true }, {} }), 100,
+  "an ordinary unmarked overlay retains the engine's speed resolution")
+T.eq(resolvedSpeed({ { modernPokedexUI = true } }, {
+  speedOverworld = 4,
+}), 4, "older single-speed engines pass through unchanged")
+
 local optionRows = Runtime.call("ui.options.rows",
   function(_, rows) return rows end, game, { { id = "text_speed" } })
 T.eq(#optionRows, 2,
@@ -113,6 +159,90 @@ T.eq(hub and #hub.items, 10,
   "the hub contains bulk actions, seven components, and Back")
 T.eq(hub.items[1].id, "enable_all", "Enable All is the first bulk action")
 T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
+
+-- Exercise every player-facing row through the same OptionsMenu:update path
+-- used by keyboard and controller input. A complete rightward cycle must
+-- visit every advertised value, return to the starting value, update both
+-- live and saved buckets, and request durable persistence. Left then proves
+-- the reverse/wrap path for that same individual option.
+local visitedRows = {}
+local expectedPageRows = {
+  modern_start_menu_ui = 5, -- enabled + 3 choices + icon picker
+  modern_party_ui = 11,
+  modern_bag_ui = 2,
+  modern_pc_ui = 1,
+  modern_pokedex_ui = 4,
+  battle_info_hud = 1,
+  typed_move_colors = 8,
+}
+local function pressPage(page, button)
+  input.pressed[button] = true
+  page:update(0)
+  input.pressed[button] = nil
+end
+for hubIndex = 3, 9 do
+  local item = hub.items[hubIndex]
+  hub.onChoose(item, hub)
+  local page = stack:top()
+  local componentId = item.component.id
+  T.eq(page.modernUiSuiteComponent, componentId,
+    componentId .. " opens its own detailed page")
+  T.eq(#page.rows, expectedPageRows[componentId],
+    componentId .. " exposes every intended detailed row")
+  for rowIndex, row in ipairs(page.rows) do
+    T.check(#tostring(row.label or "") <= 16,
+      row.id .. " has a 160x144-safe component-page label: "
+        .. tostring(row.label))
+    local schemaRow = schemaByKey[row.id]
+    if schemaRow then
+      visitedRows[row.id] = true
+      local initialLabel = row.value(page.game)
+      local states = schemaRow.type == "toggle" and 2
+        or #(schemaRow.choices or {})
+      local seen = {}
+      page.index = rowIndex
+      for _ = 1, states do
+        local writesBefore = writes
+        pressPage(page, "right")
+        local label = row.value(page.game)
+        seen[label] = true
+        T.check(writes > writesBefore,
+          row.id .. " persists after a rightward UI step")
+        local saved = game.save.options.modOptions.modern_ui_suite[row.id]
+        local live = run.loader.modOptions.modern_ui_suite[row.id]
+        T.eq(saved, live, row.id .. " keeps saved and live values synchronized")
+      end
+      T.eq(row.value(page.game), initialLabel,
+        row.id .. " wraps to its starting value after a complete cycle")
+      local seenCount = 0
+      for _ in pairs(seen) do seenCount = seenCount + 1 end
+      T.eq(seenCount, states, row.id .. " exposes every advertised value")
+      pressPage(page, "left")
+      T.check(row.value(page.game) ~= initialLabel,
+        row.id .. " supports the reverse/wrap direction")
+      pressPage(page, "right")
+      T.eq(row.value(page.game), initialLabel,
+        row.id .. " reverses cleanly back to its starting value")
+    elseif row.id == "start_menu.icon_overrides" then
+      row.activate(game)
+      local icons = stack:top()
+      T.eq(icons.screenId, "modern_start_menu_ui:settings",
+        "the vanilla icon-overrides row opens its dedicated screen")
+      T.eq(icons.items[1].label, "NO MOD ENTRIES",
+        "the vanilla icon screen explains that no custom actions exist")
+      T.eq(icons.items[#icons.items].label, "BACK",
+        "the empty vanilla icon screen always has an exit")
+      stack:pop()
+    else
+      T.check(false, "unexpected suite settings row: " .. tostring(row.id))
+    end
+  end
+  stack:pop()
+end
+for _, row in ipairs(schema) do
+  T.check(visitedRows[row.key] == true,
+    row.key .. " is reachable from a component page")
+end
 
 hub.index = 3
 input.pressed.right = true
@@ -153,6 +283,50 @@ for _, id in ipairs(componentIds) do
 end
 T.eq(run.loader.modOptions.modern_ui_suite["party.card_color"],
   "species_palette", "bulk disabling preserves detailed preferences")
+
+-- Compatibility arbitration is not itself a custom presentation. With every
+-- suite screen switched off, Gender Mod must still be the sole gender owner
+-- when Crystal 251 and a staged voxel renderer are present. This is the exact
+-- configuration that used to leave coloured glyphs floating beside a second
+-- black marker (and during the caught-mon transfer message).
+local genderHud = {
+  classicGenderXY = function(side)
+    return side == "enemy" and 24 or 104, side == "enemy" and 8 or 64
+  end,
+  enemyHudVisible = function(battle) return battle and battle.enemy ~= nil end,
+  playerHudVisible = function(battle) return battle and battle.player ~= nil end,
+}
+local crystalTrackingCalls = 0
+local crystalGender = {
+  forMon = function() return nil end,
+  withBattleHudTracking = function(_, draw, ...)
+    crystalTrackingCalls = crystalTrackingCalls + 1
+    return draw(...)
+  end,
+}
+run.loader.exports.gender_mod = { BattleHUD = genderHud, ratios = {} }
+run.loader.exports.CRYSTAL_251 = { crystalGender = crystalGender }
+Runtime.emit("game.ready", { game = game })
+T.eq(crystalGender.withBattleHudTracking({ game = game },
+    function() return "one marker" end), "one marker",
+  "disabled Battle HUD still preserves the selected Gender Mod provider")
+T.eq(crystalTrackingCalls, 0,
+  "disabled Battle HUD does not restore Crystal 251's duplicate marker")
+run.loader.modOptions.modern_ui_suite["battle_hud.enabled"] = true
+T.eq(crystalGender.withBattleHudTracking({ game = game },
+    function() return "one marker" end), "one marker",
+  "enabled Battle HUD also preserves the selected Gender Mod provider")
+T.eq(crystalTrackingCalls, 0,
+  "enabled Battle HUD does not overlap Crystal 251's duplicate marker")
+run.loader.modOptions.modern_ui_suite["battle_hud.enabled"] = false
+T.eq(genderHud.enemyHudVisible({ enemy = {}, result = "caught" }), false,
+  "caught-mon transfer frames suppress the stray opponent gender glyph")
+T.eq(genderHud.playerHudVisible({ player = {}, blankForAskName = true }), false,
+  "caught-mon nickname frames suppress the stray player gender glyph")
+T.eq(genderHud.playerHudVisible({ player = {} }), true,
+  "ordinary disabled-suite battles retain Gender Mod's native marker")
+T.same({ genderHud.classicGenderXY("player") }, { 104, 64 },
+  "disabled Battle HUD leaves Gender Mod's native coordinate unchanged")
 
 -- Typed Move Colors has process-stable patches on native controller classes.
 -- Those patches outlive the suite's hook gate, so their own presentation
@@ -241,6 +415,28 @@ local StartMenu = require("src.ui.StartMenu")
 local modernStart = StartMenu.new(game)
 T.eq(modernStart.modernStartMenuUI, true,
   "the enabled Start presentation hook decorates a newly built controller")
+
+-- Phosphor's optional iOS controls hide the engine-owned touch overlay and
+-- present themselves as a joystick. Current sandboxed mods cannot inspect
+-- love.system, so reproduce that denied module here and prove the portrait
+-- overlay still selects the native surface without touching it.
+local startPresentation = exports.components.modern_start_menu_ui.exports.presentation
+local savedSystem, savedJoystick = love.system, love.joystick
+local savedPixelDimensions = love.graphics.getPixelDimensions
+love.system = setmetatable({}, { __index = function(_, key)
+  error("love.system is not available to mods: " .. tostring(key), 2)
+end })
+love.joystick = { getJoysticks = function() return { {} } end }
+love.graphics.getPixelDimensions = function() return 390, 844 end
+local phosphorOK, phosphorWidth, phosphorHeight = pcall(
+  startPresentation.responsiveSize, modernStart)
+love.system, love.joystick = savedSystem, savedJoystick
+love.graphics.getPixelDimensions = savedPixelDimensions
+T.check(phosphorOK,
+  "Phosphor's controller overlay never reads sandboxed love.system")
+T.same({ phosphorWidth, phosphorHeight }, { 160, 144 },
+  "Phosphor's portrait overlay keeps the native START surface")
+
 suiteOptions["start_menu.enabled"] = false
 local nativeStart = StartMenu.new(game)
 T.check(nativeStart.modernStartMenuUI ~= true,
@@ -286,6 +482,73 @@ T.eq(gameRow.textX, 48, "GAME keeps the native move-name origin")
 T.check(gameRow.textWidth >= 96,
   "GAME preserves room for a twelve-glyph stock move at 1x")
 
+-- Localization mods can move the whole move-list row left to make room for
+-- longer translated labels. Colour those glyphs while the native renderer is
+-- drawing them so no uncovered prefix or second cursor survives at the old
+-- position (the reported ARRANHAO/ROSNA DURA doubling regression).
+local shiftedRow = typedInputPatch.nativeGameRowGeometry(1, 16)
+T.eq(shiftedRow.x, 8,
+  "GAME colour follows a localization's shifted cursor column")
+T.eq(shiftedRow.textX, 16,
+  "GAME ink follows a localization's shifted move-name column")
+T.eq(shiftedRow.w, 144,
+  "a shifted GAME row still reaches the native right edge")
+
+local Font = require("src.render.Font")
+local PaletteFX = require("src.render.PaletteFX")
+local realFontDraw, realFontDrawCode = Font.draw, Font.drawCode
+local realRectangle = love.graphics.rectangle
+local realMarkTrueColor = PaletteFX.markTrueColor
+local shiftedDraws, shiftedCodes, shiftedFills, shiftedMarks = {}, {}, {}, {}
+Font.draw = function(value, x, y)
+  shiftedDraws[#shiftedDraws + 1] = { value = value, x = x, y = y }
+end
+Font.drawCode = function(code, x, y)
+  shiftedCodes[#shiftedCodes + 1] = { code = code, x = x, y = y }
+end
+love.graphics.rectangle = function(mode, x, y, w, h)
+  if mode == "fill" then
+    shiftedFills[#shiftedFills + 1] = { x = x, y = y, w = w, h = h }
+  end
+  return realRectangle(mode, x, y, w, h)
+end
+PaletteFX.markTrueColor = function(x, y, w, h)
+  shiftedMarks[#shiftedMarks + 1] = { x = x, y = y, w = w, h = h }
+end
+
+run.data.moves.TRANSLATED_LONG = {
+  id = "TRANSLATED_LONG", name = "MARTELOSDEIS", type = "FIGHTING",
+  power = 100, pp = 10,
+}
+local shiftedBattle = {
+  phase = "moveSelect", game = game, moveIndex = 1,
+  player = { curMoves = { { id = "TRANSLATED_LONG", pp = 10 } } },
+}
+originalTextArea = typedTextPatch.original
+typedTextPatch.original = function()
+  Font.draw("MARTELOSDEIS", 16, 104)
+  Font.drawCode(0xED, 8, 104)
+  return "shifted native GAME layout"
+end
+local shiftedTextOK, shiftedTextResult = pcall(BattleState.drawTextArea,
+  shiftedBattle)
+typedTextPatch.original = originalTextArea
+Font.draw, Font.drawCode = realFontDraw, realFontDrawCode
+love.graphics.rectangle = realRectangle
+PaletteFX.markTrueColor = realMarkTrueColor
+T.check(shiftedTextOK and shiftedTextResult == "shifted native GAME layout",
+  "GAME colours a shifted localization row without replacing its renderer")
+T.same(shiftedFills[1], { x = 8, y = 104, w = 144, h = 8 },
+  "the shifted row fill covers the original long-name prefix")
+T.same(shiftedMarks[1], { x = 8, y = 104, w = 144, h = 8 },
+  "the complete shifted row remains protected as true colour")
+T.eq(#shiftedDraws, 1,
+  "the translated move name is drawn once rather than duplicated")
+T.same(shiftedDraws[1], { value = "MARTELOSDEIS", x = 16, y = 104 },
+  "the single coloured name retains the localization's coordinates")
+T.same(shiftedCodes[1], { code = 0xED, x = 8, y = 104 },
+  "the single coloured cursor retains the localization's coordinates")
+
 nativeTextCalls = 0
 originalTextArea = typedTextPatch.original
 typedTextPatch.original = function()
@@ -304,6 +567,90 @@ suiteOptions["bag.enabled"] = true
 local openModern = run.data.screens.BagMenu.new(game, {})
 T.eq(openModern.modernBagUI, true,
   "an enabled screen component opens its modern presentation")
+
+-- START opens a compact sort overlay. Category order follows the visible
+-- pockets and is stable within each one; name order uses the displayed item
+-- names. All four choices update only bagOrder and retain the selected item.
+local sortDefs = {
+  SORT_KEY = { name = "EMBER MAP", bagPocket = "key" },
+  SORT_ZINC = { name = "ZINC TOOL", bagPocket = "items" },
+  SORT_MED = { name = "APPLE MED", bagPocket = "medicine" },
+  SORT_BERRY = { name = "BERRY TOOL", bagPocket = "items" },
+  SORT_BALL = { name = "CHARM BALL", bagPocket = "balls" },
+  SORT_TM = { name = "DELTA TM", bagPocket = "machines" },
+}
+for id, def in pairs(sortDefs) do run.data.items[id] = def end
+local originalSortOrder = {
+  "SORT_KEY", "SORT_ZINC", "SORT_MED",
+  "SORT_BERRY", "SORT_BALL", "SORT_TM",
+}
+game.save.inventory = {}
+for _, id in ipairs(originalSortOrder) do game.save.inventory[id] = 1 end
+
+local function resetSortBag()
+  game.save.bagOrder = {}
+  for index, id in ipairs(originalSortOrder) do
+    game.save.bagOrder[index] = id
+  end
+  openModern.index, openModern.scroll = 1, 0
+  openModern:modernBagRefresh("SORT_KEY")
+end
+
+local function pressState(state, key)
+  input.pressed[key] = true
+  state:update(0)
+  input.pressed[key] = nil
+end
+
+local function chooseSort(index)
+  resetSortBag()
+  pressState(openModern, "start")
+  local sorter = stack:top()
+  T.check(sorter ~= openModern and sorter.modernBagSortMenu == true,
+    "START opens the Bag sorting submenu")
+  T.eq(sorter.items[1].label, "CATEGORY ASC",
+    "the sorting submenu begins with ascending pocket categories")
+  T.eq(sorter.items[4].label, "NAMES Z-A",
+    "the sorting submenu exposes descending item names")
+  T.check(sorter.__modernBagResponsiveOverlay == true,
+    "the sorting submenu stays inside the responsive Bag surface")
+  local drawOK, drawErr = pcall(sorter.draw, sorter)
+  T.check(drawOK,
+    "the sorting submenu draws cleanly: " .. tostring(drawErr))
+  for _ = 2, index do pressState(sorter, "down") end
+  pressState(sorter, "a")
+  T.eq(stack:top(), openModern,
+    "choosing a sort order returns directly to the Bag")
+end
+
+stack:push(openModern)
+chooseSort(1)
+T.same(game.save.bagOrder, {
+  "SORT_ZINC", "SORT_BERRY", "SORT_MED",
+  "SORT_BALL", "SORT_TM", "SORT_KEY",
+}, "category ascending follows pocket order and preserves pocket contents")
+T.eq(openModern.items[openModern.index].value, "SORT_KEY",
+  "sorting keeps the previously selected item highlighted")
+
+chooseSort(2)
+T.same(game.save.bagOrder, {
+  "SORT_KEY", "SORT_TM", "SORT_BALL",
+  "SORT_MED", "SORT_ZINC", "SORT_BERRY",
+}, "category descending reverses pocket groups but not their contents")
+
+chooseSort(3)
+T.same(game.save.bagOrder, {
+  "SORT_MED", "SORT_BERRY", "SORT_BALL",
+  "SORT_TM", "SORT_KEY", "SORT_ZINC",
+}, "name A-Z uses the item names shown in the Bag")
+
+chooseSort(4)
+T.same(game.save.bagOrder, {
+  "SORT_ZINC", "SORT_KEY", "SORT_TM",
+  "SORT_BALL", "SORT_BERRY", "SORT_MED",
+}, "name Z-A reverses the displayed-name order")
+stack:pop()
+
 suiteOptions["bag.enabled"] = false
 T.eq(openModern.modernBagUI, true,
   "an already-open screen is not rebuilt underneath the player")
@@ -453,5 +800,97 @@ T.eq(damaged.loader.exports.modern_ui_suite, nil,
 T.eq(damaged.loader.optionSchemas.modern_ui_suite, nil,
   "a preflight failure leaves no partial settings schema")
 damaged.release()
+
+-- The Gen 2 Battle HUD decorates a screen instance after full-window battle
+-- presenters have wrapped the class. An active Stadium scene must retain the
+-- final draw: replacing it here regresses the fight to the centred stock art.
+local savedGen2Chrome = package.loaded["src.ui.gen2.Chrome"]
+package.loaded["src.ui.gen2.Chrome"] = {
+  paletteGlyphs = function() return nil end,
+  wrap = function(text) return { text } end,
+}
+local pushedGen2Battle
+local gen2Hooks = {}
+local stadiumActive = true
+local stadiumScene
+local battleArtState
+local gen2Mod = {
+  options = { get = function() return true end },
+  hooks = { wrap = function(_, name, callback)
+    gen2Hooks[name] = callback
+  end },
+  events = { on = function(_, name, callback)
+    if name == "screen.pushed" then pushedGen2Battle = callback end
+  end },
+  exports = {},
+  log = { info = function() end },
+  find = function(id)
+    if id == "STADIUM2_IMPORTER" then
+      return { exports = {
+        getActiveBattleScene = function() return stadiumScene end,
+        battleStatus = function() return { active = stadiumActive } end,
+      } }
+    end
+    if id == "BATTLE_ART_VOXEL_FORK" then
+      return { exports = { battleStage = {
+        state = function(expected)
+          if battleArtState and expected == battleArtState.battle then
+            return battleArtState
+          end
+        end,
+      } } }
+    end
+  end,
+}
+local gen2Install = assert(loadfile(
+  "mods/modern_ui_suite/components/battle_info_hud/gen2.lua"))()
+gen2Install(gen2Mod)
+T.eq(type(pushedGen2Battle), "function",
+  "the Gen 2 Battle HUD registers its instance decorator")
+T.eq(type(gen2Hooks["battle.overlay"]), "function",
+  "the Gen 2 Battle HUD keeps its ordinary overlay integration")
+
+local stadiumDraws = 0
+local gen2Battle = {
+  screenId = "Gen2BattleState",
+  battle = {},
+  drawWidescreen = function(_, width, height)
+    stadiumDraws = stadiumDraws + 1
+    return ("stadium:%dx%d"):format(width, height)
+  end,
+}
+stadiumScene = { battle = gen2Battle.battle, screen = gen2Battle }
+pushedGen2Battle({ state = gen2Battle })
+T.eq(gen2Battle:drawWidescreen(1280, 720), "stadium:1280x720",
+  "an active Stadium Gen 2 scene retains the final widescreen draw")
+T.eq(stadiumDraws, 1,
+  "the suite delegates to the captured 3D presenter exactly once")
+T.eq(gen2Battle.modernBattleYieldedTo3D, true,
+  "the screen records that its stock compositor yielded to 3D")
+T.eq(gen2Battle.modernBattleKeptIntact, nil,
+  "the stock centred capture never replaces an active 3D arena")
+
+stadiumActive, stadiumScene = false, nil
+local battleArtDraws = 0
+local battleArtBattle = {
+  screenId = "Gen2BattleState",
+  battle = {},
+  drawWidescreen = function()
+    battleArtDraws = battleArtDraws + 1
+    return "battle-art"
+  end,
+}
+battleArtState = {
+  battle = battleArtBattle.battle,
+  staged = true,
+  ownership = { arena = true },
+}
+pushedGen2Battle({ state = battleArtBattle })
+T.eq(battleArtBattle:drawWidescreen(1280, 720), "battle-art",
+  "a staged Battle Art Gen 2 scene also retains its final draw")
+T.eq(battleArtDraws, 1,
+  "the suite honours Battle Art's public arena-ownership contract")
+
+package.loaded["src.ui.gen2.Chrome"] = savedGen2Chrome
 
 T.finish("modern_ui_suite")

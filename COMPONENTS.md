@@ -6,12 +6,12 @@ loaded from the legacy directories.
 
 | Component | Imported version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.16 |
+| Modern Start Menu UI | 0.1.17 |
 | Modern Party UI | 0.4.8 |
-| Modern Bag UI | 0.4.10 |
+| Modern Bag UI | 0.5.0 |
 | Modern PC UI | 0.4.3 |
 | Modern Pokedex UI | 0.2.10 |
-| Battle Info HUD | 0.9.0 |
+| Battle Info HUD | 0.9.2 |
 | Typed Move Colors | 0.4.8 |
 
 All component code is MIT licensed. The Start Menu icon atlas also contains
@@ -28,10 +28,12 @@ CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
 - `core/hub.lua` owns the only ordinary Options-menu entry.
 - `components/<legacy-id>/` contains each maintained feature implementation.
 
-Hooks and lifecycle listeners consult their component switch at call time.
+Hooks and ordinary lifecycle listeners consult their component switch at call time.
 Screen records choose the component or the captured downstream/native factory
 at construction time. The Bag storage patch is deliberately outside that
-presentation gate so expanded saves remain usable.
+presentation gate so expanded saves remain usable. Battle Info HUD's provider
+arbitration is likewise process-stable: it draws no suite UI while disabled,
+but prevents Gender Mod and Crystal 251 from painting the same native cell.
 
 ## Updating a component
 

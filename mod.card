@@ -11,6 +11,7 @@ return {
     added = {
       "One Modern UI Suite settings hub",
       "Seven independently switchable UI components",
+      "Start-button Bag sorting by category or item name",
       "Live hook gating and native-screen fallbacks",
       "Automatic import of saved settings from the standalone releases",
       "Responsive native, widescreen and portrait layouts across Gen 1 and Gen 2",
