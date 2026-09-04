@@ -498,9 +498,11 @@ return function(game)
       "Battle Info HUD wide prompt stays within its two-line region")
   end
 
-  -- GAME is a persisted Gen 1 preference but Gen 2 still presents the same
-  -- visible two-column cards.  This is the setting combination from the
-  -- reported two-move failure and must navigate horizontally.
+  -- GAME is a persisted Gen 1 preference; Gen 2 responds to its actual
+  -- canvas instead. Compact widescreen battles use a readable vertical list,
+  -- while genuinely roomy canvases retain the two-column card grid.
+  local compactMoveList = expectedLogicalWidth > 160
+    and expectedLogicalWidth < 304
   setOption("typed_move_colors", "layout", "game")
   setOption("typed_move_colors", "battle_colors", true)
   setOption("typed_move_colors", "effect_hints", true)
@@ -527,11 +529,11 @@ return function(game)
     moves[3], moves[4] = nil, nil
     battleScreen.moveIndex = 1
     U.tap(game, "right")
-    check(battleScreen.moveIndex == 2,
-      "Typed Move Colors RIGHT switches two first-row moves in GAME layout")
+    check(battleScreen.moveIndex == (compactMoveList and 1 or 2),
+      "Typed Move Colors RIGHT follows the visible Gen 2 move layout")
     U.tap(game, "down")
     check(battleScreen.moveIndex == 2,
-      "Typed Move Colors DOWN stays on the only populated two-move row")
+      "Typed Move Colors DOWN follows the visible Gen 2 move layout")
     capture("typed-move-colors-two-moves",
       "Typed Move Colors two-move first row")
     check(battleScreen.typedMoveColorsInfoPanel == true,
@@ -549,23 +551,23 @@ return function(game)
     setOption("typed_move_colors", "layout", "wide")
     battleScreen.moveIndex = 1
     U.tap(game, "right")
-    check(battleScreen.moveIndex == 2,
-      "Typed Move Colors RIGHT crosses the wide battle grid")
+    check(battleScreen.moveIndex == (compactMoveList and 1 or 2),
+      "Typed Move Colors RIGHT matches the responsive battle layout")
     U.tap(game, "down")
-    check(battleScreen.moveIndex == 4,
-      "Typed Move Colors DOWN crosses the wide battle grid")
+    check(battleScreen.moveIndex == (compactMoveList and 2 or 4),
+      "Typed Move Colors DOWN matches the responsive battle layout")
     battleScreen.phase = "moveSelect"
     battleScreen.moveIndex = 1
     U.tap(game, "right")
-    check(battleScreen.moveIndex == 2,
-      "Typed Move Colors RIGHT works on the earlier Silver move phase")
+    check(battleScreen.moveIndex == (compactMoveList and 1 or 2),
+      "Typed Move Colors responsive input works on the earlier Silver phase")
     battleScreen.phase = "moves"
     battleScreen.update = function() end
   end
   battleScreen.moveIndex = 2
-  capture("typed-move-colors", "Typed Move Colors battle grid")
+  capture("typed-move-colors", "Typed Move Colors battle presentation")
   check(battleScreen.typedMoveColorsGen2 == true,
-    "Typed Move Colors rendered its Gen 2 move grid")
+    "Typed Move Colors rendered its responsive Gen 2 move presentation")
 
   clear()
   local typedSummary = Screens.push(game, "Gen2SummaryMenu", {

@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "api": 2,
   "games": [
     "gen1",

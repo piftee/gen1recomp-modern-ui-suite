@@ -1,5 +1,5 @@
--- Type-coloured 2x2 move cards over Gen 2's native battle controller. The
--- move list, PP, disable state, swapping and choice callbacks remain native.
+-- Type-coloured move cards over Gen 2's native battle controller. The move
+-- list, PP, disable state, swapping and choice callbacks remain native.
 return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
@@ -42,10 +42,10 @@ return function(mod)
     return not ok or value ~= false
   end
 
-  -- The Gen 2 presenter below is a two-column card grid in both saved layout
-  -- modes.  Navigation must therefore follow what is actually on screen;
-  -- conditioning it on the older Gen 1 WIDE/GAME preference made GAME show
-  -- horizontal cards while retaining vertical-only input.
+  -- The saved WIDE/GAME preference describes Gen 1 presentation. Gen 2 uses
+  -- the room it actually has: a vertical list beside the details card on
+  -- compact widescreen canvases, and a 2x2 grid only when each column is wide
+  -- enough for stock move names. Navigation must follow that visible shape.
   local function gridEnabled()
     return componentEnabled() and option("battle_colors", true) ~= false
   end
@@ -69,8 +69,32 @@ return function(mod)
       or type(player and player.moves) == "table" and player.moves or {}
   end
 
-  local function gridTarget(index, count, direction)
+  local function layoutColumns(screen)
+    -- modernBattleWideWidth exists only while the compositor is drawing and
+    -- is deliberately cleared before the next input update. Its persisted
+    -- last-width companion keeps navigation shaped like the frame the player
+    -- can still see.
+    local width = tonumber(screen and (screen.modernBattleWideWidth
+      or screen.modernBattleLastWideWidth)) or 160
+    -- At the common 200/256px Gen 2 widths, the fixed 80px details card left
+    -- only 28-55px for a name in the old 2x2 grid (the reported TA./SC./BI.
+    -- labels). Four 10px rows use the same 40px footer and restore 90px or
+    -- more for the name. 304px is the first width where two columns can show
+    -- a ten-tile name plus its effect marker without touching.
+    if width > 160 and width < 304 then return 1 end
+    return 2
+  end
+
+  local function gridTarget(index, count, direction, columns)
     index = math.max(1, math.min(tonumber(index) or 1, math.max(1, count)))
+    if columns == 1 then
+      if direction == "up" then
+        return index > 1 and index - 1 or count
+      elseif direction == "down" then
+        return index < count and index + 1 or 1
+      end
+      return index
+    end
     local col, row = (index - 1) % 2, math.floor((index - 1) / 2)
     if direction == "left" or direction == "right" then
       col = 1 - col
@@ -267,6 +291,17 @@ return function(mod)
     end
   end
 
+  local function moveNameBudget(width, indicator)
+    -- Text starts seven pixels into the card. Keep two clear pixels before
+    -- the left edge of the marker: x+w-15 for a single arrow/circle and
+    -- x+w-19 for the two-arrow form. The previous blanket reserves counted
+    -- both the marker and the card margins twice, needlessly dropping one or
+    -- two more characters even on layouts that had room.
+    if indicator == "double_up" then return width - 28 end
+    if indicator then return width - 25 end
+    return width - 14
+  end
+
   local function moveDetails(def, move)
     local power = tonumber(def and def.power)
     local powerText = power and power > 0 and tostring(math.floor(power))
@@ -301,6 +336,22 @@ return function(mod)
     chamfer("line", fx + 0.5, fy + 0.5, fw - 1, fh - 1, 2)
   end
 
+  local function drawListRowFace(x, y, w, h, face, selected)
+    -- A ten-pixel row has exactly one pixel above and below Gen 2's 8px
+    -- battle font. The regular card's chamfer, drop shadow and expanded
+    -- selected outline all need a taller face and cut through these compact
+    -- rows, so use a crisp flat cell with its border on the outer half-pixel.
+    local G = love.graphics
+    local r, g, b = face[1], face[2], face[3]
+    if selected then r, g, b = darken(face, 0.56) end
+    G.setColor(r, g, b, alpha())
+    G.rectangle("fill", x + 2, y + 1, w - 4, h - 2)
+    G.setColor(selected and 1 or 0.10,
+      selected and 1 or 0.11, selected and 1 or 0.14, 1)
+    G.setLineWidth(1)
+    G.rectangle("line", x + 1.5, y + 0.5, w - 3, h - 1)
+  end
+
   local function drawCards(screen)
     if option("battle_colors", true) == false then return end
     local moves = playerMoves(screen)
@@ -316,15 +367,19 @@ return function(mod)
       math.min(104, math.floor(width * 0.29))) or width
     local gridW = wide and (width - detailW - detailGap) or width
     local gridH = wide and height or 32
-    local colW = math.floor(gridW / 2)
-    local rowH = math.floor(gridH / 2)
+    local columns = layoutColumns(screen)
+    local colW = math.floor(gridW / columns)
+    local rowH = math.floor(gridH / (columns == 1 and 4 or 2))
     G.push("all")
     G.setColor(0.08, 0.09, 0.12, 1)
     G.rectangle("fill", 0, top, width, 144 - top)
     screen.typedMoveColorsEffectMarkers = {}
+    screen.typedMoveColorsColumns = columns
+    screen.typedMoveColorsLayout = columns == 1 and "list" or "grid"
     for i = 1, 4 do
       local move = moves[i]
-      local col, row = (i - 1) % 2, math.floor((i - 1) / 2)
+      local col, row = (i - 1) % columns,
+        math.floor((i - 1) / columns)
       local x, y = col * colW, top + row * rowH
       local selected = i == screen.moveIndex
       local def = moveDef(screen, move)
@@ -333,23 +388,26 @@ return function(mod)
       local face = { r, g, b }
       local textOnly = option("text_only", false)
       if textOnly then face = { 0.94, 0.94, 0.94 } end
-      drawCardFace(x, y, colW, rowH, face, selected)
+      if columns == 1 then
+        drawListRowFace(x, y, colW, rowH, face, selected)
+      else
+        drawCardFace(x, y, colW, rowH, face, selected)
+      end
       local ink = selected and { 1, 1, 1 } or { 0, 0, 0 }
+      local textY = columns == 1 and (y + 1)
+        or (y + math.max(2, math.floor((rowH - 8) / 2)))
       if move then
         local indicator = effectIndicator(screen, def)
         screen.typedMoveColorsEffectMarkers[i] = indicator
-        local markerReserve = indicator
-          and (indicator == "double_up" and 24 or 16) or 0
         -- RBY parity: Power and PP belong to the selected-move information
         -- card, not redundantly inside every move button. Card colour already
         -- communicates type.
         printCardInk(fit((def and def.name) or move.id,
-            colW - 14 - markerReserve),
-          x + 7, y + math.max(2, math.floor((rowH - 8) / 2)), ink)
+            moveNameBudget(colW, indicator)),
+          x + 7, textY, ink)
         drawEffectIndicator(indicator, x, y, colW, rowH, ink)
       else
-        printCardInk("--", x + 7,
-          y + math.max(2, math.floor((rowH - 8) / 2)), ink)
+        printCardInk("--", x + 7, textY, ink)
       end
     end
 
@@ -394,7 +452,7 @@ return function(mod)
 
   mod.hooks:wrap("battle.move_grid_navigation", function(next, screen)
     local downstream = next(screen)
-    if gridEnabled() then return true end
+    if gridEnabled() then return layoutColumns(screen) > 1 end
     return downstream
   end, 1000)
 
@@ -423,7 +481,7 @@ return function(mod)
       local nativeGrid = screen.moveGridNavigation
       screen.typedMoveColorsGridMethod = true
       screen.moveGridNavigation = function(self)
-        if gridEnabled() then return true end
+        if gridEnabled() then return layoutColumns(self) > 1 end
         if type(nativeGrid) == "function" then return nativeGrid(self) end
         return false
       end
@@ -442,7 +500,8 @@ return function(mod)
         if direction then
           local moves = playerMoves(self)
           if #moves > 0 then
-            self.moveIndex = gridTarget(self.moveIndex, #moves, direction)
+            self.moveIndex = gridTarget(self.moveIndex, #moves, direction,
+              layoutColumns(self))
           end
           -- Do not let an older controller read the same press again as a
           -- vertical-list command and undo the grid movement.

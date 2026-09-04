@@ -9,10 +9,10 @@ loaded from the legacy directories.
 | Modern Start Menu UI | 0.1.18 |
 | Modern Party UI | 0.4.9 |
 | Modern Bag UI | 0.5.0 |
-| Modern PC UI | 0.4.3 |
+| Modern PC UI | 0.4.4 |
 | Modern Pokedex UI | 0.2.10 |
 | Battle Info HUD | 0.9.2 |
-| Typed Move Colors | 0.4.9 |
+| Typed Move Colors | 0.4.10 |
 
 All component code is MIT licensed. The Start Menu icon atlas also contains
 CC0 artwork described in `THIRD_PARTY_NOTICES.md`.

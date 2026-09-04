@@ -30,10 +30,10 @@ local expectedVersions = {
   modern_start_menu_ui = "0.1.18",
   modern_party_ui = "0.4.9",
   modern_bag_ui = "0.5.0",
-  modern_pc_ui = "0.4.3",
+  modern_pc_ui = "0.4.4",
   modern_pokedex_ui = "0.2.10",
   battle_info_hud = "0.9.2",
-  typed_move_colors = "0.4.9",
+  typed_move_colors = "0.4.10",
 }
 
 local exports = run.loader.exports.modern_ui_suite
@@ -952,6 +952,166 @@ T.eq(damaged.loader.exports.modern_ui_suite, nil,
 T.eq(damaged.loader.optionSchemas.modern_ui_suite, nil,
   "a preflight failure leaves no partial settings schema")
 damaged.release()
+
+-- Compact Gen 2 widescreen battles are commonly only 200 logical pixels
+-- wide. A details panel plus two move columns left each label room for just
+-- two letters even though the footer had four full rows available. Exercise
+-- the component directly with Gen 2's fixed-width battle font so both the
+-- responsive geometry and the matching controller path stay covered here.
+local savedGen2MoveChrome = package.loaded["src.ui.gen2.Chrome"]
+local savedGen2MoveFont = package.loaded["src.render.Font"]
+local savedGen2MoveSummary = package.loaded["src.ui.gen2.SummaryMenu"]
+local savedGen2MovePolygon = love.graphics.polygon
+local savedGen2MoveCircle = love.graphics.circle
+love.graphics.polygon = function() end
+love.graphics.circle = function() end
+local gen2MovePrints = {}
+local gen2BattleFont = false
+package.loaded["src.render.Font"] = {
+  TTF_BASE = 0x400000,
+  useBattleExtra = function(on)
+    local was = gen2BattleFont
+    gen2BattleFont = on == true
+    return was
+  end,
+  encode = function(text)
+    local codes = {}
+    for i = 1, #tostring(text or "") do
+      codes[#codes + 1] = tostring(text):byte(i)
+    end
+    return codes
+  end,
+  advanceOf = function() return 8 end,
+  width = function(text) return #tostring(text or "") * 8 end,
+  draw = function(text) return #tostring(text or "") * 8 end,
+}
+package.loaded["src.ui.gen2.Chrome"] = {
+  paletteGlyphs = function()
+    local printed = { text = "", glyphs = {} }
+    gen2MovePrints[#gen2MovePrints + 1] = printed
+    return {}, function(code, x, y)
+      printed.text = printed.text .. string.char(code)
+      printed.glyphs[#printed.glyphs + 1] = { x = x, y = y }
+    end, function() end
+  end,
+}
+package.loaded["src.ui.gen2.SummaryMenu"] = {
+  new = function() return {} end,
+}
+
+local gen2MoveHooks, pushedGen2Move
+gen2MoveHooks = {}
+local gen2MoveMod = {
+  id = "typed_move_colors",
+  options = {
+    enabled = function() return true end,
+    get = function(_, key)
+      if key == "battle_colors" or key == "effect_hints" then return true end
+      if key == "strength" then return "bold" end
+      if key == "opacity" then return "100" end
+      return nil
+    end,
+  },
+  hooks = { wrap = function(_, name, callback)
+    gen2MoveHooks[name] = callback
+  end },
+  events = { on = function(_, name, callback)
+    if name == "screen.pushed" then pushedGen2Move = callback end
+  end },
+  content = { screens = {
+    get = function() return nil end,
+    register = function() end,
+  } },
+  exports = {},
+  log = { info = function() end },
+}
+local gen2MoveInstall = assert(loadfile(
+  "mods/modern_ui_suite/components/typed_move_colors/gen2.lua"))()
+gen2MoveInstall(gen2MoveMod)
+
+local gen2MovePressed = {}
+local gen2MoveInput = {}
+function gen2MoveInput:wasPressed(key) return gen2MovePressed[key] == true end
+local gen2MoveDefs = {
+  TACKLE = { name = "TACKLE", type = "NORMAL", power = 35, pp = 35 },
+  SCREECH = { name = "SCREECH", type = "NORMAL", power = 0, pp = 40 },
+  BIND = { name = "BIND", type = "NORMAL", power = 15, pp = 20 },
+  EARTHQUAKE = {
+    name = "EARTHQUAKE", type = "GROUND", power = 100, pp = 10,
+  },
+}
+local gen2Moves = {
+  { id = "TACKLE", pp = 18 }, { id = "SCREECH", pp = 40 },
+  { id = "BIND", pp = 20 }, { id = "EARTHQUAKE", pp = 10 },
+}
+local function gen2MoveScreen(width)
+  return {
+    screenId = "Gen2BattleState", phase = "moves", moveIndex = 1,
+    modernBattleWideWidth = width, modernBattleLastWideWidth = width,
+    game = { input = gen2MoveInput, data = {
+      moves = gen2MoveDefs, type_chart = { matchups = {} },
+    } },
+    player = { moves = gen2Moves },
+    activeMon = function() return { types = { "GRASS", "POISON" } } end,
+    update = function() end,
+  }
+end
+local function drawGen2Moves(screen)
+  gen2MovePrints = {}
+  pushedGen2Move({ state = screen })
+  gen2MoveHooks["battle.overlay"](function() end, screen)
+end
+
+local compactGen2Moves = gen2MoveScreen(200)
+drawGen2Moves(compactGen2Moves)
+-- The real Gen 2 compositor clears this draw-only field before input runs.
+compactGen2Moves.modernBattleWideWidth = nil
+T.eq(compactGen2Moves.typedMoveColorsLayout, "list",
+  "a 200px Gen 2 battle uses four readable move rows")
+T.eq(gen2MovePrints[1] and gen2MovePrints[1].text, "TACKLE",
+  "compact Gen 2 keeps TACKLE instead of collapsing it to TA.")
+T.eq(gen2MovePrints[2] and gen2MovePrints[2].text, "SCREECH",
+  "compact Gen 2 keeps SCREECH instead of collapsing it to SC.")
+T.eq(gen2MovePrints[3] and gen2MovePrints[3].text, "BIND",
+  "compact Gen 2 keeps BIND instead of collapsing it to BI.")
+T.eq(gen2MovePrints[4] and gen2MovePrints[4].text, "EARTHQUAKE",
+  "compact Gen 2 keeps a ten-tile name beside its effect marker")
+gen2MovePressed.right = true
+compactGen2Moves:update()
+gen2MovePressed.right = nil
+T.eq(compactGen2Moves.moveIndex, 1,
+  "compact Gen 2 ignores horizontal movement in its vertical list")
+gen2MovePressed.down = true
+compactGen2Moves:update()
+gen2MovePressed.down = nil
+T.eq(compactGen2Moves.moveIndex, 2,
+  "compact Gen 2 DOWN follows the visible vertical list")
+
+local roomyGen2Moves = gen2MoveScreen(304)
+drawGen2Moves(roomyGen2Moves)
+roomyGen2Moves.modernBattleWideWidth = nil
+T.eq(roomyGen2Moves.typedMoveColorsLayout, "grid",
+  "a genuinely roomy Gen 2 battle retains the 2x2 move grid")
+T.eq(gen2MovePrints[4] and gen2MovePrints[4].text, "EARTHQUAKE",
+  "the wide Gen 2 grid uses the marker's real footprint for name fitting")
+gen2MovePressed.right = true
+roomyGen2Moves:update()
+gen2MovePressed.right = nil
+T.eq(roomyGen2Moves.moveIndex, 2,
+  "roomy Gen 2 RIGHT follows the visible 2x2 grid")
+gen2MovePressed.down = true
+roomyGen2Moves:update()
+gen2MovePressed.down = nil
+T.eq(roomyGen2Moves.moveIndex, 4,
+  "roomy Gen 2 DOWN follows the visible 2x2 grid")
+T.eq(gen2BattleFont, false,
+  "the Gen 2 move presenter restores the caller's font page")
+
+package.loaded["src.ui.gen2.Chrome"] = savedGen2MoveChrome
+package.loaded["src.render.Font"] = savedGen2MoveFont
+package.loaded["src.ui.gen2.SummaryMenu"] = savedGen2MoveSummary
+love.graphics.polygon = savedGen2MovePolygon
+love.graphics.circle = savedGen2MoveCircle
 
 -- The Gen 2 Battle HUD decorates a screen instance after full-window battle
 -- presenters have wrapped the class. An active Stadium scene must retain the

@@ -96,6 +96,7 @@ return function(parent, settings, state, component)
     Gen2SummaryMenu = "src.ui.gen2.SummaryMenu",
     Gen2NamingScreen = "src.ui.gen2.NamingScreen",
     Gen2BoxMenu = "src.ui.gen2.BoxMenu",
+    Gen2PcMenu = "src.ui.gen2.PcMenu",
     Gen2PokedexMenu = "src.ui.gen2.PokedexMenu",
   }
 

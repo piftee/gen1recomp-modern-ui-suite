@@ -6,6 +6,8 @@ return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
   local GbcPalette = require("src.render.GbcPalette")
+  local PcMenu = require("src.ui.gen2.PcMenu")
+  local Strings = require("src.core.Strings")
 
   local INK_BLACK = { 0, 0, 0 }
   local INK_WHITE = { 1, 1, 1 }
@@ -328,6 +330,77 @@ return function(mod)
     G.setColor(1, 1, 1, 1)
   end
 
+  -- Gen 2 puts a mode chooser in front of every storage list. Leaving that
+  -- screen native made the mod look disabled until the player selected an
+  -- operation, even though the themed BoxMenu was waiting one level deeper.
+  -- Keep PcMenu's controller (including mail checks and CHANGE BOX saving)
+  -- and replace only its idle presentation.
+  local ENTRY_COLORS = {
+    withdraw = { 0.38, 0.73, 0.38 },
+    deposit = { 1.00, 0.64, 0.34 },
+    changebox = { 0.34, 0.61, 0.86 },
+    move = { 0.98, 0.83, 0.25 },
+    mailbox = { 0.67, 0.55, 0.83 },
+    decoration = { 0.93, 0.55, 0.72 },
+    seeya = { 0.62, 0.65, 0.69 },
+  }
+
+  local function pcEntryLabel(entry)
+    if not entry then return "" end
+    return entry.builtin and Strings(entry.label) or tostring(entry.label or "")
+  end
+
+  local function modernPcMenuPanel(menu)
+    local G = love.graphics
+    local wasBattle = Font.useBattleExtra(true)
+    local width = menu.modernPCWideWidth or 160
+    drawBackdrop(menu)
+    setColor(HEADER)
+    G.rectangle("fill", 0, 0, width, 16)
+    setColor(HEADER_LIGHT)
+    G.rectangle("fill", 0, 14, width, 2)
+    local title = width >= 184 and "POKéMON STORAGE" or "PC STORAGE"
+    drawInk(title, 4, 4, width - 60, INK_WHITE)
+    local currentBox = menu.save and menu.save.currentBox or 1
+    drawInkRight(("BOX %02d"):format(currentBox), width - 4, 4, 54, INK_WHITE)
+
+    local entries = menu.entries or {}
+    local count = math.max(1, #entries)
+    local gap = 2
+    local available = 100
+    local rowH = math.max(12, math.floor((available - gap * (count - 1)) / count))
+    local y = 18
+    for i, entry in ipairs(entries) do
+      local selected = i == menu.index
+      local color = ENTRY_COLORS[entry.id] or PAPER
+      if selected then
+        color = { math.min(1, color[1] + 0.12),
+          math.min(1, color[2] + 0.12), math.min(1, color[3] + 0.12) }
+      end
+      setColor(color)
+      chamfer("fill", 4, y, width - 8, rowH, 2)
+      setColor(selected and BLUE or { 0.32, 0.34, 0.40 })
+      G.setLineWidth(selected and 2 or 1)
+      chamfer("line", 4.5, y + 0.5, width - 9, rowH - 1, 2)
+      if selected then
+        setColor(BLUE)
+        G.rectangle("fill", 8, y + 3, 3, math.max(5, rowH - 6))
+      end
+      drawInk(pcEntryLabel(entry), 15,
+        y + math.max(2, math.floor((rowH - 8) / 2)), width - 23, INK_BLACK)
+      y = y + rowH + gap
+    end
+
+    setColor(HEADER)
+    G.rectangle("fill", 0, 120, width, 24)
+    setColor(HEADER_LIGHT)
+    G.rectangle("fill", 0, 120, width, 2)
+    drawInk("A SELECT", 5, 126, 72, INK_WHITE)
+    drawInkRight("B LOG OFF", width - 5, 126, 72, INK_WHITE)
+    Font.useBattleExtra(wasBattle)
+    G.setColor(1, 1, 1, 1)
+  end
+
   local inherited = mod.content.screens:get("Gen2BoxMenu")
   local provider = inherited or BoxMenu
   local record = {
@@ -349,7 +422,43 @@ return function(mod)
   else
     mod.content.screens:register("Gen2BoxMenu", record)
   end
+
+  local inheritedPc = mod.content.screens:get("Gen2PcMenu")
+  local pcProvider = inheritedPc or PcMenu
+  local pcRecord = {
+    new = function(game, ...)
+      local menu = pcProvider.new(game, ...)
+      if type(menu) ~= "table" or menu.modernPCEntryGeneration == 2 then
+        return menu
+      end
+      local nativePanel = menu.drawPanel
+      local nativeWide = menu.drawWidescreen
+      menu.modernPCUI = true
+      menu.modernPCEntryGeneration = 2
+      menu.classicGen2PcPanel = nativePanel
+      menu.drawPanel = function(self)
+        if self.message or self.picking or self.savePhase then
+          return nativePanel(self)
+        end
+        return modernPcMenuPanel(self)
+      end
+      installWideDraw(menu, menu.drawPanel)
+      local modernWide = menu.drawWidescreen
+      menu.drawWidescreen = function(self, winW, winH)
+        if (self.message or self.picking or self.savePhase) and nativeWide then
+          return nativeWide(self, winW, winH)
+        end
+        return modernWide(self, winW, winH)
+      end
+      return menu
+    end,
+  }
+  if inheritedPc then
+    mod.content.screens:override("Gen2PcMenu", pcRecord)
+  else
+    mod.content.screens:register("Gen2PcMenu", pcRecord)
+  end
   mod.exports.generation = 2
   mod.exports.boxCount = 14
-  mod.log:info("modern fourteen-box Gen 2 storage workspace enabled")
+  mod.log:info("modern Gen 2 storage entry and fourteen-box workspace enabled")
 end

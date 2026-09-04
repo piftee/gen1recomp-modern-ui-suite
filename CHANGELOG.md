@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.12 - 2026-09-04
+
+- Modern PC now themes the Gold, Silver, and Crystal storage mode chooser, so
+  the component is visible immediately instead of only after an operation is
+  selected. Native mail, box-selection, and save-confirmation states remain
+  intact.
+- Fixed Gen 2 move names collapsing to two-letter abbreviations on compact
+  widescreen layouts. Common 200px and 256px battle canvases now use four
+  readable move rows beside the Power/PP card; genuinely wide canvases retain
+  the 2x2 grid.
+- Matched Gen 2 move navigation to the visible responsive layout and reclaimed
+  excess spacing before effectiveness markers so ten-character stock names
+  remain intact when they fit.
+
 ## 0.1.11 - 2026-09-04
 
 - Fixed literal `(PROMPT)` control markers appearing in Gen 3 Inspired UI
