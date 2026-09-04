@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.10 - 2026-09-04
+## 0.1.11 - 2026-09-04
 
 - Fixed literal `(PROMPT)` control markers appearing in Gen 3 Inspired UI
   battle dialogue. The compatibility adapter now supplies a display-only
