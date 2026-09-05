@@ -156,7 +156,7 @@ return function(mod, presentation, config)
       items = {
         {
         id = mod.id .. ":theme",
-        label = "PHONE THEME",
+        label = "PHONE COLOUR",
         right = config.themeLabel(),
         kind = "theme",
         },

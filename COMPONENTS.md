@@ -6,13 +6,14 @@ loaded from the legacy directories.
 
 | Component | Imported version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.18 |
+| Modern Start Menu UI | 0.1.19 |
 | Modern Party UI | 0.4.9 |
-| Modern Bag UI | 0.5.0 |
-| Modern PC UI | 0.4.4 |
-| Modern Pokedex UI | 0.2.10 |
-| Battle Info HUD | 0.9.2 |
-| Typed Move Colors | 0.4.10 |
+| Modern Bag UI | 0.6.1 |
+| Modern PC UI | 0.6.1 |
+| Modern Pokedex UI | 0.2.13 |
+| Battle Info HUD | 0.9.3 |
+| Typed Move Colors | 0.5.1 |
+| Unlimited PP (independent QoL, default Off) | 0.1.0 |
 
 All component code is MIT licensed. The Start Menu icon atlas also contains
 CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
@@ -24,7 +25,8 @@ CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
 - `core/scope.lua` gives imported code its original id and path while all
   loader registrations remain owned atomically by `modern_ui_suite`.
 - `core/settings.lua` owns namespaced preferences, live master switches, and
-  one-way migration from the seven legacy option buckets.
+  one-way migration from the legacy option buckets. Bulk UI actions exclude
+  the independent default-off QoL component.
 - `core/hub.lua` owns the only ordinary Options-menu entry.
 - `components/<legacy-id>/` contains each maintained feature implementation.
 
@@ -49,5 +51,7 @@ but prevents Gender Mod and Crystal 251 from painting the same native cell.
    and the Gen 2 proof driver when a Gen 2 runtime is available.
 7. Record player-visible behavior in `CHANGELOG.md` and rebuild the ZIP.
 
-Do not make matching edits in the old standalone directories. They are kept as
-frozen release history and regression fixtures only.
+Do not wholesale synchronize standalone directories: their controllers and
+Gen 1 presentation can intentionally differ. This corrective build explicitly
+shares only the reviewed PC/Pokedex sprite helpers and Typed Gen 2 fixes with
+the corresponding standalone sources. Unlimited PP has its own standalone.

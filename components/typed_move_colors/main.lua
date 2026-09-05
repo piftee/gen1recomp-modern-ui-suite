@@ -28,6 +28,19 @@ return function(mod)
       } },
     { key = "text_only", label = "TEXT ONLY", type = "toggle",
       default = false },
+    { key = "text_position", label = "TEXT POSITION", type = "choice",
+      default = "left", choices = {
+        { "LEFT", "left" }, { "CENTER", "center" }, { "RIGHT", "right" },
+      } },
+    { key = "box_color", label = "BOX COLOR", type = "choice",
+      default = "original", choices = {
+        { "DEFAULT", "original" }, { "GRAY", "gray" },
+        { "WHITE", "white" }, { "BLACK", "black" },
+      } },
+    { key = "info_position", label = "INFO WINDOWS", type = "choice",
+      default = "original", choices = {
+        { "ORIGINAL", "original" }, { "LEFT", "left" }, { "RIGHT", "right" },
+      } },
   }
   mod.options:define(optionSchema)
 
@@ -39,6 +52,9 @@ return function(mod)
     strength = "MOVE TINT",
     opacity = "CARD OPACITY",
     text_only = "TEXT ONLY",
+    text_position = "TEXT",
+    box_color = "BOX COLOR",
+    info_position = "INFO",
   }
 
   local function setOption(game, key, value)

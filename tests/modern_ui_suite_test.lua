@@ -27,13 +27,13 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.18",
+  modern_start_menu_ui = "0.1.19",
   modern_party_ui = "0.4.9",
-  modern_bag_ui = "0.5.0",
-  modern_pc_ui = "0.4.4",
-  modern_pokedex_ui = "0.2.10",
-  battle_info_hud = "0.9.2",
-  typed_move_colors = "0.4.10",
+  modern_bag_ui = "0.6.1",
+  modern_pc_ui = "0.6.1",
+  modern_pokedex_ui = "0.2.13",
+  battle_info_hud = "0.9.3",
+  typed_move_colors = "0.5.1",
 }
 
 local exports = run.loader.exports.modern_ui_suite
@@ -54,8 +54,8 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 31,
-  "seven master toggles and all 24 detailed preferences share one schema")
+T.eq(#schema, 36,
+  "seven UI toggles, independent QoL and all 28 detailed preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
   schemaByKey[row.key] = row
@@ -69,8 +69,19 @@ for _, key in ipairs(componentKeys) do
 end
 T.eq(schemaByKey["battle_hud.enabled"].label, "HUD ENABLED",
   "Battle HUD's former enabled option is one concise suite master toggle")
+T.eq(schemaByKey["qol.enabled"].label, "QOL UNLIMITED PP",
+  "independent QoL has one clearly named manager control")
+T.eq(schemaByKey["qol.enabled"].default, false, "Unlimited PP defaults OFF")
+T.eq(exports.isEnabled("unlimited_pp"), false, "fresh suite never enables Unlimited PP")
+T.eq(exports.components.unlimited_pp.version, "0.1.0", "QoL component is versioned")
 T.eq(schemaByKey["move_colors.opacity"].label, "MOVE OPACITY",
   "flat manager labels keep their component context without overflowing")
+T.eq(schemaByKey["start_menu.theme"].label, "START COLOUR",
+  "the Start palette setting uses a plain player-facing name")
+T.same(schemaByKey["start_menu.theme"].choices, {
+  { "AUTO", "map" }, { "RED", "red" },
+  { "BLUE", "blue" }, { "GREEN", "dmg" },
+}, "clear palette labels preserve every legacy saved value")
 T.eq(run.loader.optionSchemas.modern_party_ui, nil,
   "embedded components do not leak standalone option schemas")
 
@@ -155,8 +166,8 @@ optionRows[2].activate(game)
 local hub = stack:top()
 T.eq(hub and hub.screenId, "modern_ui_suite:settings",
   "the consolidated row opens the unified settings hub")
-T.eq(hub and #hub.items, 10,
-  "the hub contains bulk actions, seven components, and Back")
+T.eq(hub and #hub.items, 11,
+  "the hub contains UI bulk actions, seven interfaces, independent QoL and Back")
 T.eq(hub.items[1].id, "enable_all", "Enable All is the first bulk action")
 T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 
@@ -170,17 +181,18 @@ local expectedPageRows = {
   modern_start_menu_ui = 5, -- enabled + 3 choices + icon picker
   modern_party_ui = 11,
   modern_bag_ui = 2,
-  modern_pc_ui = 1,
+  modern_pc_ui = 2,
   modern_pokedex_ui = 4,
   battle_info_hud = 1,
-  typed_move_colors = 8,
+  typed_move_colors = 11,
+  unlimited_pp = 1,
 }
 local function pressPage(page, button)
   input.pressed[button] = true
   page:update(0)
   input.pressed[button] = nil
 end
-for hubIndex = 3, 9 do
+for hubIndex = 3, 10 do
   local item = hub.items[hubIndex]
   hub.onChoose(item, hub)
   local page = stack:top()
@@ -273,11 +285,26 @@ T.eq(run.loader.modOptions.modern_ui_suite["party.card_color"],
 stack:pop()
 hub = stack:top()
 hub.onChoose(hub.items[1], hub)
+T.eq(exports.isEnabled("unlimited_pp"), false, "Enable All UI never enables gameplay QoL")
 for _, id in ipairs(componentIds) do
   T.eq(exports.isEnabled(id), true, "Enable All turns on " .. id)
 end
 T.check(writes >= 1, "bulk actions request durable option persistence")
 hub.onChoose(hub.items[2], hub)
+T.eq(exports.isEnabled("unlimited_pp"), false, "Disable All UI preserves default-off QoL")
+hub.onChoose(hub.items[10], hub)
+local qolPage = stack:top()
+T.eq(#qolPage.rows, 1, "QoL has a single toggle, not a master and detail pair")
+T.eq(qolPage.rows[1].label, "UNLIMITED PP", "QoL toggle names the actual feature")
+qolPage.rows[1].step(game)
+T.eq(exports.isEnabled("unlimited_pp"), true, "Unlimited PP works with all UI components OFF")
+hub.onChoose(hub.items[1], hub)
+T.eq(exports.isEnabled("unlimited_pp"), true, "Enable All UI preserves explicit QoL ON")
+hub.onChoose(hub.items[2], hub)
+T.eq(exports.isEnabled("unlimited_pp"), true, "Disable All UI preserves explicit QoL ON")
+qolPage.rows[1].step(game)
+T.eq(exports.isEnabled("unlimited_pp"), false, "QoL switches OFF independently")
+stack:pop()
 for _, id in ipairs(componentIds) do
   T.eq(exports.isEnabled(id), false, "Disable All UI turns off " .. id)
 end
@@ -415,12 +442,47 @@ local StartMenu = require("src.ui.StartMenu")
 local modernStart = StartMenu.new(game)
 T.eq(modernStart.modernStartMenuUI, true,
   "the enabled Start presentation hook decorates a newly built controller")
+local startPresentation = exports.components.modern_start_menu_ui.exports.presentation
+
+-- AUTO is not a white preset: it follows the nearest active field palette.
+-- This stack contract is shared by Gen 1 and Gen 2 START controllers, so
+-- changing the underlying area's palette must change the phone without
+-- changing the legacy `map` value stored in existing saves.
+do
+  local areaColors = {
+    { 255, 255, 255 }, { 190, 220, 180 },
+    { 60, 110, 70 }, { 5, 20, 10 },
+  }
+  local paletteOwner = {
+    sgbPalettes = function()
+      return { { colors = areaColors, x = 0, y = 0, w = 160, h = 144 } }
+    end,
+  }
+  local originalStates = game.stack.states
+  game.stack.states = { paletteOwner, modernStart }
+  suiteOptions["start_menu.theme"] = "map"
+  local automatic = modernStart:sgbPalettes(game)
+  T.eq(automatic[1].colors, areaColors,
+    "AUTO inherits the active area's palette instead of forcing white")
+  T.eq(#automatic, 1,
+    "AUTO does not add a fixed phone-only palette zone")
+
+  suiteOptions["start_menu.theme"] = "dmg"
+  local green = modernStart:sgbPalettes(game)
+  T.eq(green[#green].colors,
+    startPresentation and startPresentation.themePalettes.dmg,
+    "GREEN still resolves the legacy DMG save value to its fixed palette")
+  T.check(green[#green].colors[2][2] > green[#green].colors[2][1]
+      and green[#green].colors[2][2] > green[#green].colors[2][3],
+    "the renamed fixed palette has a visibly green accent")
+  suiteOptions["start_menu.theme"] = "map"
+  game.stack.states = originalStates
+end
 
 -- Phosphor's optional iOS controls hide the engine-owned touch overlay and
 -- present themselves as a joystick. Current sandboxed mods cannot inspect
 -- love.system, so reproduce that denied module here and prove the portrait
 -- overlay still selects the native surface without touching it.
-local startPresentation = exports.components.modern_start_menu_ui.exports.presentation
 local savedSystem, savedJoystick = love.system, love.joystick
 local savedPixelDimensions = love.graphics.getPixelDimensions
 love.system = setmetatable({}, { __index = function(_, key)
@@ -613,6 +675,38 @@ T.same(shiftedDraws[1], { value = "MARTELOSDEIS", x = 16, y = 104 },
   "the single coloured name retains the localization's coordinates")
 T.same(shiftedCodes[1], { code = 0xED, x = 8, y = 104 },
   "the single coloured cursor retains the localization's coordinates")
+
+-- The command hand shares y=112 with move row two. It must never create a
+-- move-coloured rectangle after FIGHT/PKMN have already been drawn.
+originalTextArea = typedTextPatch.original
+local realNativeRows = typedTextPatch.drawNativeRows
+local interceptedPhases = 0
+typedTextPatch.drawNativeRows = function(...)
+  interceptedPhases = interceptedPhases + 1
+  return realNativeRows(...)
+end
+typedTextPatch.original = function(self)
+  Font.drawCode(0xED, 72, 112)
+  return self.phase
+end
+for _, phase in ipairs({"menu", "messages", "mimicSelect", "submenu"}) do
+  gameLayoutBattle.phase = phase
+  gameLayoutBattle.typedMoveColorsNativeRows = { stale = true }
+  T.eq(BattleState.drawTextArea(gameLayoutBattle), phase,
+    phase .. " keeps its own native renderer")
+  T.eq(gameLayoutBattle.typedMoveColorsNativeRows, nil,
+    phase .. " drops move-row state before drawing")
+end
+T.eq(interceptedPhases, 0, "non-move phases never enter the native move-row interceptor")
+gameLayoutBattle.phase = "moveSelect"
+typedTextPatch.original = function() error("native row provider failure") end
+local drawBefore, codeBefore = Font.draw, Font.drawCode
+local rowOK, rowWhy = pcall(BattleState.drawTextArea, gameLayoutBattle)
+T.check(not rowOK and tostring(rowWhy):find("native row provider failure", 1, true),
+  "native row renderer propagates provider failures")
+T.eq(Font.draw, drawBefore, "native row failure restores the text renderer")
+T.eq(Font.drawCode, codeBefore, "native row failure restores the glyph renderer")
+typedTextPatch.original, typedTextPatch.drawNativeRows = originalTextArea, realNativeRows
 
 nativeTextCalls = 0
 originalTextArea = typedTextPatch.original
@@ -961,6 +1055,8 @@ damaged.release()
 local savedGen2MoveChrome = package.loaded["src.ui.gen2.Chrome"]
 local savedGen2MoveFont = package.loaded["src.render.Font"]
 local savedGen2MoveSummary = package.loaded["src.ui.gen2.SummaryMenu"]
+local savedGen2MovePalette = package.loaded["src.render.GbcPalette"]
+package.loaded["src.render.GbcPalette"] = { setBgp = function() end }
 local savedGen2MovePolygon = love.graphics.polygon
 local savedGen2MoveCircle = love.graphics.circle
 love.graphics.polygon = function() end
@@ -1110,6 +1206,7 @@ T.eq(gen2BattleFont, false,
 package.loaded["src.ui.gen2.Chrome"] = savedGen2MoveChrome
 package.loaded["src.render.Font"] = savedGen2MoveFont
 package.loaded["src.ui.gen2.SummaryMenu"] = savedGen2MoveSummary
+package.loaded["src.render.GbcPalette"] = savedGen2MovePalette
 love.graphics.polygon = savedGen2MovePolygon
 love.graphics.circle = savedGen2MoveCircle
 

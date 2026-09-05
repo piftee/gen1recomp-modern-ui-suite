@@ -138,5 +138,5 @@ return function(mod)
   end
   mod.exports.settings = hub
   mod.exports.apiVersion = 1
-  mod.log:info("seven-component Modern UI Suite initialized")
+  mod.log:info(tostring(#components) .. "-component Modern UI Suite initialized")
 end

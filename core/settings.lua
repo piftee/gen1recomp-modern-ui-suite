@@ -28,7 +28,7 @@ return function(parent, components)
   }
   local MANAGER_DETAIL = {
     start_menu = {
-      theme = "THEME", position = "POSITION", clock = "CLOCK",
+      theme = "COLOUR", position = "POSITION", clock = "CLOCK",
     },
     party = {
       card_color = "CARD COLOR", animate_icons = "ANIMATION",
@@ -37,6 +37,7 @@ return function(parent, components)
       responsive = "WIDE", rename_style = "RENAME",
     },
     bag = { skin = "SKIN" },
+    pc = { box_exclusive = "BOX ONLY" },
     pokedex = {
       responsive = "WIDE", pattern = "BACKDROP", theme = "COLOURS",
     },
@@ -44,6 +45,7 @@ return function(parent, components)
       battle_colors = "BATTLE", layout = "LAYOUT", effect_hints = "EFFECT",
       menu_colors = "MENUS", strength = "TINT", opacity = "OPACITY",
       text_only = "TEXT ONLY",
+      text_position = "TEXT ALIGN", box_color = "BOX COLOR", info_position = "INFO SIDE",
     },
   }
 
@@ -95,7 +97,7 @@ return function(parent, components)
   function Settings:managerLabel(component, row)
     component = componentFor(self, component)
     local prefix = MANAGER_PREFIX[component.key] or component.short
-    if not row then return prefix .. " ENABLED" end
+    if not row then return component.managerEnabledLabel or (prefix .. " ENABLED") end
     local details = MANAGER_DETAIL[component.key] or {}
     local detail = details[row.key] or self:detailLabel(component, row)
     -- Do not repeat a component prefix already present in a fallback label.
@@ -108,7 +110,9 @@ return function(parent, components)
     local fullKey = self:keyFor(component, key)
     local value = self.parent.options:get(fullKey)
     if value ~= nil then return value end
-    if key == "__enabled" or key == component.enabledOption then return true end
+    if key == "__enabled" or key == component.enabledOption then
+      return component.defaultEnabled ~= false
+    end
     return component.defaults and component.defaults[key] or nil
   end
 
@@ -170,7 +174,9 @@ return function(parent, components)
 
   function Settings:setAll(game, value)
     for _, component in ipairs(self.components) do
-      self:setEnabled(game, component, value, false)
+      -- Bulk UI actions must not opt a player into gameplay changes or
+      -- disable an independently selected QoL option with the renderers.
+      if component.bulkUI ~= false then self:setEnabled(game, component, value, false) end
     end
     return true
   end
@@ -255,7 +261,7 @@ return function(parent, components)
         key = self:keyFor(component, "__enabled"),
         label = self:managerLabel(component),
         type = "toggle",
-        default = true,
+        default = component.defaultEnabled ~= false,
       }
     end
     for _, component in ipairs(self.components) do

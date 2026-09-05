@@ -11,8 +11,8 @@ a replacement interface and more like the UI the games might have grown into.
 The layouts respond to the space available instead of simply stretching the
 Game Boy screen. They can stay compact at the original 160×144 aspect ratio,
 spread out across a desktop window, or reorganize for a tall phone-shaped
-view. The mod changes presentation and convenience—not battles, progression,
-or the rules of the game.
+view. The seven interface components keep native battle and progression rules.
+A separate, optional Unlimited PP gameplay setting is OFF by default.
 
 **[Download the latest installable release](https://github.com/piftee/gen1recomp-modern-ui-suite/releases/latest)**
 
@@ -28,13 +28,28 @@ or the rules of the game.
   money and capacity readouts, two visual skins, and layouts suited to both
   wide and narrow screens. Press Start to sort the Bag by pocket category or
   item name in either direction. Expanded storage supports 255 unique entries
-  and stacks of up to 999 items.
+  and stacks of up to 999 items. Gen 2's Modern skin now has the same All,
+  Items, Medicine, Balls, TMs/HMs and Key views as Gen 1. They filter the four
+  native stores without changing item ownership or native action rules;
+  the Pocket skin keeps its four-pocket appearance and supports sorting too.
+  The Modern skin places descriptions across the bottom so the tab rail and
+  item list can use the full screen width.
+  Both skins place exact money in the header. Fitting descriptions stay still;
+  overflow scrolls horizontally with a pause at each end, and resets when the
+  selected item, description or layout changes. Prompts and action overlays
+  remain static.
 - **Direct Pokémon storage management** — see the party and current Box
   together, inspect a Pokémon before moving it, and pick up, place, reorder,
-  or swap Pokémon in one workspace.
+  or swap Pokémon in one workspace. Gen 2 now opens this grid directly too,
+  with all fourteen boxes and native held-item and Mail actions under START.
+  Party rows wrap; optional Box Exclusive movement keeps navigation within the
+  current box. START Multiple Selections moves ordered groups across boxes or
+  swaps a whole party, with capacity, usable-party, Egg and Mail safeguards.
 - **A Pokédex built for browsing** — caught and seen progress, filters, artwork,
   and dedicated information, stats, evolution-family, and move views make the
   Pokédex feel like a research tool rather than a long list.
+  Native Gen 2 PC/Pokédex portraits use exact-image guarded background cutouts
+  that preserve white markings and skip different replacement artwork.
 - **More informative battles** — readable colored HP bars, experience progress,
   status, level, gender, and caught indicators add useful information while
   preserving the battlefield and the native battle flow. On Gen 2, an active
@@ -42,6 +57,10 @@ or the rules of the game.
 - **Type-aware move displays** — move cards and text use their type colors
   consistently in battle, summaries, move learning, move forgetting, Mimic,
   and PP selection, with clearer PP and effectiveness cues where relevant.
+  Normal 16:9 Gen 2 battles use a full-width 2×2 move grid above a slim Power/PP
+  strip. The held source move gets an amber border, distinct from destination
+  focus. Dialogue alignment, full-opacity neutral box colors and responsive
+  information placement are available on the Move Colors page.
 
 Modern UI Suite supports Red, Blue, and Yellow, plus Gold, Silver, and Crystal
 on Gen 2-capable Gen1Recomp builds. Every major feature has its own switch, so
@@ -50,7 +69,7 @@ game. Detailed appearance and behavior options remain independent too.
 
 ## Install
 
-Disable the seven standalone versions before enabling this suite. The suite
+Disable the seven standalone UI versions and standalone Unlimited PP before enabling this suite. The suite
 declares hard conflicts so duplicate screen owners cannot silently overwrite
 one another. Import the packaged ZIP in the Mods manager, enable **Modern UI
 Suite**, then apply and restart.
@@ -61,7 +80,7 @@ settings are left untouched.
 
 ## Settings
 
-Open **Options → Modern UI Suite**. The hub provides **Enable All**, **Disable
+Open **Options → Modern UI Suite**. The hub provides **Enable All UI**, **Disable
 All UI**, and a page for each component. Left or Right on a component in the
 hub toggles it directly; A opens its detailed settings.
 
@@ -74,8 +93,31 @@ but the expanded 255-slot/x999 storage support remains active. This is a save
 safety rule: lowering capacity while an expanded inventory exists could strand
 items. Cartridge `.sav` export still has the original cartridge limits.
 
-All seven components are enabled by default. **Disable All UI** preserves each
+All seven UI components are enabled by default. **Disable All UI** preserves each
 component's detailed preferences so they return unchanged when re-enabled.
+Both bulk UI actions leave the independent **QOL** setting unchanged.
+
+**QOL → UNLIMITED PP** is a single On/Off toggle, OFF on a fresh install.
+When On, eligible player moves can be selected and used even at zero PP,
+without consuming or permanently refilling their stored PP. Opponent PP
+handling stays native, Disable and other native restrictions still apply, and link
+battles retain native PP rules. Turning it Off immediately restores normal
+rules using the real stored PP. It works with Party, Move Colors, Battle HUD,
+or all seven UI components disabled. Battle PP readouts show **∞** when active;
+ordinary out-of-battle summaries retain the actual stored values.
+
+PC **BOX ONLY** defaults to Off. START → MULTIPLE SELECTIONS marks the focused
+Pokémon; A marks others on that same side (including other boxes), and A on an
+empty or opposite-side target places/swaps the group. Six box selections enable
+START → SWAP WHOLE PARTY. B cancels, and SELECT browses boxes deliberately.
+
+Move Colors **TEXT ALIGN** uses complete native lines for stable typing.
+**BOX COLOR** only overrides neutral panels at opacity 100; Default retains
+their original appearance. **INFO SIDE** keeps a bottom Power/PP strip at
+normal Gen 2 16:9 sizes; explicit side panels need at least 360 logical pixels,
+apart from the 161–223-pixel list fallback. Native 160-pixel command layouts,
+Text Only and independently owned third-party panels remain unchanged. Gen 1
+command/dialogue preferences apply to the Typed Move Colors Wide presenter.
 
 ## Compatibility API
 
@@ -103,11 +145,11 @@ luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/Modern-UI-Suite-v0.1.12.zip
+  -o build/modern_ui_suite-0.1.15.zip
 ```
 
-The live settings sweep opens every component page, drives all 31 persisted
-rows through all 77 advertised values, and captures each state:
+The live settings sweep opens every component page, drives the persisted
+preferences through their advertised values, and captures each state:
 
 ```sh
 SHOT_DIR=/tmp/modern-ui-suite-options \
