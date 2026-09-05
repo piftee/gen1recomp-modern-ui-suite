@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "api": 2,
   "games": [
     "gen1",
@@ -20,6 +20,7 @@
     "gen1_modern_ui",
     "DRAMATIC_SHAPE",
     "BATTLE_ART_VOXEL_FORK",
+    "BATTLE_ART_VOXEL_GEN2",
     "DRAMALESS_SHAPE",
     "CRYSTAL_251",
     "crystal_animated_sprites_with_shiny_visuals",

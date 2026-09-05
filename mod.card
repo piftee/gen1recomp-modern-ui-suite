@@ -17,6 +17,7 @@ return {
       "Safe PC group selections, whole-party swaps and optional box-local navigation",
       "Stable battle text alignment, full-opacity neutral colors and responsive information placement",
       "Gen 2 full-width 2x2 moves with a bottom Power/PP strip and amber held-source border",
+      "Battle Art 2.1.0 Gen 2 compatibility: retain active 3D battles with coloured move cards",
       "Exact-source Gen 2 PC/Pokedex portrait cutouts that preserve genuine white artwork",
       "Live hook gating and native-screen fallbacks",
       "Automatic import of saved settings from the standalone releases",

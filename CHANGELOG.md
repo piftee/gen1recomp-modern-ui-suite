@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.16 - 2026-09-05
+
+- Fix Battle Art 2.1.0's Gen 2 3D battles being covered by the suite's flat
+  battle presentation. Recognize `BATTLE_ART_VOXEL_GEN2` and query its public
+  scene contract with the live battle screen, retaining support for older
+  providers that identify scenes with the battle model.
+- Declare the new Battle Art ID as an optional dependency so it installs its
+  renderer before the suite captures that renderer.
+- Keep Battle Art's arena, sprites, camera and animation composition while
+  the suite's move cards remain available. Restore normal suite presentation
+  when no active 3D scene owns this battle.
+- Honor Battle HUD OFF immediately on an already-open Gen 2 battle.
+- Add actual-release native coverage for 3D scenes, component toggles, aspect
+  ratios, move navigation/reordering, animation and 3D OFF/ON transitions.
+- Update the embedded Battle Info HUD ledger to 0.9.4.
+
 ## 0.1.15 - 2026-09-05
 
 - Corrected Gen 2 caught/nickname dialogue: native page wrapping and glyph-safe
