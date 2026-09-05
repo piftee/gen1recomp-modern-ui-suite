@@ -1,5 +1,6 @@
 -- Shared workspace navigation/layout; native Gen 2 storage and Mail records.
 return function(mod)
+  mod:load("gen2_catch_storage.lua")(mod)
   local cutoutSource = assert(mod:read("gen2_portrait_cutouts.lua"))
   local PortraitCutouts = assert(load(cutoutSource, "@" .. mod.path
     .. "/gen2_portrait_cutouts.lua"))()

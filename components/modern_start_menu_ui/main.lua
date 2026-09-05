@@ -44,9 +44,59 @@ return function(mod)
   for _, choice in ipairs(ICON_CHOICES) do ICON_VALUES[choice[2]] = true end
   local customEntries, customEntryOrder = {}, {}
   local presentation
+  local liveMenus = setmetatable({}, { __mode = "k" })
 
   local function setOption(game, key, value)
     return mod.options:set(game, key, value)
+  end
+
+  local function savedOrder()
+    local order = mod.options:get("icon_order")
+    return type(order) == "table" and order or {}
+  end
+
+  local function rememberLiveMenu(menu, game)
+    if not game then return end
+    local entries, byKey, occurrences = {}, {}, {}
+    for _, item in ipairs(menu.items) do
+      local base = presentation.entryKeyFor(item)
+      occurrences[base] = (occurrences[base] or 0) + 1
+      local key = base .. (occurrences[base] > 1 and ("#" .. occurrences[base]) or "")
+      local entry = { key = key, label = tostring(item.label or item.id or "MENU"), item = item }
+      entries[#entries + 1], byKey[key] = entry, entry
+    end
+    local ordered, used = {}, {}
+    for _, key in ipairs(savedOrder()) do
+      if byKey[key] and not used[key] then
+        ordered[#ordered + 1], used[key] = byKey[key], true
+      end
+    end
+    for _, entry in ipairs(entries) do
+      if not used[entry.key] then ordered[#ordered + 1] = entry end
+    end
+    -- Keep the original array shared with Gen 2's native list controller.
+    for index, entry in ipairs(ordered) do menu.items[index] = entry.item end
+    liveMenus[game] = ordered
+  end
+
+  local function liveEntries(game)
+    return liveMenus[game] or {}
+  end
+
+  local function setLiveOrder(game, entries)
+    local order, seen = {}, {}
+    for _, entry in ipairs(entries) do
+      order[#order + 1], seen[entry.key] = entry.key, true
+    end
+    -- Retain unavailable keys so temporarily hidden actions remain eligible
+    -- when the native START menu includes them again.
+    for _, key in ipairs(savedOrder()) do
+      if not seen[key] then order[#order + 1], seen[key] = key, true end
+    end
+    setOption(game, "icon_order", order)
+    local snapshot = {}
+    for i, entry in ipairs(entries) do snapshot[i] = entry end
+    liveMenus[game] = snapshot
   end
 
   local function choiceLabel(key)
@@ -181,6 +231,8 @@ return function(mod)
       stepPosition = stepPosition,
       clockLabel = clockLabel,
       stepClock = stepClock,
+      liveEntries = liveEntries,
+      setLiveOrder = setLiveOrder,
       customEntries = customEntries,
       customEntryOrder = customEntryOrder,
       iconChoices = ICON_CHOICES,
@@ -278,6 +330,7 @@ return function(mod)
         source)
       return menu
     end
+    rememberLiveMenu(menu, game or menu.game)
     local ok, decorated = pcall(presentation.decorate, menu, game or menu.game)
     if not ok then
       mod.log:error("could not decorate START menu through %s: %s",

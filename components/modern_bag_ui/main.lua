@@ -3,6 +3,29 @@
 -- Every item effect, target picker, battle turn, toss prompt and callback
 -- continues to run through src/ui/BagMenu.lua.
 return function(mod)
+  local function loadFactory(filename)
+    local source, readErr = mod:read(filename)
+    if not source then
+      mod.log:error("%s is missing (%s); reinstall the mod", filename,
+        tostring(readErr or "unknown read error"))
+      return nil
+    end
+
+    local chunk, compileErr = load(source, "@" .. mod.path .. "/" .. filename)
+    if not chunk then
+      mod.log:error("%s did not compile: %s", filename, tostring(compileErr))
+      return nil
+    end
+
+    local ok, factory = pcall(chunk)
+    if not ok or type(factory) ~= "function" then
+      mod.log:error("%s must return a factory function: %s", filename,
+        tostring(factory))
+      return nil
+    end
+    return factory
+  end
+
   local SKINS = {
     { label = "MODERN", value = "modern" },
     { label = "POCKET", value = "classic_pocket" },
@@ -15,6 +38,15 @@ return function(mod)
         { SKINS[1].label, SKINS[1].value },
         { SKINS[2].label, SKINS[2].value },
       } },
+  }
+  optionSchema[#optionSchema + 1] = {
+    key = "hide_all", label = "HIDE ALL ITEMS", type = "toggle", default = false,
+  }
+  optionSchema[#optionSchema + 1] = {
+    key = "open_on", label = "OPEN ON", type = "choice", default = "all",
+    choices = { { "ALL", "all" }, { "ITEMS", "items" },
+      { "MEDICINE", "medicine" }, { "BALLS", "balls" },
+      { "TMs", "machines" }, { "KEY", "key" } },
   }
   mod.options:define(optionSchema)
 
@@ -74,6 +106,13 @@ return function(mod)
     end
   end
 
+  local makePockets = loadFactory("pockets.lua")
+  if not makePockets then return end
+  local pockets = makePockets(mod, function(game, key, value)
+    return setOption(game, mod.id, key, value)
+  end)
+  mod.exports.pocketSettings = pockets
+
   local function bagOptionRows()
     local rows = {
       {
@@ -87,6 +126,39 @@ return function(mod)
           return true
         end,
       },
+    }
+    for _, row in ipairs({ optionSchema[2], optionSchema[3] }) do
+      local source = row
+      rows[#rows + 1] = {
+        id = "modern_bag_ui_" .. source.key, label = source.label,
+        value = function(game)
+          local value = optionValue(game, mod.id, source.key, source.default)
+          if source.type == "toggle" then return value and "ON" or "OFF" end
+          for _, choice in ipairs(source.choices) do
+            if choice[2] == value then return choice[1] end
+          end
+          return source.choices[1][1]
+        end,
+        step = function(game, direction)
+          local value = optionValue(game, mod.id, source.key, source.default)
+          if source.type == "toggle" then value = not value
+          else
+            local index = 1
+            for i, choice in ipairs(source.choices) do
+              if choice[2] == value then index = i break end
+            end
+            value = source.choices[(index - 1 + (direction or 1)) % #source.choices + 1][2]
+          end
+          setOption(game, mod.id, source.key, value)
+          if game.writeOptions then pcall(game.writeOptions, game) end
+          return true
+        end,
+      }
+    end
+    rows[#rows + 1] = {
+      id = "modern_bag_ui_pocket_order", label = "BAG POCKET ORDER",
+      value = function() return "OPEN" end, activate = pockets.openOrder,
+      step = pockets.openOrder,
     }
     if usefulBag then
       rows[#rows + 1] = {
@@ -159,33 +231,11 @@ return function(mod)
   local GameVersion = require("src.core.GameVersion")
   if type(GameVersion.generation) == "function"
       and GameVersion.generation() == 2 then
-    return mod:load("gen2.lua")(mod, {
+    return assert(loadFactory("gen2.lua"))(mod, {
+      pockets = pockets,
       skins = SKINS,
       skinIndex = skinIndex,
     })
-  end
-
-  local function loadFactory(filename)
-    local source, readErr = mod:read(filename)
-    if not source then
-      mod.log:error("%s is missing (%s); reinstall the mod", filename,
-        tostring(readErr or "unknown read error"))
-      return nil
-    end
-
-    local chunk, compileErr = load(source, "@" .. mod.path .. "/" .. filename)
-    if not chunk then
-      mod.log:error("%s did not compile: %s", filename, tostring(compileErr))
-      return nil
-    end
-
-    local ok, factory = pcall(chunk)
-    if not ok or type(factory) ~= "function" then
-      mod.log:error("%s must return a factory function: %s", filename,
-        tostring(factory))
-      return nil
-    end
-    return factory
   end
 
   -- Compile both parts before installing either one so a damaged archive
@@ -199,6 +249,7 @@ return function(mod)
   -- can decorate it instead of silently falling back to the stock BagMenu.
   local upstreamBagScreen = mod.content.screens:get("BagMenu")
   local compatibility = {
+    pockets = pockets,
     usefulBag = mod.find("useful_bag") ~= nil,
     kantoReforged = kantoReforged ~= nil,
     upstreamBagScreen = kantoReforged and upstreamBagScreen or nil,

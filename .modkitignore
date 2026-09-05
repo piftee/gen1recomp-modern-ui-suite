@@ -1,4 +1,6 @@
 tests/modern_ui_suite_test.lua
+tests/checklist_test.lua
+tests/checklist_runtime_driver.lua
 tests/preview_driver.lua
 tests/gen2_pokedex_move_driver.lua
 tests/gen2_bag_parity_test.lua
@@ -24,3 +26,8 @@ tests/battle_meters_test.lua
 screenshots/
 screenshots/gen1-wide-hud.png
 screenshots/gen1-battle-art-hud.png
+
+tests/gen2_catch_storage_test.lua
+tests/gen2_catch_storage_driver.lua
+tests/gen2_party_refusal_driver.lua
+tests/gen2_party_navigation_test.lua

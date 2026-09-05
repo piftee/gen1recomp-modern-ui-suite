@@ -6,10 +6,10 @@ loaded from the legacy directories.
 
 | Component | Imported version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.19 |
-| Modern Party UI | 0.4.9 |
-| Modern Bag UI | 0.6.1 |
-| Modern PC UI | 0.6.1 |
+| Modern Start Menu UI | 0.1.20 |
+| Modern Party UI | 0.4.11 |
+| Modern Bag UI | 0.6.2 |
+| Modern PC UI | 0.6.2 |
 | Modern Pokedex UI | 0.2.13 |
 | Battle Info HUD | 0.10.1 |
 | Typed Move Colors | 0.5.1 |
@@ -52,6 +52,9 @@ but prevents Gender Mod and Crystal 251 from painting the same native cell.
 7. Record player-visible behavior in `CHANGELOG.md` and rebuild the ZIP.
 
 Do not wholesale synchronize standalone directories: their controllers and
-Gen 1 presentation can intentionally differ. This corrective build explicitly
-shares only the reviewed PC/Pokedex sprite helpers and Typed Gen 2 fixes with
-the corresponding standalone sources. Unlimited PP has its own standalone.
+Gen 1 presentation can intentionally differ. The 0.1.19 update also shares the reviewed Party controls, Start order editor,
+and Bag preferences with their standalone versions. Bag additionally receives
+the suite’s existing header money, description scrolling and Gen 2 pockets.
+The 0.1.20 update shares the Gen 2 catch-storage routing helper with standalone
+Modern PC UI 0.6.2, and the visible Gen 2 party-refusal messages with
+standalone Modern Party UI 0.4.10. Unlimited PP has its own standalone.
