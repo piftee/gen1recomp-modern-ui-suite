@@ -345,12 +345,37 @@ return function(mod)
       setColor(INK_WHITE)
       G.rectangle("fill", 9, 122, 3, 5)
     else
-      drawInk("B CANCEL", 5, 119, 66, INK_LIGHT)
+      local hint = self.modernPartyForcedChoice and "A SEND OUT"
+        or self.switchFrom and "SEL DROP B CANCEL"
+        or (self.wantsSubmenu and not self.battle and not self.tmhm
+          and not self.softboiledFrom and "SEL PICK A OK B BACK")
+        or "B CANCEL"
+      drawInk(hint, 5, 119, width - 10, INK_LIGHT)
     end
     drawInkRight(#self.party == 0 and PartyMenu.PROMPTS.none or prompt,
       width - 5, 132, width - 10, INK_WHITE)
     drawPartySubmenu(self)
     Font.useBattleExtra(wasBattle)
+    -- Native refusals (fainted Pokémon, Eggs, already-out or trapped) and
+    -- item results own input until A/B acknowledges them. Hiding this box
+    -- made the otherwise unchanged picker look frozen until B was pressed.
+    local result = self.itemResult
+    if result and result.text and not self:itemResultClimbing() then
+      setColor(MODAL_DARK)
+      chamfer("fill", 2, 95, width - 4, 47, 3)
+      setColor(HEADER_LIGHT)
+      G.setLineWidth(1)
+      chamfer("line", 2.5, 95.5, width - 5, 46, 3)
+      local y = 101
+      for line in tostring(result.text):gmatch("[^\n]+") do
+        if y > 113 then break end
+        drawInk(line, 8, y, width - 16, INK_WHITE)
+        y = y + 12
+      end
+      if not result.auto then
+        drawInkRight("A/B CONTINUE", width - 8, 131, width - 16, INK_LIGHT)
+      end
+    end
     G.setColor(1, 1, 1, 1)
   end
 
@@ -411,11 +436,18 @@ return function(mod)
     elseif direction == "up" then
       local target = index - 2
       if target >= 1 then return target, column end
-      return allowCancel and cancel or index, column
+      if allowCancel then return cancel, column end
+      target = count
+      while target > 1 and (target - 1) % 2 ~= column do target = target - 1 end
+      if target == index then target = (index - 2) % count + 1 end
+      return target, (target - 1) % 2
     elseif direction == "down" then
       local target = index + 2
       if target <= count then return target, column end
-      return allowCancel and cancel or index, column
+      if allowCancel then return cancel, column end
+      target = column + 1
+      if target == index then target = index % count + 1 end
+      return target, (target - 1) % 2
     end
     return index, column
   end
@@ -833,16 +865,23 @@ return function(mod)
     local inherited = mod.content.screens:get(id)
     local provider = inherited or native
     local record = { new = function(game, ...)
-      return decorate(provider.new(game, ...), game)
+      return decorate(provider.new(game, ...), game, ...)
     end }
     if inherited then mod.content.screens:override(id, record)
     else mod.content.screens:register(id, record) end
   end
 
-  local function decorateParty(menu)
+  local function decorateParty(menu, game, opts)
     if type(menu) ~= "table" or menu.modernPartyGeneration == 2 then return menu end
     menu.modernPartyUI = true
     menu.modernPartyGeneration = 2
+    menu.modernPartyForcedChoice = opts and opts.battle == true
+      and opts.battleSubmenu ~= true and opts.prompt == "which"
+    local nativeCount = menu.count
+    if menu.modernPartyForcedChoice and nativeCount then
+      menu.count = function(self) return #self.party end
+      menu.index = math.max(1, math.min(menu.index, #menu.party))
+    end
     menu.classicGen2PartyPanel = menu.drawPanel
     menu.drawPanel = modernPartyPanel
     local nativeUpdate = menu.update
@@ -850,6 +889,18 @@ return function(mod)
       menu.classicGen2PartyUpdate = nativeUpdate
       menu.update = function(self, dt)
         local input = self.game and self.game.input
+        if input and input.wasPressed and not self.submenu and not self.itemResult
+            and not self.softboiledFrom and not self.battle and not self.tmhm
+            and self.wantsSubmenu and not self.wantsBattleSubmenu
+            and self.save and self.party == self.save.party
+            and input:wasPressed("select") then
+          if self.switchFrom then
+            self:finishSwitch() -- also carries slot-indexed mail with its owner
+          elseif self.party[self.index] then
+            self:beginSwitch(self.index)
+          end
+          return
+        end
         local renderedWidth = tonumber(self.modernPartyWideWidth)
           or tonumber(self.modernPartyLastWideWidth) or 160
 
@@ -864,7 +915,7 @@ return function(mod)
           end
           if direction then
             local count = #(self.party or {})
-            local noCancel = self.switchFrom or self.softboiledFrom
+            local noCancel = self.switchFrom or self.softboiledFrom or self.modernPartyForcedChoice
             local nextIndex, nextColumn = partyGridIndex(self.index, count,
               direction, not noCancel, self.modernPartyGridColumn)
             self.index = nextIndex or self.index

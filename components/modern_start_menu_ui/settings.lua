@@ -150,6 +150,45 @@ return function(mod, presentation, config)
     return picker
   end
 
+  function Settings.openOrder(game)
+    if not (ListMenu and game and game.stack) then return false end
+    local entries, rows = {}, {}
+    for index, entry in ipairs(config.liveEntries(game)) do
+      entries[index] = entry
+      rows[index] = { label = compactLabel(entry.label), value = entry.key }
+    end
+    if #rows == 0 then rows[1] = { label = "OPEN START ONCE" } end
+    local menu = ListMenu.new(game, "START ICON ORDER", rows, {
+      wrap = true, keyRepeat = true,
+      footer = #entries > 0 and "L/R MOVE  B BACK" or "B BACK",
+      onChoose = function() end,
+    })
+    menu.screenId = mod.id .. ":icon_order"
+    local baseUpdate = menu.update
+    menu.update = function(self, dt)
+      local input = self.game.input
+      local delta = input and input:wasPressed("left") and -1
+        or input and input:wasPressed("right") and 1
+      if delta then
+        local from, to = self.index, self.index + delta
+        if entries[from] and entries[to] then
+          entries[from], entries[to] = entries[to], entries[from]
+          self.items[from], self.items[to] = self.items[to], self.items[from]
+          self.index = to
+          self.scroll = math.max(0, math.min(self.scroll, to - 1))
+          if to > self.scroll + self.rows then self.scroll = to - self.rows end
+          config.setLiveOrder(game, entries)
+          if game.writeOptions then pcall(game.writeOptions, game) end
+          beep(game)
+        end
+        return
+      end
+      return baseUpdate(self, dt)
+    end
+    game.stack:push(menu)
+    return true
+  end
+
   local function buildItems(game, iconsOnly)
     local items = {}
     if not iconsOnly then
@@ -195,6 +234,10 @@ return function(mod, presentation, config)
         kind = "empty",
       }
     end
+    if not iconsOnly then
+      items[#items + 1] = { id = mod.id .. ":order", label = "START ICON ORDER",
+        right = "OPEN", kind = "order" }
+    end
     items[#items + 1] = { id = mod.id .. ":back", label = "BACK", cancel = true }
     return items
   end
@@ -236,6 +279,8 @@ return function(mod, presentation, config)
         config.stepClock(game, 1)
         persist()
         refresh(item.id)
+      elseif item.kind == "order" then
+        Settings.openOrder(game)
       elseif item.kind == "icon" then
         local picker = Settings.newPicker(game, item.key, item.entry,
           function() refresh(item.id) end)

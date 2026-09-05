@@ -678,15 +678,18 @@ return function(mod, compatibility)
     if not id then return "items" end
     local def = game.data.items[id] or {}
     local explicit = normalizedPocket(def.bagPocket or def.pocket)
+    if explicit == "battle" then explicit = "items" end
+    if explicit == "berries" and not compatibility.kantoReforged then explicit = "medicine" end
+    if explicit == "medicine" and compatibility.kantoReforged then explicit = "items" end
     if explicit then return explicit end
     if BERRIES[id] or def.holdEffect == "berry"
         or def.holdEffect == "berry_status" then
-      return "berries"
+      return compatibility.kantoReforged and "berries" or "medicine"
     end
     if ItemEffects.isBall(id) or def.ball then return "balls" end
     if def.machine then return "machines" end
     if def.keyItem then return "key" end
-    if MEDICINE[id] then return "medicine" end
+    if MEDICINE[id] then return compatibility.kantoReforged and "items" or "medicine" end
     return "items"
   end
 
@@ -866,7 +869,13 @@ return function(mod, compatibility)
     if menu.modernBagExternalController then
       local api = menu.gen1ModernUi
       if api and type(api.switchPocket) == "function" then
-        api:switchPocket(delta or 0)
+        local pockets = pocketsFor(menu)
+        local target = pockets[((menu.modernBagPocket - 1 + (delta or 0)) % #pockets) + 1]
+        local nativeIndex
+        for index, source in ipairs(menu.__pocketIds or {}) do
+          if source == (target.source or target.key) then nativeIndex = index break end
+        end
+        api:switchPocket(nativeIndex and (nativeIndex - menu.__pocketIndex) or 0)
         syncExternalPocketIndex(menu)
         clampList(menu)
         menu.modernBagInventorySignature = inventorySignature(menu)
@@ -978,6 +987,16 @@ return function(mod, compatibility)
     for index = #order, 1, -1 do order[index] = nil end
     for index, entry in ipairs(entries) do order[index] = entry.id end
     menu.modernBagSwapId = nil
+    if kind == "category" then
+      -- Grouping the whole inventory is otherwise invisible from a single
+      -- filtered pocket. Respect Hide All; never recreate a disabled tab.
+      for index, pocket in ipairs(pocketsFor(menu)) do
+        if pocket.key == "all" and index ~= menu.modernBagPocket then
+          switchPocket(menu, index - menu.modernBagPocket)
+          break
+        end
+      end
+    end
     rebuildPocket(menu, selected)
     return true
   end
@@ -1036,11 +1055,14 @@ return function(mod, compatibility)
     return counts
   end
 
-  local function drawPocketSymbol(key, x, y, size)
+  local function drawPocketSymbol(key, x, y, size, active)
     x, y, size = math.floor(x), math.floor(y), math.max(8, math.floor(size))
     local unit = math.max(1, math.floor(size / 8))
     if key == "all" then
-      gray(DARK)
+      -- The active tab is DARK too, so lift the backpack's silhouette
+      -- and pocket outline to white while it is selected.
+      local outline = active and WHITE or DARK
+      gray(outline)
       love.graphics.rectangle("line", x + 2 * unit, y + unit,
         size - 4 * unit, 3 * unit)
       love.graphics.rectangle("fill", x, y + 3 * unit,
@@ -1052,7 +1074,7 @@ return function(mod, compatibility)
       gray(LIGHT)
       love.graphics.rectangle("fill", x + 3 * unit, y + 3 * unit,
         size - 6 * unit, size - 4 * unit)
-      gray(DARK)
+      gray(outline)
       love.graphics.rectangle("line", x + 3 * unit, y + 5 * unit,
         size - 6 * unit, 2 * unit)
     elseif key == "items" then
@@ -1217,7 +1239,8 @@ return function(mod, compatibility)
       end
       local iconSize = math.min(10, tabW - 4)
       drawPocketSymbol(pocket.key,
-        x + math.floor((tabW - iconSize) / 2), layout.tabsY + 4, iconSize)
+        x + math.floor((tabW - iconSize) / 2), layout.tabsY + 4, iconSize,
+        active)
       gray(active and WHITE or DARK)
       local markerW = math.min(tabW - 6, math.max(2, counts[pocket.key] or 0))
       love.graphics.rectangle("fill", x + math.floor((tabW - markerW) / 2),
@@ -2180,7 +2203,8 @@ return function(mod, compatibility)
     menu.holdsUIAnchors = true
     menu.modernBagUI = true
     menu.modernBagLayout = "pc-pockets"
-    menu.modernBagPockets = POCKETS
+    menu.modernBagPockets = compatibility.pockets
+      and compatibility.pockets.ordered(POCKETS) or POCKETS
     menu.modernBagCategoryFor = function(_, id)
       return categoryFor(menu.game, id)
     end
@@ -2216,7 +2240,9 @@ return function(mod, compatibility)
       menu.modernBagPocketState = {}
       menu.modernBagSwapId = nil
       menu.modernBagExternalController = externalController
-      menu.modernBagPockets = externalController and KANTO_POCKETS or POCKETS
+      local sourcePockets = externalController and KANTO_POCKETS or POCKETS
+      menu.modernBagPockets = compatibility.pockets
+        and compatibility.pockets.ordered(sourcePockets) or sourcePockets
       syncExternalPocketIndex(menu)
       menu.rows = layoutFor(menu).rows
 
@@ -2258,6 +2284,9 @@ return function(mod, compatibility)
       menu.modernBagRefresh = rebuildPocket
       menu.modernBagSort = sortBag
       menu.modernBagOpenSort = openSortMenu
+      local initial = compatibility.pockets and compatibility.pockets.opening(menu.modernBagPockets) or 1
+      if externalController then switchPocket(menu, initial - menu.modernBagPocket)
+      else menu.modernBagPocket = initial end
       rebuildPocket(menu)
       return menu
     end,

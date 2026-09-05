@@ -287,9 +287,11 @@ return function(mod, shared)
       compact = "K", title = "KEY ITEMS" },
   }
 
-  local MODERN_POCKET_INDEX = {}
-  for index, pocket in ipairs(MODERN_POCKETS) do
-    MODERN_POCKET_INDEX[pocket.id] = index
+  for index, key in ipairs({"all", "items", "medicine", "balls", "machines", "key"}) do
+    MODERN_POCKETS[index].key = key
+  end
+  local function modernPockets(menu)
+    return menu.modernBagPockets or MODERN_POCKETS
   end
 
   local NATIVE_POCKET_INDEX = {}
@@ -335,8 +337,8 @@ return function(mod, shared)
   end
 
   local function activeModernPocket(menu)
-    return MODERN_POCKETS[menu.modernBagPocketIndex or 1]
-      or MODERN_POCKETS[1]
+    local pockets = modernPockets(menu)
+    return pockets[menu.modernBagPocketIndex or 1] or pockets[1]
   end
 
   local function pocketLabelFor(pocket, tabWidth)
@@ -349,11 +351,11 @@ return function(mod, shared)
     return fitText(label, tabWidth)
   end
 
-  local function modernTabLabels(width)
-    local labels = {}
-    for i, pocket in ipairs(MODERN_POCKETS) do
-      local x = math.floor((i - 1) * width / #MODERN_POCKETS)
-      local nextX = math.floor(i * width / #MODERN_POCKETS)
+  local function modernTabLabels(menu, width)
+    local labels, pockets = {}, modernPockets(menu)
+    for i, pocket in ipairs(pockets) do
+      local x = math.floor((i - 1) * width / #pockets)
+      local nextX = math.floor(i * width / #pockets)
       labels[i] = pocketLabelFor(pocket, nextX - x)
     end
     return labels
@@ -549,8 +551,10 @@ return function(mod, shared)
         }
       end
     end
-    local ranks = { ITEMS = 1, MEDICINE = 2, BALL = 3, TM_HM = 4,
-      KEY_ITEM = 5 }
+    local ranks = {}
+    for index, pocket in ipairs(modernPockets(menu)) do
+      if pocket.id ~= "ALL" then ranks[pocket.id] = index end
+    end
     table.sort(entries, function(a, b)
       if kind == "category" then
         local av, bv = ranks[a.category] or 99, ranks[b.category] or 99
@@ -574,6 +578,15 @@ return function(mod, shared)
     end
     for index = #order, 1, -1 do order[index] = nil end
     for index, entry in ipairs(entries) do order[index] = entry.id end
+    if kind == "category" and parityEnabled(menu) then
+      for index, pocket in ipairs(modernPockets(menu)) do
+        if pocket.id == "ALL" then
+          saveModernPocketState(menu)
+          menu.modernBagPocketIndex = index
+          break
+        end
+      end
+    end
     menu.modernBagSortKind = kind
     menu.modernBagSortDescending = descending and true or false
     menu.modernBagRestoreState = { id = selected }
@@ -727,7 +740,7 @@ return function(mod, shared)
     self.modernBagHeaderCash = header.cash
     self.modernBagHeaderBounds = header
 
-    local pockets = parityEnabled(self) and MODERN_POCKETS
+    local pockets = parityEnabled(self) and modernPockets(self)
       or (PackMenu.POCKETS or {})
     local selectedPocket = parityEnabled(self) and self.modernBagPocketIndex
       or self.pocketIndex
@@ -847,6 +860,17 @@ return function(mod, shared)
     local baseArmSwitch = menu.armSwitch
     local basePlaceSwitch = menu.placeSwitch
     local baseEndSwitch = menu.endSwitch
+    menu.modernBagPockets = shared and shared.pockets
+      and shared.pockets.ordered(MODERN_POCKETS) or MODERN_POCKETS
+    local pocketIndex = {}
+    for index, pocket in ipairs(menu.modernBagPockets) do pocketIndex[pocket.id] = index end
+    local nativeSource = {}
+    local nativeKeys = { ITEM = "items", BALL = "balls", KEY_ITEM = "key", TM_HM = "machines" }
+    for _, source in ipairs(PackMenu.POCKETS or {}) do
+      nativeSource[#nativeSource + 1] = { key = nativeKeys[source.id], id = source.id }
+    end
+    menu.modernBagNativePockets = shared and shared.pockets
+      and shared.pockets.ordered(nativeSource) or nativeSource
     menu.modernBagUI = true
     menu.modernBagGeneration = 2
     menu.classicGen2PackPanel = nativePanel
@@ -865,10 +889,18 @@ return function(mod, shared)
     local specialPack = type(opts) == "table"
       and (opts.pocket or opts.give or opts.battle or opts.tutorial)
     if not specialPack and persistent and persistent.pocket
-        and MODERN_POCKET_INDEX[persistent.pocket] then
+        and pocketIndex[persistent.pocket] then
       initialId = persistent.pocket
     end
-    menu.modernBagPocketIndex = MODERN_POCKET_INDEX[initialId] or 1
+    if not specialPack and shared and shared.pockets then
+      initialId = menu.modernBagPockets[shared.pockets.opening(menu.modernBagPockets)].id
+    end
+    if not specialPack and shared and shared.pockets
+        and option(menu.game or game, "skin", "modern") == "classic_pocket" then
+      local native = menu.modernBagNativePockets[shared.pockets.opening(menu.modernBagNativePockets)]
+      menu.pocketIndex = NATIVE_POCKET_INDEX[native.id] or 1
+    end
+    menu.modernBagPocketIndex = pocketIndex[initialId] or 1
     menu.modernBagRestoreState = menu.modernBagPocketState[initialId]
     menu.modernBagControllerReady = type(baseUpdate) == "function"
       and type(baseRebuild) == "function"
@@ -911,11 +943,15 @@ return function(mod, shared)
 
       menu.switchPocket = function(self, delta)
         if not parityEnabled(self, game) then
-          return baseSwitchPocket(self, delta)
+          local current = (PackMenu.POCKETS[self.pocketIndex] or {}).id
+          local pockets, index = self.modernBagNativePockets, 1
+          for i, pocket in ipairs(pockets) do if pocket.id == current then index = i break end end
+          local target = pockets[(index - 1 + (delta or 0)) % #pockets + 1]
+          return baseSwitchPocket(self, (NATIVE_POCKET_INDEX[target.id] or 1) - self.pocketIndex)
         end
         self:storeCursor()
         self.modernBagPocketIndex = (self.modernBagPocketIndex - 1
-          + (delta or 0)) % #MODERN_POCKETS + 1
+          + (delta or 0)) % #modernPockets(self) + 1
         local view = activeModernPocket(self)
         local state = self.modernBagPocketState[view.id]
         if not state and view.source and view.id ~= "ITEMS"
@@ -1032,7 +1068,7 @@ return function(mod, shared)
       local modern = parityEnabled(self, game)
       local width = tonumber(self.modernBagWideWidth
         or self.modernBagLastWideWidth) or 160
-      return { generation = 2, pockets = modern and #MODERN_POCKETS or 4,
+      return { generation = 2, pockets = modern and #modernPockets(self) or 4,
         pocket = modern and activeModernPocket(self).id
           or ((PackMenu.POCKETS or {})[self.pocketIndex or 1] or {}).id,
         skin = option(self.game or game, "skin", "modern"),
@@ -1040,7 +1076,7 @@ return function(mod, shared)
         listWidth = modern and width or math.min(width, 160),
         detailPosition = modern and "bottom" or "native",
         detailWidth = modern and width or math.min(width, 160),
-        tabLabels = modern and modernTabLabels(width) or nil }
+        tabLabels = modern and modernTabLabels(self, width) or nil }
     end
     menu.modernBagQolInfo = function(self)
       local scroll = self.modernBagDescriptionScroll or {}

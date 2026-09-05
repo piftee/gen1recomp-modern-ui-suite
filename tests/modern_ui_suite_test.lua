@@ -27,10 +27,10 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.19",
-  modern_party_ui = "0.4.9",
-  modern_bag_ui = "0.6.1",
-  modern_pc_ui = "0.6.1",
+  modern_start_menu_ui = "0.1.20",
+  modern_party_ui = "0.4.11",
+  modern_bag_ui = "0.6.2",
+  modern_pc_ui = "0.6.2",
   modern_pokedex_ui = "0.2.13",
   battle_info_hud = "0.10.1",
   typed_move_colors = "0.5.1",
@@ -54,8 +54,8 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 36,
-  "seven UI toggles, independent QoL and all 28 detailed preferences share one schema")
+T.eq(#schema, 38,
+  "seven UI toggles, independent QoL and all 30 detailed preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
   schemaByKey[row.key] = row
@@ -178,9 +178,9 @@ T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 -- the reverse/wrap path for that same individual option.
 local visitedRows = {}
 local expectedPageRows = {
-  modern_start_menu_ui = 5, -- enabled + 3 choices + icon picker
+  modern_start_menu_ui = 6, -- enabled + 3 choices + icon picker + order
   modern_party_ui = 11,
-  modern_bag_ui = 2,
+  modern_bag_ui = 5,
   modern_pc_ui = 2,
   modern_pokedex_ui = 4,
   battle_info_hud = 1,
@@ -244,6 +244,10 @@ for hubIndex = 3, 10 do
         "the vanilla icon screen explains that no custom actions exist")
       T.eq(icons.items[#icons.items].label, "BACK",
         "the empty vanilla icon screen always has an exit")
+      stack:pop()
+    elseif row.id == "start_menu.icon_order" or row.id == "bag.pocket_order" then
+      row.activate(game)
+      T.check(stack:top() ~= page, row.id .. " opens its editor")
       stack:pop()
     else
       T.check(false, "unexpected suite settings row: " .. tostring(row.id))
@@ -902,9 +906,9 @@ compatibilityRows[1].activate(compatibilityGame)
 local compatibilityHub = compatibilityStack:top()
 compatibilityHub.onChoose(compatibilityHub.items[5], compatibilityHub)
 local bagPage = compatibilityStack:top()
-T.eq(bagPage.rows[3] and bagPage.rows[3].id, "bag.companions",
+T.eq(bagPage.rows[6] and bagPage.rows[6].id, "bag.companions",
   "the Bag page offers companion settings without another root entry")
-bagPage.rows[3].activate(compatibilityGame)
+bagPage.rows[6].activate(compatibilityGame)
 local companionPage = compatibilityStack:top()
 T.eq(#(companionPage.rows or {}), 1,
   "the companion page removes the duplicate suite-owned skin setting")

@@ -36,7 +36,7 @@ return function(parent, components)
       exp_strip = "EXP STRIP", empty_slots = "EMPTY", pattern = "BACKDROP",
       responsive = "WIDE", rename_style = "RENAME",
     },
-    bag = { skin = "SKIN" },
+    bag = { skin = "SKIN", hide_all = "HIDE ALL", open_on = "OPEN ON" },
     pc = { box_exclusive = "BOX ONLY" },
     pokedex = {
       responsive = "WIDE", pattern = "BACKDROP", theme = "COLOURS",

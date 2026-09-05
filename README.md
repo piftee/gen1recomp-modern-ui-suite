@@ -35,7 +35,7 @@ A separate, optional Unlimited PP gameplay setting is OFF by default.
   The Modern skin places descriptions across the bottom so the tab rail and
   item list can use the full screen width.
   Both skins place exact money in the header. Fitting descriptions stay still;
-  overflow scrolls horizontally with a pause at each end, and resets when the
+  overflow pauses, scrolls left, holds briefly and jumps back to the start. It resets when the
   selected item, description or layout changes. Prompts and action overlays
   remain static.
 - **Direct Pokémon storage management** — see the party and current Box
@@ -107,6 +107,13 @@ rules using the real stored PP. It works with Party, Move Colors, Battle HUD,
 or all seven UI components disabled. Battle PP readouts show **∞** when active;
 ordinary out-of-battle summaries retain the actual stored values.
 
+Gen 2 **Modern PC UI** also routes ordinary wild catches to the next box with
+space when both the party and current box are full. It skips full boxes and
+wraps from Box 14 to Box 1. The destination becomes the active box before the
+throw and stays selected, including if the throw fails. A free party slot still
+takes priority; completely full storage consumes neither a ball nor a turn.
+This behavior follows the PC component's switch.
+
 PC **BOX ONLY** defaults to Off. START → MULTIPLE SELECTIONS marks the focused
 Pokémon; A marks others on that same side (including other boxes), and A on an
 empty or opposite-side target places/swaps the group. Six box selections enable
@@ -119,6 +126,25 @@ normal Gen 2 16:9 sizes; explicit side panels need at least 360 logical pixels,
 apart from the 161–223-pixel list fallback. Native 160-pixel command layouts,
 Text Only and independently owned third-party panels remain unchanged. Gen 1
 command/dialogue preferences apply to the Typed Move Colors Wide presenter.
+
+Party **Select** picks up the highlighted slot; **Select** on another slot swaps
+it. **B** cancels the hold. The footer shows pickup/drop hints. Battle replacement
+and item-target menus retain their native selection rules. In small wide parties,
+Up/Down can leave a column containing only one Pokémon. Gen 2 refusals
+(such as a fainted choice) display their native message and **A/B CONTINUE**
+instead of leaving the picker waiting behind an invisible message.
+
+Start Menu **START ICON ORDER** opens the full live list after you open Start
+once. Up/Down highlights an action; Left/Right moves it earlier/later. Native and
+mod-added actions are included, and the saved order applies when Start reopens.
+
+Bag **HIDE ALL ITEMS** removes the combined tab. **OPEN ON** chooses All, Items,
+Medicine, Balls, TMs/HMs or Key; an unavailable choice falls back to Items.
+**BAG POCKET ORDER** opens one editor: Select picks up a tab, Select swaps it
+with another, and B cancels the hold. The editor follows the available tabs,
+including Kanto Reforged and the four native pockets in Gen 2's Pocket skin.
+Category sorting groups the item list in tab order (or its reverse) and opens
+All Items to show the result when that tab is enabled.
 
 ## Gen 1 battle presentation
 
@@ -167,16 +193,19 @@ resolve to an embedded component; integrations should use the suite path above.
 ## Development
 
 The component sources under `components/` are the authoritative suite copies.
-The former standalone repositories are frozen legacy releases and are not read
-at runtime or during packaging.
+Standalone releases are maintained separately and are not read at runtime or
+during suite packaging.
 
 ```sh
 luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
 luajit mods/modern_ui_suite/tests/battle_meters_test.lua
+luajit mods/modern_ui_suite/tests/checklist_test.lua
+luajit mods/modern_ui_suite/tests/gen2_catch_storage_test.lua
+luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.18.zip
+  -o build/modern_ui_suite-0.1.20.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

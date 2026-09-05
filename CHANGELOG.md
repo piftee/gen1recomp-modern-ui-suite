@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.20 - 2026-09-05
+
+- Gen 2 Party: show native refusal and item-result messages with an A/B
+  acknowledgement hint. Selecting a fainted Pokémon previously left an
+  invisible message consuming input until A or B dismissed it.
+
+- Gen 2: when the party and current box are full, ordinary wild-ball attempts
+  automatically select the next box with space, wrapping from Box 14 to Box 1.
+  The selected box remains active for subsequent catches and PC visits.
+- Keep native capture data, held items, nickname prompts, Pokédex updates,
+  storage healing and specialty-ball effects. Full storage still refuses
+  without using a ball or a turn; trainer/contest/tutorial flows stay native.
+
+## 0.1.19 - 2026-09-05
+
+- Party: Select picks up a slot, Select drops/swaps, and B cancels the hold.
+  Add footer hints and preserve Gen 2 Mail ownership during swaps.
+- Fix vertical navigation getting stuck in a single-slot column, including
+  fainted-Pokémon replacement menus. Forced Gen 2 choices skip Cancel.
+- Start: add START ICON ORDER for every live native/mod action, with Left/Right
+  reordering and persistent preferences. Open Start once to discover the list.
+- Bag: add Hide All Items, Open On and a Select-based Bag Pocket Order editor.
+  Category sorting reveals its result in All Items when enabled; the selected
+  All Items backpack symbol now contrasts with its active tab.
+
 ## 0.1.18 - 2026-09-05
 
 - Suppress the original Gen 1 HP bar tiles while drawing the enhanced HUD,

@@ -58,7 +58,9 @@ return function(mod, settings, state, components)
     local page = stack and type(stack.top) == "function" and stack:top() or nil
     if opened ~= false and page and page ~= before and type(page.rows) == "table" then
       for index = #page.rows, 1, -1 do
-        if page.rows[index].id == "modern_bag_ui_skin" then
+        local id = page.rows[index].id
+        if id == "modern_bag_ui_skin" or id == "modern_bag_ui_hide_all"
+            or id == "modern_bag_ui_open_on" or id == "modern_bag_ui_pocket_order" then
           table.remove(page.rows, index)
         end
       end
@@ -112,8 +114,24 @@ return function(mod, settings, state, components)
           return openOriginalOptions(component, activeGame)
         end,
       }
-    elseif component.id == "modern_bag_ui"
-        and (mod.find("useful_bag") or mod.find("Kanto-Reforged")) then
+      rows[#rows + 1] = {
+        id = "start_menu.icon_order", label = "START ICON ORDER",
+        value = function() return "OPEN" end,
+        activate = function(activeGame)
+          local interface = component.exports and component.exports.settings
+          return interface and interface.openOrder(activeGame)
+        end,
+      }
+    elseif component.id == "modern_bag_ui" then
+      rows[#rows + 1] = {
+        id = "bag.pocket_order", label = "BAG POCKET ORDER",
+        value = function() return "OPEN" end,
+        activate = function(activeGame)
+          local interface = component.exports and component.exports.pocketSettings
+          return interface and interface.openOrder(activeGame)
+        end,
+      }
+      if mod.find("useful_bag") or mod.find("Kanto-Reforged") then
       rows[#rows + 1] = {
         id = "bag.companions",
         label = "COMPANION OPTIONS",
@@ -122,6 +140,7 @@ return function(mod, settings, state, components)
           return openBagCompanions(component, activeGame)
         end,
       }
+    end
     end
     local page = OptionsMenu.new(game)
     page.rows, page.view = rows, rows
