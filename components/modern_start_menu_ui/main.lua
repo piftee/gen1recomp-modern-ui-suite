@@ -5,10 +5,10 @@
 -- builds released before that hook existed.
 return function(mod)
   local optionSchema = {
-    { key = "theme", label = "START MENU THEME", type = "choice",
+    { key = "theme", label = "START MENU COLOUR", type = "choice",
       default = "map", choices = {
-        { "MAP", "map" }, { "RED", "red" },
-        { "BLUE", "blue" }, { "DMG", "dmg" },
+        { "AUTO", "map" }, { "RED", "red" },
+        { "BLUE", "blue" }, { "GREEN", "dmg" },
       } },
     { key = "position", label = "START MENU POSITION", type = "choice",
       default = "right", choices = {
@@ -219,7 +219,7 @@ return function(mod)
 
     out[#out + 1] = {
       id = "modern_start_menu_ui_theme",
-      label = "PHONE THEME",
+      label = "PHONE COLOUR",
       value = themeLabel,
       step = stepTheme,
     }

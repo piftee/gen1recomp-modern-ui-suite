@@ -305,25 +305,27 @@ return function(game)
     box[#box + 1] = assert(Mon.new(game.data, spec[1], spec[2]))
   end
   clear()
-  local pc = Screens.push(game, "Gen2BoxMenu", {
-    save = game.save, mode = "move",
+  local pc = Screens.push(game, "Gen2PcMenu", {
+    save = game.save, bills = true,
   })
-  pc.index = 2
+  pc.boxIndex = 2
   pc.update = function() end
   check(pc.modernPCGeneration == 2,
     "Modern PC owns the native fourteen-box screen")
-  capture("modern-pc", "Modern PC storage list")
+  check(pc.modernPCLayout == "party-and-box", "PC opens the direct workspace")
+  capture("modern-pc", "Modern PC storage grid")
   check(pc.modernPCLastWideWidth == expectedLogicalWidth,
     ("Modern PC uses a %dx144 logical layout"):format(expectedLogicalWidth))
-  pc.phase = "submenu"
-  pc.submenuIndex = 2
+  pc.actions = pc:modernPCActionItems()
+  pc.actionIndex = 2
   capture("modern-pc-actions", "Modern PC action menu")
-  pc:beginMove()
+  pc.actions = nil
+  pc:modernPCPickOrDrop()
   capture("modern-pc-insert", "Modern PC move destination")
-  pc.phase = nil
-  pc.message = "Saving... Leave ON!"
+  pc.held = nil
+  pc.status = "Moved CYNDAQUIL."
   capture("modern-pc-message", "Modern PC status message")
-  pc.message = nil
+  pc.status = nil
 
   -- Modern Pokedex UI: scroll to #152 so the screenshot itself proves the
   -- list is the 251-species Johto dex rather than a Gen 1 fallback.

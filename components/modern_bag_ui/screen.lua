@@ -197,8 +197,8 @@ return function(mod, compatibility)
     return text:sub(1, spans[count].to) .. "."
   end
 
-  local function drawText(text, x, y, maxWidth, shade)
-    text = fitText(text, maxWidth or Font.width(tostring(text or "")))
+  local function drawTextRaw(text, x, y, shade)
+    text = tostring(text or "")
     love.graphics.push("all")
     local shader = shaderForInk()
     if shader then
@@ -210,6 +210,16 @@ return function(mod, compatibility)
     Font.draw(text, math.floor(x), math.floor(y))
     love.graphics.pop()
     return Font.width(text)
+  end
+
+  local function drawText(text, x, y, maxWidth, shade)
+    text = fitText(text, maxWidth or Font.width(tostring(text or "")))
+    return drawTextRaw(text, x, y, shade)
+  end
+
+  local function moneyText(menu)
+    local save = menu and menu.game and menu.game.save
+    return ("¥%d"):format((save and tonumber(save.money)) or 0)
   end
 
   local function drawTextRight(text, right, y, maxWidth, shade)
@@ -298,6 +308,111 @@ return function(mod, compatibility)
       lines[#lines + 1] = fitText(current, maxWidth)
     end
     return lines
+  end
+
+  -- Preserve the useful part of the contributor's QoL change without making
+  -- every description move. Text that fits remains a conventional wrapped
+  -- paragraph. When it needs more rows, keep every complete leading row still
+  -- and marquee only the remaining tail through the final row. The content,
+  -- viewport and selection are all part of the key, so changing any of them
+  -- predictably returns the text to its beginning.
+  local function allWrappedLines(text, maxWidth)
+    local lines = {}
+    local source = tostring(text or ""):gsub("<NEXT>", "\n")
+    for paragraph in (source .. "\n"):gmatch("(.-)\n") do
+      local current = ""
+      for word in paragraph:gmatch("%S+") do
+        local candidate = current == "" and word or (current .. " " .. word)
+        if current ~= "" and Font.width(candidate) > maxWidth then
+          lines[#lines + 1] = current
+          current = word
+        else
+          current = candidate
+        end
+      end
+      if current ~= "" then lines[#lines + 1] = current end
+    end
+    return lines
+  end
+
+  local function descriptionScrollState(menu, key)
+    local state = menu.modernBagDescriptionScroll
+    if not state or state.key ~= key then
+      state = { key = key, elapsed = 0, offset = 0, overflow = false }
+      menu.modernBagDescriptionScroll = state
+    end
+    return state
+  end
+
+  local function clearDescriptionScroll(menu)
+    menu.modernBagDescriptionScroll = nil
+  end
+
+  local function drawReadableDescription(menu, key, text, x, y,
+      maxWidth, maxLines, shade)
+    text = tostring(text or "")
+    maxWidth = math.max(8, math.floor(maxWidth or 8))
+    maxLines = math.max(1, math.floor(maxLines or 1))
+    local lines = allWrappedLines(text, maxWidth)
+    local fits = #lines <= maxLines
+    for _, line in ipairs(lines) do
+      if Font.width(line) > maxWidth then fits = false break end
+    end
+
+    local stateKey = table.concat({ tostring(key or "description"), text,
+      tostring(maxWidth), tostring(maxLines) }, "\31")
+    local state = descriptionScrollState(menu, stateKey)
+    state.overflow = not fits
+    state.maxWidth, state.maxLines = maxWidth, maxLines
+    if fits then
+      state.offset, state.travel = 0, 0
+      for index, line in ipairs(lines) do
+        drawText(line, x, y + (index - 1) * 9, maxWidth, shade)
+      end
+      return false
+    end
+
+    local staticCount = math.max(0, maxLines - 1)
+    for index = 1, staticCount do
+      local line = lines[index]
+      if not line or Font.width(line) > maxWidth then
+        staticCount = 0
+        break
+      end
+    end
+    for index = 1, staticCount do
+      drawText(lines[index], x, y + (index - 1) * 9, maxWidth, shade)
+    end
+    local tail = {}
+    for index = staticCount + 1, #lines do tail[#tail + 1] = lines[index] end
+    if #tail == 0 then tail[1] = text end
+    local tailText = table.concat(tail, "  ")
+    local travel = math.max(0, Font.width(tailText) - maxWidth)
+    local holdStart, holdEnd, speed = 1.0, 0.75, 36
+    local moving = travel / speed
+    local cycle = holdStart + moving + holdEnd
+    local phase = cycle > 0 and ((state.elapsed or 0) % cycle) or 0
+    local offset
+    if phase <= holdStart then
+      offset = 0
+    elseif phase < holdStart + moving then
+      offset = math.min(travel, (phase - holdStart) * speed)
+    else
+      offset = travel
+    end
+    state.offset, state.travel = offset, travel
+    state.tailText, state.staticLines = tailText, staticCount
+
+    local lineY = y + staticCount * 9
+    if love.graphics.setScissor then
+      love.graphics.push("all")
+      love.graphics.setScissor(math.floor(x), math.floor(lineY), maxWidth, 9)
+      drawTextRaw(tailText, x - offset, lineY, shade)
+      love.graphics.pop()
+    else
+      drawText(tailText, x, lineY, maxWidth, shade)
+    end
+    return true
   end
 
   local function chamfer(mode, x, y, width, height, cut)
@@ -470,6 +585,9 @@ return function(mod, compatibility)
       local listY = topRail and (headerH + railH) or headerH
       local listW = topRail and width or (width - railW)
       local listH = detailY - listY
+      local headerLeftW = menu and not menu.modernBagListConfig
+        and math.max(48, Font.width(moneyText(menu)) + 4) or 48
+      headerLeftW = math.min(headerLeftW, width - 28)
       local rows = math.max(4, math.min(stacked and 10 or 6,
         math.floor((listH - 5) / ROW_H)))
       return {
@@ -484,8 +602,10 @@ return function(mod, compatibility)
         railH = railH,
         listX = listX, listY = listY,
         listW = listW, listH = listH,
-        headerAccentX = topRail and 48 or listX,
-        headerAccentW = topRail and 64 or listW,
+        headerAccentX = topRail and headerLeftW
+          or math.max(listX, headerLeftW),
+        headerAccentW = width - (topRail and headerLeftW
+          or math.max(listX, headerLeftW)),
         detailX = 0, detailY = detailY,
         detailW = width, detailH = detailH,
       }
@@ -1025,8 +1145,6 @@ return function(mod, compatibility)
     local config = listConfig(menu)
     gray(DARK)
     love.graphics.rectangle("fill", 0, 0, layout.width, layout.headerH)
-    drawText(Strings(config and config.header or "BAG"), 5,
-      layout.stacked and 2 or 4, 32, WHITE)
 
     local capacity
     if config and type(config.capacity) == "function" then
@@ -1035,8 +1153,15 @@ return function(mod, compatibility)
       capacity = ("%d/%d"):format(Bag.slots(menu.game.save),
         Bag.capacity(menu.game.data))
     end
-    drawTextRight(capacity, layout.width - 5, layout.stacked and 2 or 4,
-      48, WHITE)
+    local capacityW = math.min(math.floor(layout.width * 0.36),
+      math.max(24, Font.width(capacity) + 2))
+    local left = Strings(config and config.header or moneyText(menu))
+    local leftW = math.min(math.floor(layout.width * 0.42),
+      math.max(32, Font.width(left) + 2))
+    local headerY = layout.stacked and 2 or 4
+    drawText(left, 5, headerY, leftW, WHITE)
+    drawTextRight(capacity, layout.width - 5, headerY, capacityW, WHITE)
+    menu.modernBagHeaderCash = config and nil or left
 
     local label
     if config then
@@ -1049,10 +1174,19 @@ return function(mod, compatibility)
     -- active pocket count after the label made ALL ITEMS read like
     -- "ALL ITEMS 4646/255" once the Bag held 46 unique items.
     local center = Strings(label)
-    local centerWidth = layout.stacked and (layout.width - 10)
-      or math.max(40, layout.width - 96)
+    local centerX = layout.stacked and 5 or (5 + leftW + 3)
+    local centerRight = layout.stacked and (layout.width - 5)
+      or (layout.width - 5 - capacityW - 3)
+    local centerWidth = math.max(0, centerRight - centerX)
     center = fitText(center, centerWidth)
-    drawText(center, (layout.width - Font.width(center)) / 2,
+    menu.modernBagHeaderBounds = {
+      cash = not config, leftX = 5,
+      leftRight = 5 + math.min(leftW, Font.width(left)),
+      titleX = centerX, titleRight = centerRight,
+      capacityLeft = layout.width - 5 - capacityW,
+      twoRows = layout.stacked and true or false,
+    }
+    drawText(center, centerX + (centerWidth - Font.width(center)) / 2,
       layout.stacked and 13 or 4,
       centerWidth, WHITE)
   end
@@ -1220,12 +1354,13 @@ return function(mod, compatibility)
       local caption = config and config.direction
         or (item and categoryFor(menu.game, item.value) or pocket.key)
       drawText(caption:upper(), layout.detailX + 6, layout.detailY + 5,
-        math.floor(layout.detailW * 0.58), DARK)
+        layout.detailW - 12, DARK)
       local status = config and type(config.detailStatus) == "function"
         and config.detailStatus(menu)
-        or ("¥%d"):format(menu.game.save.money or 0)
-      drawTextRight(status, layout.detailX + layout.detailW - 6,
-        layout.detailY + 5, math.floor(layout.detailW * 0.42), DARK)
+      if status and status ~= "" then
+        drawTextRight(status, layout.detailX + layout.detailW - 6,
+          layout.detailY + 5, math.floor(layout.detailW * 0.42), DARK)
+      end
 
       local category = item and categoryFor(menu.game, item.value) or pocket.key
       local iconSize = math.min(28, math.max(20, layout.detailH - 56))
@@ -1246,10 +1381,17 @@ return function(mod, compatibility)
       local descriptionW = layout.detailW - 12
       local maxLines = math.max(2, math.floor(
         (layout.detailY + layout.detailH - 4 - descriptionY) / 9))
-      for index, line in ipairs(wrappedLines(
-          description, descriptionW, maxLines)) do
-        drawText(line, layout.detailX + 6,
-          descriptionY + (index - 1) * 9, descriptionW, DARK)
+      if item and not config and not menu.modernBagPrompt
+          and not swapId(menu) then
+        drawReadableDescription(menu, item.value, description,
+          layout.detailX + 6, descriptionY, descriptionW, maxLines, DARK)
+      else
+        clearDescriptionScroll(menu)
+        for index, line in ipairs(wrappedLines(
+            description, descriptionW, maxLines)) do
+          drawText(line, layout.detailX + 6,
+            descriptionY + (index - 1) * 9, descriptionW, DARK)
+        end
       end
       return
     end
@@ -1293,14 +1435,22 @@ return function(mod, compatibility)
           (layout.detailY + layout.detailH - 2 - descriptionY - 8) / 9) + 1)
       else
         descriptionLines = math.max(1, math.floor(
-          (layout.detailY + layout.detailH - 14 - descriptionY) / 9))
+          (layout.detailY + layout.detailH - 4 - descriptionY) / 9))
       end
-      local lines = wrappedLines(itemDescription(menu, item.value),
-        layout.detailW - 12, descriptionLines)
-      for index, line in ipairs(lines) do
-        drawText(line, layout.detailX + 6,
-          descriptionY + (index - 1) * 9,
-          layout.detailW - 12, LIGHT)
+      local description = itemDescription(menu, item.value)
+      if not config and not menu.modernBagPrompt and not swapId(menu) then
+        drawReadableDescription(menu, item.value, description,
+          layout.detailX + 6, descriptionY,
+          layout.detailW - 12, descriptionLines, LIGHT)
+      else
+        clearDescriptionScroll(menu)
+        local lines = wrappedLines(description,
+          layout.detailW - 12, descriptionLines)
+        for index, line in ipairs(lines) do
+          drawText(line, layout.detailX + 6,
+            descriptionY + (index - 1) * 9,
+            layout.detailW - 12, LIGHT)
+        end
       end
     else
       drawPocketSymbol(pocket.key,
@@ -1309,6 +1459,7 @@ return function(mod, compatibility)
       local lines = wrappedLines(
         Strings(config and config.blurb or pocket.blurb),
         layout.detailW - 12, 3)
+      clearDescriptionScroll(menu)
       for index, line in ipairs(lines) do
         drawText(line, layout.detailX + 6,
           layout.detailY + 58 + (index - 1) * 9,
@@ -1316,11 +1467,6 @@ return function(mod, compatibility)
       end
     end
 
-    if not config then
-      local status = ("¥%d"):format(menu.game.save.money or 0)
-      drawTextRight(status, layout.detailX + layout.detailW - 6,
-        layout.detailY + layout.detailH - 11, layout.detailW - 12, WHITE)
-    end
   end
 
   local function drawFooter(menu, layout)
@@ -1412,11 +1558,24 @@ return function(mod, compatibility)
   local function drawClassicHeader(menu, layout)
     local pocket = pocketFor(menu)
     local config = listConfig(menu)
-    local left = "POCKET"
-    local leftW = layout.topRail and 48 or layout.railW
-    drawText(fitText(Strings(left), leftW), 0,
+    local left = Strings(config and (config.header or "POCKET")
+      or moneyText(menu))
+    local capacity
+    if config and type(config.capacity) == "function" then
+      capacity = tostring(config.capacity(menu) or "")
+    else
+      capacity = ("%d/%d"):format(Bag.slots(menu.game.save),
+        Bag.capacity(menu.game.data))
+    end
+    local capacityW = math.min(math.floor(layout.width * 0.36),
+      math.max(24, Font.width(capacity) + 2))
+    local leftW = math.min(layout.width - capacityW - 28,
+      math.max(layout.topRail and 48 or layout.railW,
+        Font.width(left) + 4))
+    drawText(left, 2,
       math.max(2, math.floor((layout.headerH - 8) / 2)),
-      leftW, WHITE)
+      leftW - 2, WHITE)
+    menu.modernBagHeaderCash = config and nil or left
 
     local titleSource
     if config then
@@ -1426,19 +1585,18 @@ return function(mod, compatibility)
       titleSource = layout.topRail and pocket.short or pocket.label
     end
     local title = Strings(titleSource)
-    local capacity
-    if config and type(config.capacity) == "function" then
-      capacity = tostring(config.capacity(menu) or "")
-    else
-      capacity = ("%d/%d"):format(Bag.slots(menu.game.save),
-        Bag.capacity(menu.game.data))
-    end
-    local capacityW = math.min(48, Font.width(capacity) + 4)
-    local titleX = layout.topRail and leftW or layout.listX
+    local titleX = layout.topRail and leftW or math.max(layout.listX, leftW)
     local titleW = layout.topRail
       and math.max(24, layout.width - titleX - capacityW - 4)
-      or math.max(24, layout.listW - capacityW - 8)
+      or math.max(24, layout.width - titleX - capacityW - 4)
     title = fitText(title, titleW)
+    menu.modernBagHeaderBounds = {
+      cash = not config, leftX = 2,
+      leftRight = 2 + math.min(leftW - 2, Font.width(left)),
+      titleX = titleX, titleRight = titleX + titleW,
+      capacityLeft = layout.width - 3 - capacityW,
+      twoRows = false,
+    }
     drawText(title,
       titleX + math.max(2, math.floor((titleW - Font.width(title)) / 2)),
       math.max(2, math.floor((layout.headerH - 8) / 2)), titleW, LIGHT)
@@ -1674,8 +1832,15 @@ return function(mod, compatibility)
       textY = textY + 10
       maxLines = math.max(1, maxLines - 1)
     end
-    for index, line in ipairs(wrappedLines(text, textW, maxLines)) do
-      drawText(line, textX, textY + (index - 1) * 9, textW, BLACK)
+    local item = menu.items[menu.index]
+    if item and not config and not status and not swapId(menu) then
+      drawReadableDescription(menu, item.value, text,
+        textX, textY, textW, maxLines, BLACK)
+    else
+      clearDescriptionScroll(menu)
+      for index, line in ipairs(wrappedLines(text, textW, maxLines)) do
+        drawText(line, textX, textY + (index - 1) * 9, textW, BLACK)
+      end
     end
   end
 
@@ -1784,6 +1949,11 @@ return function(mod, compatibility)
   end
 
   local function update(menu, dt)
+    local description = menu.modernBagDescriptionScroll
+    if description then
+      description.elapsed = (description.elapsed or 0)
+        + math.max(0, tonumber(dt) or 0)
+    end
     local layout = layoutFor(menu)
     menu.rows = layout.rows
     clampList(menu)
@@ -1977,6 +2147,22 @@ return function(mod, compatibility)
     end
   end
 
+  local function bagQolInfo(menu)
+    local scroll = menu.modernBagDescriptionScroll or {}
+    local bounds = menu.modernBagHeaderBounds or {}
+    return {
+      money = moneyText(menu),
+      headerCash = menu.modernBagHeaderCash,
+      header = bounds,
+      descriptionOverflow = scroll.overflow and true or false,
+      descriptionOffset = tonumber(scroll.offset) or 0,
+      descriptionTravel = tonumber(scroll.travel) or 0,
+      descriptionElapsed = tonumber(scroll.elapsed) or 0,
+      descriptionStaticLines = tonumber(scroll.staticLines) or 0,
+      descriptionTail = scroll.tailText,
+    }
+  end
+
   local function decorateList(menu, config)
     installOverlayBridge(menu.game)
     menu.modernBagListConfig = config or {}
@@ -1999,6 +2185,7 @@ return function(mod, compatibility)
       return categoryFor(menu.game, id)
     end
     menu.modernBagLayoutInfo = function() return layoutFor(menu) end
+    menu.modernBagQolInfo = bagQolInfo
     menu.modernBagSwitchPocket = switchPocket
     menu.modernBagRefresh = rebuildPocket
     rebuildPocket(menu)
@@ -2066,6 +2253,7 @@ return function(mod, compatibility)
       menu.modernBagLayout = "pockets"
       menu.modernBagCategoryFor = function(_, id) return categoryFor(game, id) end
       menu.modernBagLayoutInfo = function() return layoutFor(menu) end
+      menu.modernBagQolInfo = bagQolInfo
       menu.modernBagSwitchPocket = switchPocket
       menu.modernBagRefresh = rebuildPocket
       menu.modernBagSort = sortBag

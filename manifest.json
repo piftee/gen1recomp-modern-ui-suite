@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.12",
+  "version": "0.1.15",
   "api": 2,
   "games": [
     "gen1",
@@ -45,13 +45,14 @@
     "modern_pc_ui",
     "modern_pokedex_ui",
     "battle_info_hud",
-    "typed_move_colors"
+    "typed_move_colors",
+    "unlimited_pp"
   ],
   "incompatible": [],
   "permissions": [
     "engine_internals"
   ],
   "experimental": false,
-  "description": "One modular package for the modern Start, Party, Bag, PC, Pokedex, battle HUD and move-colour interfaces.",
+  "description": "Seven modern interfaces and a separate default-off Unlimited PP QoL option in one modular package.",
   "github": "piftee/gen1recomp-modern-ui-suite"
 }

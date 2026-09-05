@@ -140,7 +140,8 @@ jobs:
           git archive HEAD | tar -x -C "$staging"
 
           rm -rf "$staging/.github" "$staging/.gitattributes" \
-                 "$staging/.gitignore" "$staging/.luarc.json"
+                 "$staging/.gitignore" "$staging/.luarc.json" \
+                 "$staging/tests" "$staging/.modkitignore"
 
           python3 - "$staging/manifest.json" "$VERSION" <<'PY'
           import json, sys
@@ -180,20 +181,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          prev="$(git tag -l 'v*' --sort=-v:refname | grep -v "^${TAG}$" | head -1 || true)"
-          range="${prev:+${prev}..}$GITHUB_SHA"
-          changes="$(git log --no-merges --pretty='- %s' "$range" | head -50 || true)"
-
-          notes=$'Download the .zip and install it from the game: MODS > Import mod .zip.'
-          if [ -n "$changes" ]; then
-            notes+=$'\n\n## Changes\n\n'"$changes"
-          fi
-          printf 'Release notes:\n%s\n' "$notes"
+          test -s RELEASE_NOTES.md
 
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
             --title "$VERSION" \
-            --notes "$notes" \
+            --notes-file RELEASE_NOTES.md \
             "dist/${MOD_ID}-${VERSION}.zip" \
             "dist/sha256sums.txt"
 

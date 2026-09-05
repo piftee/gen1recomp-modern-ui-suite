@@ -4,6 +4,53 @@
 return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+
+  -- Keep native message pages/reveal/input; only make its existing wrapping
+  -- split overlong words on real glyph boundaries. The scoped Chrome override
+  -- cannot affect other screens and is restored even if a provider throws.
+  local function installDialogueWrapping(screen, owner, active)
+    if type(screen.showPages) ~= "function" or type(screen.syncTyper) ~= "function" then return end
+    screen.modernGen2DialogueOwners = screen.modernGen2DialogueOwners or {}
+    screen.modernGen2DialogueOwners[owner] = active
+    if screen.modernGen2DialogueWrapped then return end
+    screen.modernGen2DialogueWrapped = true
+    for _, method in ipairs({ "showPages", "syncTyper" }) do
+      local native = screen[method]
+      screen[method] = function(self, ...)
+        local enabled = false
+        for _, test in pairs(self.modernGen2DialogueOwners or {}) do
+          if test() then enabled = true; break end
+        end
+        if not enabled or not Font.split or not Font.spansFitting then
+          return native(self, ...)
+        end
+        local wrap = Chrome.wrap
+        Chrome.wrap = function(text, tiles)
+          local out, budget = {}, math.max(8, (tiles or 20) * 8)
+          for _, line in ipairs(wrap(text, tiles)) do
+            while Font.width(line) > budget do
+              local spans = Font.split(line)
+              local count = math.max(1, Font.spansFitting(spans, budget))
+              -- A macro may expand several glyphs from one byte; keep every
+              -- span of that source token together instead of duplicating it.
+              local last = spans[count] and spans[count].to
+              if not last then break end
+              while spans[count + 1] and spans[count + 1].to == last do count = count + 1 end
+              out[#out + 1] = line:sub(1, last)
+              line = line:sub(last + 1)
+              if line == "" then break end
+            end
+            if line ~= "" then out[#out + 1] = line end
+          end
+          return out
+        end
+        local result = { pcall(native, self, ...) }
+        Chrome.wrap = wrap
+        if not result[1] then error(result[2], 0) end
+        return unpack(result, 2)
+      end
+    end
+  end
   local Runtime = require("src.mods.Runtime")
 
   -- The enhanced labels are an overlay, not tilemap replacements. Draw only
@@ -59,8 +106,30 @@ return function(mod)
     G.rectangle("line", x + 1, y + 1, w - 2, h - 2)
   end
 
+  local function drawChoices(screen, width, palette)
+    screen.modernBattleChoiceBounds = nil
+    local fields = { ["ask-nickname"] = "nicknameIndex", ["ask-shift"] = "shiftIndex",
+      ["ask-next-mon"] = "nextMonIndex", ["ask-forget"] = "forgetChoice",
+      ["stop-learning"] = "forgetChoice" }
+    local field = fields[screen.phase]
+    if not field or (screen.messageTimer or 0) > 0 then return end
+    local Strings = require("src.core.Strings")
+    palette = palette or Chrome.DEFAULT_BOX_PALETTE
+    -- Match native YesNoBox positions and its actual selection fields. This
+    -- is temporary prompt chrome, not a second input/controller path.
+    local left = (screen.phase == "ask-shift" or screen.phase == "ask-next-mon")
+      and 1 or (width - 48) / 8
+    Chrome.paletteBox(left, 7, 6, 5, palette)
+    Chrome.printThrough(Strings("YES"), left + 2, 8, palette)
+    Chrome.printThrough(Strings("NO"), left + 2, 10, palette)
+    Chrome.cursorThrough(left + 1, screen[field] == 1 and 8 or 10, palette)
+    screen.modernBattleChoiceBounds = { x = left * 8, y = 56, w = 48, h = 40,
+      index = screen[field], phase = screen.phase }
+  end
+
   local function drawWideBottom(screen, width)
     local G = love.graphics
+    screen.modernBattleChoiceBounds = nil
     local y, h = 104, 40
     if screen.phase == "moves" or screen.phase == "moveSelect" then
       -- Typed Move Colors replaces this bed with four colour cards.  Keeping
@@ -111,7 +180,17 @@ return function(mod)
       return
     end
     panel(0, y, width, h)
-    printInkPx(screen.message or "", 8, y + 8)
+    if type(screen.syncTyper) == "function" then screen:syncTyper() end
+    local lines = type(screen.messageLines) == "function" and screen:messageLines()
+      or Chrome.wrap(screen.message or "", math.floor((width - 16) / 8))
+    screen.modernBattleDialogueLines = lines
+    for i = 1, math.min(2, #lines) do
+      printInkPx(lines[i], 8, y + 4 + (i - 1) * 16)
+    end
+    if type(screen.messageArrowVisible) == "function" and screen:messageArrowVisible() then
+      printInkPx("▼", width - 14, 132)
+    end
+    drawChoices(screen, width)
   end
 
   -- A full-window battle presenter may already have wrapped the Gen 2 class
@@ -165,6 +244,14 @@ return function(mod)
   end
 
   local function drawWideBattle(screen, winW, winH)
+    -- A disabled move renderer must leave real native move controls visible.
+    -- The wide bed alone cannot display choices or their PP.
+    local moving = screen.phase == "moves" or screen.phase == "moveSelect"
+    local cards = mod.suite and mod.suite.enabled("typed_move_colors")
+      and mod.suite.option("typed_move_colors", "battle_colors") ~= false
+    if moving and not cards and type(screen.classicGen2BattleWidescreen) == "function" then
+      return screen.classicGen2BattleWidescreen(screen, winW, winH)
+    end
     if external3DBattleActive(screen)
         and type(screen.classicGen2BattleWidescreen) == "function" then
       screen.modernBattleYieldedTo3D = true
@@ -277,6 +364,10 @@ return function(mod)
     local screen = type(event) == "table" and event.state or nil
     if type(screen) ~= "table" or screen.screenId ~= "Gen2BattleState"
         or screen.modernBattleWideInstalled then return end
+    installDialogueWrapping(screen, "battle_hud", enabled)
+    screen.modernBattleDrawChoices = function(self, palette)
+      return drawChoices(self, self.modernBattleWideWidth or self.modernBattleLastWideWidth or 160, palette)
+    end
     screen.modernBattleWideInstalled = true
     screen.classicGen2BattleWidescreen = screen.drawWidescreen
     screen.drawWidescreen = drawWideBattle

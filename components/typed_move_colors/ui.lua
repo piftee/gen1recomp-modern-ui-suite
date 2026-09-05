@@ -410,12 +410,13 @@ return function(mod)
     textPatch = { original = BattleState.drawTextArea }
     rawset(BattleState, "_typedMoveColorsTextPatch", textPatch)
     BattleState.drawTextArea = function(self, ...)
+      self.typedMoveColorsNativeRows = nil
       if textPatch.owns and textPatch.owns(self) then return end
       -- Faithful GAME rows are coloured while the native renderer is
       -- producing them. This lets a localization/layout mod move the native
       -- move-name and cursor columns without leaving the old ink exposed to
       -- the left of a separately positioned post-overlay.
-      if textPatch.nativeRows and textPatch.nativeRows(self)
+      if self.phase == "moveSelect" and textPatch.nativeRows and textPatch.nativeRows(self)
           and textPatch.drawNativeRows then
         return textPatch.drawNativeRows(self, textPatch.original, ...)
       end
@@ -607,8 +608,19 @@ return function(mod)
     return color[1] / 255, color[2] / 255, color[3] / 255
   end
 
+  local function drawInfinity(x, y, color)
+    local G = love.graphics
+    inputPatch.infinityDrawCount = (inputPatch.infinityDrawCount or 0) + 1
+    G.setShader(); G.setColor(rgb(color))
+    for row, line in ipairs({".##...##.","#..#.#..#","#...#...#","#..#.#..#",".##...##."}) do
+      for col=1,#line do if line:sub(col,col)=="#" then G.rectangle("fill",x+col-1,y+row,1,1) end end
+    end
+  end
+
   local function drawInk(text, x, y, maxWidth, color)
-    text = fitText(text, maxWidth)
+    local infinity = text:sub(-3) == "∞"
+    if infinity then text = text:sub(1,-4) end
+    text = fitText(text, maxWidth - (infinity and 9 or 0))
     love.graphics.push("all")
     local shader = shaderForInk()
     if shader then
@@ -618,6 +630,7 @@ return function(mod)
       love.graphics.setColor(0, 0, 0, 1)
     end
     Font.draw(text, math.floor(x), math.floor(y))
+    if infinity then drawInfinity(math.floor(x) + Font.width(text), math.floor(y), color) end
     love.graphics.pop()
   end
 
@@ -707,8 +720,10 @@ return function(mod)
 
   local function drawDetachedInk(text, x, y, maxWidth, color, preferred,
       minimum)
-    local scale = detachedInkScale(text, maxWidth, preferred, minimum)
     text = tostring(text or "")
+    local infinity = text:sub(-3) == "∞"
+    if infinity then text = text:sub(1,-4) end
+    local scale = detachedInkScale(text .. (infinity and "M" or ""), maxWidth, preferred, minimum)
     -- A scale chosen as maxWidth / width already fits exactly; feeding that
     -- quotient back through fitText's integer floor can lose one final glyph
     -- to floating-point rounding (for example translated PKMN labels).
@@ -726,6 +741,7 @@ return function(mod)
     love.graphics.translate(math.floor(x), math.floor(y))
     love.graphics.scale(scale, scale)
     Font.draw(text, 0, 0)
+    if infinity then drawInfinity(Font.width(text), 0, color) end
     love.graphics.pop()
     return scale
   end
@@ -823,8 +839,17 @@ return function(mod)
   end
 
   local function drawButton(game, moveType, x, y, w, h, selected, dense,
-      content, detached, transparentSurface, skipClear)
+      content, detached, transparentSurface, skipClear, boxPanel, held)
     local colors = colorsFor(game, moveType)
+    local boxStyle = boxPanel and detachedOpacity() == 1
+      and setting("box_color", "original") or "original"
+    if boxStyle == "white" then
+      colors = { {255,255,255}, {180,180,180}, {255,255,255}, {0,0,0} }
+    elseif boxStyle == "black" then
+      colors = { {255,255,255}, {110,110,110}, {0,0,0}, {255,255,255} }
+    elseif boxStyle == "gray" then
+      colors = { {255,255,255}, {190,190,190}, {170,170,170}, {0,0,0} }
+    end
     local strong = setting("strength", "bold") ~= "soft"
     -- Normal cards use black text. Selection inverts that relationship with
     -- white text on a deliberately darkened type face, a thicker black frame
@@ -833,6 +858,7 @@ return function(mod)
     local rim = colors[selected and 4 or 2]
     local face = selected and darkerTypeColor(colors[3])
       or colors[strong and 3 or 2]
+    if selected and boxStyle == "white" then face = {64,64,64} end
     local foreground = colors[selected and 1 or 4]
     local inset = dense and 1 or (selected and 3 or 2)
     local shadow = dense and 1 or 2
@@ -889,6 +915,11 @@ return function(mod)
         math.max(1, h - shadow - inset * 2 - 2))
     end
 
+    if held then
+      setInkColor({255, 209, 89})
+      love.graphics.setLineWidth(dense and 1 or 2)
+      chamfer("line", x + 0.5, y + 0.5, w - shadow - 1, h - shadow - 1, cut)
+    end
     content(foreground)
     if not detached then
       if skipClear then
@@ -940,12 +971,16 @@ return function(mod)
   -- the native box, TYPE/PP panel and vertical input authoritative while the
   -- coloured fill and ink follow either geometry with no doubled prefix.
   local function drawNativeGameRows(battle, drawOriginal, ...)
+    if not battle or battle.phase ~= "moveSelect" then
+      return drawOriginal(battle, ...)
+    end
     local moves = battle and battle.player and battle.player.curMoves
     if type(moves) ~= "table" then return drawOriginal(battle, ...) end
 
     local selected = battle.moveIndex
     local originalDraw, originalDrawCode = Font.draw, Font.drawCode
     local rows, args = {}, { ... }
+    battle.typedMoveColorsNativeRows = rows
     local traceback = debug and debug.traceback
       or function(err) return tostring(err) end
 
@@ -972,6 +1007,11 @@ return function(mod)
       love.graphics.push("all")
       setInkColor(style.face, detachedOpacity())
       love.graphics.rectangle("fill", row.x, row.y, row.w, row.h)
+      if battle.moveSwapIndex == index then
+        setInkColor({255,209,89})
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", row.x + 0.5, row.y + 0.5, row.w - 1, row.h - 1)
+      end
       love.graphics.pop()
       PaletteFX.markTrueColor(row.x, row.y, row.w, row.h)
       return row
@@ -1035,6 +1075,48 @@ return function(mod)
   textPatch.nativeRows = nativeGamePresentation
   textPatch.drawNativeRows = drawNativeGameRows
 
+  -- The classic engine has an INTERNAL SGB recolour pass before the normal
+  -- frame pass. A true-colour mark alone only bypasses the latter, so the
+  -- native row's RGB face was already turned green/pink by the player's
+  -- palette. Re-seat exactly the captured native row pixels after that first
+  -- pass; labels, cursor origins, frame and TYPE/PP remain native-owned.
+  local zonePatch = rawget(BattleState, "_typedMoveColorsZonePatch")
+  if not zonePatch and type(BattleState.drawZonePass) == "function" then
+    zonePatch = { original = BattleState.drawZonePass, quads = {} }
+    rawset(BattleState, "_typedMoveColorsZonePatch", zonePatch)
+    BattleState.drawZonePass = function(self, src, sx, sy, ...)
+      local result = zonePatch.original(self, src, sx, sy, ...)
+      if zonePatch.restore then zonePatch.restore(self, src, sx or 0, sy or 0) end
+      return result
+    end
+  end
+  if zonePatch then
+    zonePatch.restore = function(battle, src, sx, sy)
+      if battle.phase ~= "moveSelect" or not nativeGamePresentation(battle)
+          or not battle.typedMoveColorsNativeRows then return end
+      local g = love.graphics
+      if not (src and src.getDimensions and g.newQuad) then return end
+      local sw, sh = src:getDimensions()
+      g.push("all")
+      g.setShader(); g.setColor(1, 1, 1, 1)
+      g.setBlendMode("alpha", "premultiplied")
+      local ok, why = pcall(function()
+        for _, row in pairs(battle.typedMoveColorsNativeRows) do
+          local key = table.concat({row.x, row.y, row.w, row.h, sw, sh}, ":")
+          local quad = zonePatch.quads[key]
+          if not quad then
+            quad = g.newQuad(row.x, row.y, row.w, row.h, sw, sh)
+            zonePatch.quads[key] = quad
+          end
+          g.draw(src, quad, row.x + sx, row.y + sy)
+          PaletteFX.markTrueColor(row.x + sx, row.y + sy, row.w, row.h)
+        end
+      end)
+      g.pop()
+      if not ok then error(why, 0) end
+    end
+  end
+
   local function renderBattle(battle)
     if not componentEnabled() or textOnlyMode()
         or not setting("battle_colors", true) then return end
@@ -1096,7 +1178,7 @@ return function(mod)
             drawInk(def.name or move.id, textX, textY,
               w - (textX - x) - 5, foreground)
           end, false, transparentSurface,
-          false)
+          false, false, phase == "moveSelect" and battle.moveSwapIndex == i)
       end
     end
 
@@ -1111,8 +1193,10 @@ return function(mod)
           local maxPP = (selectedDef.pp or 0)
             + (selectedMove.ppUps or 0)
               * math.floor((selectedDef.pp or 0) / 5)
-          detailText = (Strings("PP") .. " %d/%d")
-            :format(selectedMove.pp or 0, maxPP)
+          detailText = Strings("PP") .. " " ..
+            (type(battle.modUnlimitedPP) == "function"
+              and battle:modUnlimitedPP(battle.player) and "∞"
+              or ("%d/%d"):format(selectedMove.pp or 0, maxPP))
         end
         drawButton(battle.game, selectedDef.type, 4, 84, 76, 17,
           false, false, function(foreground)
@@ -1287,9 +1371,11 @@ return function(mod)
 
     local detailW = math.max(80,
       math.min(128, math.floor(panelW * 0.26)))
-    local detailX = panelW - detailW - 2
-    local gridX = 2
-    local gridRight = detailX - 4
+    local infoPosition = setting("info_position", "original")
+    local detailLeft = infoPosition == "left"
+    local detailX = detailLeft and 2 or panelW - detailW - 2
+    local gridX = detailLeft and detailW + 6 or 2
+    local gridRight = detailLeft and panelW - 2 or detailX - 4
     local gridW = math.max(150, gridRight - gridX)
     local columnGap = 3
     local leftW = math.floor((gridW - columnGap) / 2)
@@ -1325,6 +1411,7 @@ return function(mod)
       gridX = gridX, leftW = leftW,
       rightX = rightX, rightW = rightW,
       detailX = detailX, detailW = detailW,
+      promptOnLeft = infoPosition ~= "right",
     }
   end
   inputPatch.detachedLayout = detachedLayout
@@ -1355,9 +1442,10 @@ return function(mod)
       Strings("FIGHT", "battle"), Strings("PKMN"),
       Strings("ITEM", "battle"), Strings("RUN", "battle"),
     }
-    local promptX, promptW = 2, layout.detailW
-    local actionX = promptX + promptW + 4
-    local actionRight = layout.panelW - 2
+    local promptW = layout.detailW
+    local promptX = layout.promptOnLeft == false and layout.panelW - promptW - 2 or 2
+    local actionX = layout.promptOnLeft == false and 2 or promptX + promptW + 4
+    local actionRight = layout.promptOnLeft == false and promptX - 4 or layout.panelW - 2
     local actionGap = 3
     local actionLeftW = math.floor((actionRight - actionX - actionGap) / 2)
     local actionRightX = actionX + actionLeftW + actionGap
@@ -1375,7 +1463,7 @@ return function(mod)
           drawDetachedInk(label, x + 5,
             y + math.floor((36 - 8 * textScale) / 2),
             w - 10, foreground, textScale, 0.75)
-        end, true)
+        end, true, false, false, true)
     end
 
     -- Match the move selector's attached PP card with a neutral prompt card.
@@ -1398,7 +1486,7 @@ return function(mod)
           w - 12, foreground, textScale)
         drawDetachedInk("DO", x + 6, y + (lineH + gap) * 2,
           w - 12, foreground, textScale)
-      end, true)
+      end, true, false, false, true)
   end
 
   local function drawDetachedMessagePanel(game, battle, layout)
@@ -1410,25 +1498,40 @@ return function(mod)
         end
         local off = battle.scrollPx or 0
         local shown = battle.shown or {}
-        local longest = 1
-        for _, line in ipairs(shown) do longest = math.max(longest, #line) end
+        -- Use each native COMPLETE line for alignment/scale, but paint only
+        -- its revealed glyphs. Center/right text must not slide with typing.
+        local widths, longest = {}, 8
+        for li, line in ipairs(shown) do
+          local sourceIndex = (battle.lineIndex or #shown) - #shown + li
+          local source = battle.lines and battle.lines[sourceIndex]
+          local full = source and source.codes or line
+          local width = 0
+          for _, code in ipairs(full) do
+            width = width + (Font.advanceOf and Font.advanceOf(code) or 8)
+          end
+          widths[li], longest = width, math.max(longest, width)
+        end
         local textScale = math.min(layout.fontScale,
-          (layout.panelW - 20) / (longest * 8), 2.5)
+          (layout.panelW - 20) / longest, 2.5)
         local lineH = 8 * textScale
         local lineGap = math.max(4, (74 - lineH * 2) / 3)
         for lineIndex, line in ipairs(shown) do
           local y = 2 + lineGap
             + (lineIndex - 1) * (lineH + lineGap) + off
+          local x, width = 10, widths[lineIndex] * textScale
+          local align = setting("text_position", "left")
+          if align == "center" then x = math.floor((layout.panelW - width) / 2)
+          elseif align == "right" then x = layout.panelW - 10 - width end
           for i = 1, #line do
-            drawCodeInk(line[i], 10 + (i - 1) * 8 * textScale,
-              y, foreground, textScale)
+            drawCodeInk(line[i], x, y, foreground, textScale)
+            x = x + (Font.advanceOf and Font.advanceOf(line[i]) or 8) * textScale
           end
         end
         if (battle.msgWaiting or battle.msgPrompt)
             and (battle.frame or 0) % 60 < 30 then
           drawEffectArrow(layout.panelW - 12, 62, "down", foreground)
         end
-      end, true)
+      end, true, false, false, true)
   end
 
   -- Responsive Wide battle panel drawn after the completed world/UI composite.
@@ -1561,7 +1664,8 @@ return function(mod)
                 foreground, labelLayout.scale)
             end
             drawEffectIndicator(indicator, x, y, w, h, foreground)
-          end, true)
+          end, true, false, false, false,
+            phase == "moveSelect" and battle.moveSwapIndex == i)
       end
     end
 
@@ -1584,8 +1688,10 @@ return function(mod)
           if phase == "moveSelect" then
             local maxPP = (def.pp or 0)
               + (selectedMove.ppUps or 0) * math.floor((def.pp or 0) / 5)
-            ppText = (Strings("PP") .. " %d/%d")
-              :format(selectedMove.pp or 0, maxPP)
+            ppText = Strings("PP") .. " " ..
+              (type(battle.modUnlimitedPP) == "function"
+                and battle:modUnlimitedPP(battle.player) and "∞"
+                or ("%d/%d"):format(selectedMove.pp or 0, maxPP))
           else
             ppText = Strings("COPY")
           end

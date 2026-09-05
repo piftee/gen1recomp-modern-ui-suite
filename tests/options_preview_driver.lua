@@ -68,8 +68,8 @@ return function(game)
   local hub = game.stack:top()
   check(hub ~= root and hub.screenId == "modern_ui_suite:settings",
     "the unified suite hub opens")
-  check(#(hub.items or {}) == 10,
-    "the hub contains both bulk actions, seven components, and Back")
+  check(#(hub.items or {}) == 11,
+    "the hub contains both UI bulk actions, seven interfaces, independent QoL, and Back")
   hub.index = 1
   capture("suite-hub-top")
   hub.index = #hub.items
@@ -81,7 +81,7 @@ return function(game)
   for _, row in ipairs(aggregate) do schemaByKey[row.key] = row end
 
   local testedRows, testedValues = 0, 0
-  for hubIndex = 3, 9 do
+  for hubIndex = 3, 10 do
     hub.index = hubIndex
     local item = hub.items[hubIndex]
     check(item and item.component, "hub component " .. tostring(hubIndex - 2) .. " exists")
@@ -123,9 +123,9 @@ return function(game)
     while game.stack:top() ~= hub do game.stack:pop() end
   end
 
-  check(testedRows == 32,
-    "all 31 persisted settings and the icon-overrides action were reached")
-  check(testedValues == 77,
+  check(testedRows == 37,
+    "all 36 persisted settings and the icon-overrides action were reached")
+  check(testedValues == 91,
     "all advertised toggle and choice values were rendered")
   U.log(("PASS %d settings rows and %d values rendered in %d screenshots")
     :format(testedRows, testedValues, shotIndex))

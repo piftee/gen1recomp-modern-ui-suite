@@ -20,9 +20,11 @@ return function(mod, icons)
 
   local WHITE, LIGHT, DARK, INK = 1, 0.82, 0.34, 0
   -- Each authored palette keeps paper, accent, body and ink far enough apart
-  -- to survive the engine's four-shade post-pass. MAP intentionally has no
-  -- palette: it inherits the current location, preserving combinations such
-  -- as the lime/cyan route colours seen on a phone.
+  -- to survive the engine's four-shade post-pass. The saved `map` mode is
+  -- displayed as AUTO because it intentionally has no fixed palette: it
+  -- follows the current area's colours, preserving combinations such as the
+  -- lime/cyan route treatment seen on a phone. The legacy `dmg` save id is a
+  -- fixed green Game Boy palette; it is not connected to battle damage.
   local THEME_PALETTES = {
     red = {
       { 255, 247, 232 }, { 255, 154, 126 },
@@ -526,7 +528,7 @@ return function(mod, icons)
     local fixed = THEME_PALETTES[selectedTheme()]
     if validPalette(fixed) then return fixed end
 
-    -- MAP normally inherits whichever SGB zone covers the panel on the
+    -- AUTO normally inherits whichever SGB zone covers the panel on the
     -- cartridge canvas. Resolve that same zone for the window-space redraw,
     -- preferring later (more specific) rectangles just like Renderer does.
     local layout = layoutFor(menu)

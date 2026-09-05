@@ -73,13 +73,17 @@ return function(mod, settings, state, components)
     local rows = {
       {
         id = component.key .. ".enabled",
-        label = "ENABLED",
+        label = component.enabledLabel or "ENABLED",
         value = function()
           return settings:isEnabled(component) and "ON" or "OFF"
         end,
         step = function(activeGame)
-          return settings:setEnabled(activeGame, component,
+          local changed = settings:setEnabled(activeGame, component,
             not settings:isEnabled(component))
+          -- Gen 2's native Options page does not write after a custom step.
+          -- Persist this independent switch just as hub left/right does.
+          settings:persist(activeGame)
+          return changed
         end,
       },
     }
@@ -131,7 +135,7 @@ return function(mod, settings, state, components)
     local menu
     local function buildItems()
       local items = {
-        { id = "enable_all", label = "ENABLE ALL", action = "enable" },
+        { id = "enable_all", label = "ENABLE ALL UI", action = "enable" },
         { id = "disable_all", label = "DISABLE ALL UI", action = "disable" },
       }
       for _, component in ipairs(components) do

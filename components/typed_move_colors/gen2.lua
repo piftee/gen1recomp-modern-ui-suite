@@ -3,6 +3,54 @@
 return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+
+  -- Keep native message pages/reveal/input; only make its existing wrapping
+  -- split overlong words on real glyph boundaries. The scoped Chrome override
+  -- cannot affect other screens and is restored even if a provider throws.
+  local function installDialogueWrapping(screen, owner, active)
+    if type(screen.showPages) ~= "function" or type(screen.syncTyper) ~= "function" then return end
+    screen.modernGen2DialogueOwners = screen.modernGen2DialogueOwners or {}
+    screen.modernGen2DialogueOwners[owner] = active
+    if screen.modernGen2DialogueWrapped then return end
+    screen.modernGen2DialogueWrapped = true
+    for _, method in ipairs({ "showPages", "syncTyper" }) do
+      local native = screen[method]
+      screen[method] = function(self, ...)
+        local enabled = false
+        for _, test in pairs(self.modernGen2DialogueOwners or {}) do
+          if test() then enabled = true; break end
+        end
+        if not enabled or not Font.split or not Font.spansFitting then
+          return native(self, ...)
+        end
+        local wrap = Chrome.wrap
+        Chrome.wrap = function(text, tiles)
+          local out, budget = {}, math.max(8, (tiles or 20) * 8)
+          for _, line in ipairs(wrap(text, tiles)) do
+            while Font.width(line) > budget do
+              local spans = Font.split(line)
+              local count = math.max(1, Font.spansFitting(spans, budget))
+              -- A macro may expand several glyphs from one byte; keep every
+              -- span of that source token together instead of duplicating it.
+              local last = spans[count] and spans[count].to
+              if not last then break end
+              while spans[count + 1] and spans[count + 1].to == last do count = count + 1 end
+              out[#out + 1] = line:sub(1, last)
+              line = line:sub(last + 1)
+              if line == "" then break end
+            end
+            if line ~= "" then out[#out + 1] = line end
+          end
+          return out
+        end
+        local result = { pcall(native, self, ...) }
+        Chrome.wrap = wrap
+        if not result[1] then error(result[2], 0) end
+        return unpack(result, 2)
+      end
+    end
+  end
+  local GbcPalette = require("src.render.GbcPalette")
   local SummaryMenu = require("src.ui.gen2.SummaryMenu")
 
   -- The same flat faces used by the Gen 1 presenter. Keeping these values in
@@ -42,10 +90,8 @@ return function(mod)
     return not ok or value ~= false
   end
 
-  -- The saved WIDE/GAME preference describes Gen 1 presentation. Gen 2 uses
-  -- the room it actually has: a vertical list beside the details card on
-  -- compact widescreen canvases, and a 2x2 grid only when each column is wide
-  -- enough for stock move names. Navigation must follow that visible shape.
+  -- Gen 2 uses a full-width 2x2 grid and a slim bottom details strip.
+  -- Explicit side panels are reserved for widths that fit the same 2x2 grid.
   local function gridEnabled()
     return componentEnabled() and option("battle_colors", true) ~= false
   end
@@ -70,18 +116,11 @@ return function(mod)
   end
 
   local function layoutColumns(screen)
-    -- modernBattleWideWidth exists only while the compositor is drawing and
-    -- is deliberately cleared before the next input update. Its persisted
-    -- last-width companion keeps navigation shaped like the frame the player
-    -- can still see.
     local width = tonumber(screen and (screen.modernBattleWideWidth
       or screen.modernBattleLastWideWidth)) or 160
-    -- At the common 200/256px Gen 2 widths, the fixed 80px details card left
-    -- only 28-55px for a name in the old 2x2 grid (the reported TA./SC./BI.
-    -- labels). Four 10px rows use the same 40px footer and restore 90px or
-    -- more for the name. 304px is the first width where two columns can show
-    -- a ten-tile name plus its effect marker without touching.
-    if width > 160 and width < 304 then return 1 end
+    -- Very narrow non-cartridge canvases retain the readable list fallback.
+    -- Ordinary 16:9 is 256px and always gets the full-width 2x2 default.
+    if width > 160 and width < 224 then return 1 end
     return 2
   end
 
@@ -159,6 +198,18 @@ return function(mod)
   -- glyph cell with white paper; that is correct for cartridge text boxes but
   -- creates the white labels the Gen 1 card renderer deliberately avoids.
   local function printCardInk(text, x, y, color)
+    -- Infinity is authored here, not sent to the cartridge font encoder.
+    if text:sub(-3) == "∞" then
+      local prefix = text:sub(1, -4)
+      if prefix ~= "" then printCardInk(prefix, x, y, color) end
+      local G, px, py = love.graphics, math.floor(x + Font.width(prefix)), math.floor(y) + 1
+      G.push("all"); G.setShader(); G.setColor(color[1], color[2], color[3], 1)
+      for row, line in ipairs({".##...##.","#..#.#..#","#...#...#","#..#.#..#",".##...##."}) do
+        for col=1,#line do if line:sub(col,col)=="#" then G.rectangle("fill",px+col-1,py+row-1,1,1) end end
+      end
+      G.pop()
+      return Font.width(prefix) + 9
+    end
     local palette, drawGlyph, finish = Chrome.paletteGlyphs(
       inkPalette(color), false, true)
     if not palette then
@@ -176,6 +227,9 @@ return function(mod)
 
   local function printCardInkRight(text, right, y, color)
     text = tostring(text or "")
+    if text:sub(-3) == "∞" then
+      return printCardInk(text, right - Font.width(text:sub(1,-4)) - 9, y, color)
+    end
     local width = Font.width(text)
     local palette, drawGlyph, finish = Chrome.paletteGlyphs(
       inkPalette(color), false, true)
@@ -317,7 +371,7 @@ return function(mod)
     return powerText, current, maximum
   end
 
-  local function drawCardFace(x, y, w, h, face, selected)
+  local function drawCardFace(x, y, w, h, face, selected, held)
     local G = love.graphics
     local fx, fy, fw, fh = x + 2, y + 1, w - 4, h - 3
     if selected then fx, fy, fw, fh = fx - 1, fy - 1, fw + 2, fh + 2 end
@@ -330,13 +384,18 @@ return function(mod)
       G.setColor(face[1], face[2], face[3], alpha())
     end
     chamfer("fill", fx, fy, fw, fh, 2)
-    G.setColor(selected and 1 or 0.20,
-      selected and 1 or 0.21, selected and 1 or 0.25, 1)
-    G.setLineWidth(selected and 2 or 1)
+    if held then
+      -- Pickup belongs to the SOURCE MOVE, not the Power/PP readout.
+      G.setColor(1, 0.82, 0.35, 1)
+    else
+      G.setColor(selected and 1 or 0.20,
+        selected and 1 or 0.21, selected and 1 or 0.25, 1)
+    end
+    G.setLineWidth((selected or held) and 2 or 1)
     chamfer("line", fx + 0.5, fy + 0.5, fw - 1, fh - 1, 2)
   end
 
-  local function drawListRowFace(x, y, w, h, face, selected)
+  local function drawListRowFace(x, y, w, h, face, selected, held)
     -- A ten-pixel row has exactly one pixel above and below Gen 2's 8px
     -- battle font. The regular card's chamfer, drop shadow and expanded
     -- selected outline all need a taller face and cut through these compact
@@ -348,26 +407,55 @@ return function(mod)
     G.rectangle("fill", x + 2, y + 1, w - 4, h - 2)
     G.setColor(selected and 1 or 0.10,
       selected and 1 or 0.11, selected and 1 or 0.14, 1)
+    if held then G.setColor(1, 0.82, 0.35, 1) end
     G.setLineWidth(1)
     G.rectangle("line", x + 1.5, y + 0.5, w - 3, h - 1)
   end
 
+  local function heldSource(screen, moves)
+    -- Read the controller's mark each frame; a second local pick-up state
+    -- could survive native placement, cancellation, or a refused move.
+    local index = screen.moveSwapIndex
+    if type(index) == "number" and index % 1 == 0
+        and index >= 1 and index <= 4 and moves[index] then
+      return index
+    end
+  end
+
+  local function drawHeldMarker(x, y, h)
+    -- An opaque hollow arrow stays at the SOURCE, including on the initial
+    -- selected row. The white focus frame still follows the destination.
+    -- Use the existing seven-pixel gutter so names and mobile rows keep
+    -- their full width, and never rely on type colour or blinking alone.
+    local G, cy = love.graphics, y + math.floor(h / 2)
+    G.setColor(0, 0, 0, 1)
+    G.rectangle("fill", x + 1, cy - 4, 6, 8)
+    G.setColor(1, 1, 1, 1)
+    G.setLineWidth(1)
+    G.polygon("line", { x + 2, cy - 3, x + 5, cy, x + 2, cy + 3 })
+  end
+
   local function drawCards(screen)
-    if option("battle_colors", true) == false then return end
+    if not gridEnabled() then return end
     local moves = playerMoves(screen)
     if #moves == 0 then return end
+    local source = heldSource(screen, moves)
+    screen.typedMoveColorsHeldSource = source
     local G = love.graphics
     local wasBattle = Font.useBattleExtra(true)
     local width = screen.modernBattleWideWidth or 160
     local wide = width > 160
     local top = wide and 104 or 96
     local height = 144 - top
-    local detailGap = wide and 3 or 0
-    local detailW = wide and math.max(80,
-      math.min(104, math.floor(width * 0.29))) or width
-    local gridW = wide and (width - detailW - detailGap) or width
-    local gridH = wide and height or 32
+    local infoPosition = option("info_position", "original")
     local columns = layoutColumns(screen)
+    local sidePanel = columns == 1 or (width >= 360 and infoPosition ~= "original")
+    local detailGap = sidePanel and 3 or 0
+    local detailW = sidePanel and math.max(80,
+      math.min(104, math.floor(width * 0.29))) or width
+    local gridW = sidePanel and (width - detailW - detailGap) or width
+    local gridX = sidePanel and infoPosition == "left" and detailW + detailGap or 0
+    local gridH = sidePanel and height or height - (wide and 12 or 16)
     local colW = math.floor(gridW / columns)
     local rowH = math.floor(gridH / (columns == 1 and 4 or 2))
     G.push("all")
@@ -380,7 +468,7 @@ return function(mod)
       local move = moves[i]
       local col, row = (i - 1) % columns,
         math.floor((i - 1) / columns)
-      local x, y = col * colW, top + row * rowH
+      local x, y = gridX + col * colW, top + row * rowH
       local selected = i == screen.moveIndex
       local def = moveDef(screen, move)
       local color = typeColor(def)
@@ -389,9 +477,9 @@ return function(mod)
       local textOnly = option("text_only", false)
       if textOnly then face = { 0.94, 0.94, 0.94 } end
       if columns == 1 then
-        drawListRowFace(x, y, colW, rowH, face, selected)
+        drawListRowFace(x, y, colW, rowH, face, selected, i == source)
       else
-        drawCardFace(x, y, colW, rowH, face, selected)
+        drawCardFace(x, y, colW, rowH, face, selected, i == source)
       end
       local ink = selected and { 1, 1, 1 } or { 0, 0, 0 }
       local textY = columns == 1 and (y + 1)
@@ -409,6 +497,7 @@ return function(mod)
       else
         printCardInk("--", x + 7, textY, ink)
       end
+      if i == source then drawHeldMarker(x, y, rowH) end
     end
 
     local selected = moves[math.max(1,
@@ -420,34 +509,119 @@ return function(mod)
       local face = { r, g, b }
       if option("text_only", false) then face = { 0.94, 0.94, 0.94 } end
       local power, current, maximum = moveDetails(def, selected)
+      local battle = screen.battle
+      local ppText = battle and type(battle.modUnlimitedPP) == "function"
+          and battle:modUnlimitedPP(battle.player) and "∞"
+        or ("%d/%d"):format(current, maximum)
       local ix, iy, iw, ih
-      if wide then
-        ix, iy, iw, ih = gridW + detailGap, top, detailW, height
+      if sidePanel then
+        ix = infoPosition == "left" and 0 or gridW + detailGap
+        iy, iw, ih = top, detailW, height
       else
         ix, iy, iw, ih = 0, top + gridH, width, height - gridH
       end
-      drawCardFace(ix, iy, iw, ih, face, true)
+      drawCardFace(ix, iy, iw, ih, face, true, false)
       local ink = { 1, 1, 1 }
-      if wide then
+      -- Details follow the destination normally; amber remains on the source.
+      if sidePanel then
         printCardInk("POWER", ix + 7, iy + 9, ink)
         printCardInkRight(power, ix + iw - 7, iy + 9, ink)
         printCardInk("PP", ix + 7, iy + 23, ink)
-        printCardInkRight(("%d/%d"):format(current, maximum),
+        printCardInkRight(ppText,
           ix + iw - 7, iy + 23, ink)
         screen.typedMoveColorsInfoMode = "full"
       else
-        local line = ("POWER %s PP%d/%d"):format(
-          power, current, maximum)
-        printCardInk(fit(line, iw - 14), ix + 7, iy + 3, ink)
+        local line = ("POWER %s  PP %s"):format(power, ppText)
+        local lineWidth
+        if ppText == "∞" then
+          local prefix = line:sub(1,-4)
+          if Font.width(prefix) + 9 > iw - 14 then prefix = fit(prefix, iw - 23) end
+          line, lineWidth = prefix .. "∞", Font.width(prefix) + 9
+        else
+          line = fit(line, iw - 14); lineWidth = Font.width(line)
+        end
+        local tx = ix + 7
+        if infoPosition == "right" then tx = ix + iw - 7 - lineWidth end
+        printCardInk(line, tx, iy + math.floor((ih - 8) / 2), ink)
         screen.typedMoveColorsInfoMode = "compact"
       end
+      screen.typedMoveColorsInfoSide = sidePanel
+        and (infoPosition == "left" and "left" or "right") or "bottom"
+      screen.typedMoveColorsInfoBounds = { x = ix, y = iy, w = iw, h = ih }
       screen.typedMoveColorsInfoPanel = true
-      screen.typedMoveColorsInfoPP = ("%d/%d"):format(current, maximum)
+      screen.typedMoveColorsInfoPP = ppText
+      screen.typedMoveColorsInfinityVisible = ppText == "∞"
       screen.typedMoveColorsInfoPower = power
     end
     G.pop()
     Font.useBattleExtra(wasBattle)
     screen.typedMoveColorsGen2 = true
+  end
+
+  -- The suite's responsive HUD owns a pixel-space (not native tile-space)
+  -- bottom panel. Adapt that surface too, without touching its scene or HUD.
+  local function drawWideOptions(screen)
+    local width = screen.modernBattleWideWidth
+    if not width or width < 160 or not gridEnabled()
+        or option("text_only", false) or movePhase(screen) then return end
+    local align, side = option("text_position", "left"), option("info_position", "original")
+    local style = alpha() == 1 and option("box_color", "original") or "original"
+    if align == "left" and side == "original" and style == "original" then return end
+    local G, y = love.graphics, 104
+    local face = style == "black" and {0,0,0}
+      or style == "gray" and {170/255,170/255,170/255} or {1,1,1}
+    local ink = style == "black" and {1,1,1} or {0,0,0}
+    screen.typedMoveColorsNeutralPanel = { style = style, width = width, y = y }
+    G.push("all")
+    G.setColor(face[1], face[2], face[3], 1); G.rectangle("fill", 0, y, width, 40)
+    G.setColor(ink[1], ink[2], ink[3], 1); G.setLineWidth(2)
+    G.rectangle("line", 1, y + 1, width - 2, 38)
+    local function line(value, full, x, available, atY)
+      local fullWidth = math.min(available, Font.width(full or value))
+      if align == "center" then x = x + math.floor((available - fullWidth) / 2)
+      elseif align == "right" then x = x + available - fullWidth end
+      printCardInk(fit(value, available), x, atY, ink)
+      return x
+    end
+    if screen.phase == "menu" then
+      local menuWidth = math.max(88, math.min(112, math.floor(width * 0.44)))
+      local promptWidth = width - menuWidth
+      local right = side == "right" and width >= 200 and not screen.contest
+      local promptX, menuX = right and menuWidth or 0, right and 0 or promptWidth
+      local maxTiles = math.max(6, math.floor((promptWidth - 16) / 8))
+      local lines = Chrome.wrap(screen.message or "What will you do?", maxTiles)
+      if #lines > 2 then lines = Chrome.wrap("What will you do?", maxTiles) end
+      if #lines > 2 then lines = { "What", "now?" } end
+      for i = 1, math.min(2, #lines) do
+        line(lines[i], lines[i], promptX + 8, promptWidth - 16, y + 4 + (i - 1) * 16)
+      end
+      local labels = screen:menuLabels()
+      for i, label in ipairs(labels) do
+        local x = menuX + 8 + ((i - 1) % 2) * math.floor(menuWidth / 2)
+        local ty = y + 8 + math.floor((i - 1) / 2) * 16
+        if i == screen.menuIndex then printCardInk("▶", x - 9, ty, ink) end
+        printCardInk(label, x, ty, ink)
+      end
+      screen.typedMoveColorsPromptSide = right and "right" or "left"
+    else
+      screen:syncTyper()
+      local shown = screen:messageLines()
+      local full = screen.typer and screen.typer.page or shown
+      screen.typedMoveColorsMessageOrigins = {}
+      for i = 1, math.min(2, #shown) do
+        screen.typedMoveColorsMessageOrigins[i] = line(shown[i], full[i],
+          8, width - 16, y + 4 + (i - 1) * 16)
+      end
+      if screen:messageArrowVisible() then
+        printCardInk("▼", width - 14, 132, ink)
+      end
+    end
+    if type(screen.modernBattleDrawChoices) == "function" then
+      local paper, foreground = {}, {}
+      for i = 1, 3 do paper[i], foreground[i] = face[i] * 255, ink[i] * 255 end
+      screen:modernBattleDrawChoices({ paper, paper, paper, foreground })
+    end
+    G.pop()
   end
 
   mod.hooks:wrap("battle.move_grid_navigation", function(next, screen)
@@ -468,15 +642,112 @@ return function(mod)
     return downstream
   end, 1000)
 
+  -- Adapt only native drawing: keep message pages, reveal counts, prompts and
+  -- menu callbacks in the engine. Wrappers are scoped to this single draw and
+  -- restored even if another renderer raises an error.
+  local function installBottomOptions(screen)
+    if type(screen.drawBottom) ~= "function"
+        or screen.drawBottom == screen.typedMoveColorsBottomDraw then return end
+    local native = screen.drawBottom
+    local draw = function(self, ox)
+      if not gridEnabled() or option("text_only", false) then return native(self, ox) end
+      ox = tonumber(ox) or 0
+      local width = (20 + ox) * 8
+      local style = alpha() == 1 and option("box_color", "original") or "original"
+      local palette
+      if style == "black" then
+        palette = { {0,0,0}, {0,0,0}, {0,0,0}, {255,255,255} }
+      elseif style == "white" then
+        palette = { {255,255,255}, {255,255,255}, {255,255,255}, {0,0,0} }
+      elseif style == "gray" then
+        palette = { {170,170,170}, {170,170,170}, {170,170,170}, {0,0,0} }
+      end
+      local align = option("text_position", "left")
+      local mirrored = self.phase == "menu" and not self.contest
+        and width >= 200 and option("info_position", "original") == "right"
+      self.typedMoveColorsPromptSide = mirrored and "right" or "left"
+      if not palette and align == "left" and not mirrored then return native(self, ox) end
+      local box, printThrough, cursor = Chrome.box, Chrome.printThrough, Chrome.cursorThrough
+      local printMessage = self.printMessage
+      local inMessage = false
+      local menuX = 8 + ox
+      Chrome.box = function(x, y, w, h)
+        if mirrored and y == 12 and x == menuX then x = 0 end
+        if palette then return Chrome.paletteBox(x, y, w, h, palette) end
+        return box(x, y, w, h)
+      end
+      Chrome.printThrough = function(value, x, y, pal, ...)
+        if mirrored and not inMessage and (y == 14 or y == 16) then x = x - menuX end
+        return printThrough(value, x, y, palette or pal, ...)
+      end
+      Chrome.cursorThrough = function(x, y, pal, ...)
+        if mirrored and (y == 14 or y == 16) then x = x - menuX end
+        return cursor(x, y, palette or pal, ...)
+      end
+      self.printMessage = function(active, offset)
+        inMessage = true
+        if (align == "left" and not mirrored)
+            or (active.phase == "menu" and (width < 200 or active.contest)) then
+          printMessage(active, offset)
+        else
+          active:syncTyper()
+          local shown = active:messageLines()
+          local full = active.typer and active.typer.page
+            or Chrome.wrap(active.message or "", 18)
+          local left, available = 8, width - 16
+          if active.phase == "menu" then
+            if mirrored then left = 104 end
+            available = width - 112
+          end
+          active.typedMoveColorsMessageOrigins = {}
+          for i = 1, math.min(2, #shown) do
+            local value = shown[i]
+            local fullWidth = math.min(available, Font.width(full[i] or value))
+            local x = left
+            if align == "center" then x = left + math.floor((available - fullWidth) / 2)
+            elseif align == "right" then x = left + available - fullWidth end
+            -- Native command prompts can be covered by the menu. Clip only
+            -- their visible prefix, without modifying the native reveal page.
+            if Font.width(value) > available then
+              local spans = Font.split(value)
+              local count = Font.spansFitting(spans, available)
+              value = count > 0 and value:sub(1, spans[count].to) or ""
+            end
+            active.typedMoveColorsMessageOrigins[i] = x
+            printThrough(value, x / 8, 14 + (i - 1) * 2,
+              palette or Chrome.DEFAULT_BOX_PALETTE)
+          end
+          if active:messageArrowVisible() then
+            printThrough("▼", 18 + ox, 16, palette or Chrome.DEFAULT_BOX_PALETTE)
+          end
+        end
+        inMessage = false
+      end
+      local previousBgp = GbcPalette.bgp
+      local results = { pcall(native, self, ox) }
+      Chrome.box, Chrome.printThrough, Chrome.cursorThrough = box, printThrough, cursor
+      self.printMessage = printMessage
+      if not results[1] then
+        GbcPalette.setBgp(previousBgp)
+        error(results[2], 0)
+      end
+      return unpack(results, 2)
+    end
+    screen.typedMoveColorsBottomDraw = draw
+    screen.drawBottom = draw
+  end
+
   -- Prefer the public navigation seam above, but also own D-pad movement for
   -- the single frame on which it is pressed.  Some released API 2 Gen 2
   -- builds have no battle.move_grid_navigation call at all, so changing the
   -- method alone cannot affect them.  This installer is idempotent and can be
   -- called again if that build replaces the state update after screen.pushed.
   local function installGridNavigation(screen)
+    installDialogueWrapping(screen, "typed_move_colors", gridEnabled)
     if type(screen) ~= "table" or type(screen.update) ~= "function" then
       return false
     end
+    installBottomOptions(screen)
     if not screen.typedMoveColorsGridMethod then
       local nativeGrid = screen.moveGridNavigation
       screen.typedMoveColorsGridMethod = true
@@ -527,10 +798,15 @@ return function(mod)
     -- battle.overlay is the one compatibility seam every build that can draw
     -- these cards necessarily calls.  Reattach here if an older Silver state
     -- replaced or bypassed the wrapper installed when it was pushed.
-    if type(screen) == "table" then installGridNavigation(screen) end
+    if type(screen) == "table" then
+      installGridNavigation(screen)
+      screen.typedMoveColorsHeldSource = nil
+    end
     local result = next(screen)
     if type(screen) == "table" and movePhase(screen) then
       drawCards(screen)
+    elseif type(screen) == "table" then
+      drawWideOptions(screen)
     end
     return result
   end, 900)

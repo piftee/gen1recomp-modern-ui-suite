@@ -19,6 +19,7 @@ return function(mod)
   local nativeStagedHudDepth = 0
   local nativeStagedOverlayDepth = 0
   local genderBattleDrawDepth = 0
+  local genderBattleContext
   local nativeStagedHudOwner = false
   local STAGED_COMPANIONS = {
     "DRAMATIC_SHAPE",
@@ -244,8 +245,8 @@ return function(mod)
     if ratio > 0 then fill = math.max(1, fill) end
     if fill <= 0 then return end
     love.graphics.setColor(EXP_BLUE)
-    love.graphics.rectangle("fill", 64, 90, fill, 1)
-    PaletteFX.markTrueColor(64, 90, fill, 1)
+    love.graphics.rectangle("fill", 64, 95, fill, 1)
+    PaletteFX.markTrueColor(64, 95, fill, 1)
   end
 
   local function drawStagedSemanticHpFills(battle)
@@ -320,17 +321,31 @@ return function(mod)
   -- lower and right edges fixed so it still meets Dramatic Shape's anchors.
   -- The extra row creates genuine EXP space; the extra width lets the native
   -- font keep a gap between the EXP label and current/required readout.
-  local function drawStagedPlayerHud(battle, markColor, grayFill)
+  local function drawStagedPlayerHud(battle, markColor, grayFill, classic)
     local battler = battle.player
     love.graphics.setColor(0, 0, 0, 1)
-    Font.draw(fitName(battler.name, 64), 80, 48)
-    drawStatusAt(battle, battler, 80, 56)
-    drawLevel(battler, 112, 56)
-    drawNativeHP(battle, battler, 10, 8, 1, 6, markColor, grayFill)
+    -- Classic sprites occupy the full enemy slot through y=55. Keep the
+    -- native name/level/HP rows below it; the EXP footer fits above
+    -- the same y=96 control boundary without lifting the name into the pic.
+    Font.draw(fitName(battler.name, 64), 80, classic and 56 or 48)
+    drawStatusAt(battle, battler, 80, classic and 64 or 56)
+    drawLevel(battler, 112, classic and 64 or 56)
+    drawNativeHP(battle, battler, 10, classic and 9 or 8, 1, 6, markColor, grayFill)
     Font.draw(("%3d/%3d"):format(shownHP(battler), battler.mon.stats.hp),
-      88, 72)
+      88, classic and 80 or 72)
     drawPlayerUnderline(88)
-    drawExpProgress(battle, battler, 64, 80, 80, 90, markColor)
+    if classic then
+      -- The native underline has ink across this row. Move only its central
+      -- rule to y=95 so it cannot strike through the EXP footer.
+      local g = love.graphics
+      g.push("all")
+      g.setBlendMode("replace", "premultiplied")
+      g.setColor(0, 0, 0, 0)
+      g.rectangle("fill", 64, 88, 80, 7)
+      g.pop()
+    end
+    drawExpProgress(battle, battler, 64, classic and 88 or 80, 80,
+      classic and 95 or 90, markColor)
   end
 
   local function clearStagedPlayerHud()
@@ -347,7 +362,7 @@ return function(mod)
   -- This function is called while Dramatic Shape's native HUD texture is the
   -- active canvas, before that texture is snapped to the window edges.
   local function drawStagedHudContent(battle, alreadyCleared, markColor,
-      grayFill)
+      grayFill, classic)
     if enemyVisible(battle) then
       drawStatusAfterLevel(battle, battle.enemy, 40, 8, 88)
       drawNativeHP(battle, battle.enemy, 2, 2, nil, 6, markColor, grayFill)
@@ -358,7 +373,7 @@ return function(mod)
     end
     if playerVisible(battle) then
       if not alreadyCleared then clearStagedPlayerHud() end
-      drawStagedPlayerHud(battle, markColor, grayFill)
+      drawStagedPlayerHud(battle, markColor, grayFill, classic)
     end
   end
 
@@ -397,18 +412,18 @@ return function(mod)
 
     if playerVisible(battle) then
       local battler = battle.player
-      -- Redraw the same wide player panel one row taller upward. Its bottom
-      -- remains y=96, so the battlefield and message area keep their native
-      -- boundary while EXP gets a dedicated row.
+      -- Keep the native wide panel's top at y=56, below the enemy pic slot.
+      -- Use the free tile below the old panel for its border, leaving the
+      -- full-size EXP text inside the box and the enemy picture untouched.
       love.graphics.setColor(0, 0, 0, 1)
-      Font.drawBox(23, 6, 15, 6)
-      Font.draw(fitName(battler.name, 40), 192, 56)
-      drawStatus(battle, battler, 264, 56)
-      drawLevel(battler, 264, 56)
-      drawNativeHP(battle, battler, 24, 8, 1, 10)
+      Font.drawBox(23, 7, 15, 6)
+      Font.draw(fitName(battler.name, 40), 192, 64)
+      drawStatus(battle, battler, 264, 64)
+      drawLevel(battler, 264, 64)
+      drawNativeHP(battle, battler, 24, 9, 1, 10)
       Font.draw(("%3d/%3d"):format(shownHP(battler), battler.mon.stats.hp),
-        240, 72)
-      drawExpProgress(battle, battler, 192, 80, 96, 90)
+        240, 80)
+      drawExpProgress(battle, battler, 192, 88, 96, 95)
     end
     love.graphics.pop()
   end
@@ -507,7 +522,7 @@ return function(mod)
       result = withNativeLevels(battle, false, function()
         local nativeResult = originalClassicDrawHUDs(battle, slide,
           unpack(args))
-        drawStagedHudContent(battle, false, true, battleColorMode(battle))
+        drawStagedHudContent(battle, false, true, battleColorMode(battle), true)
         return nativeResult
       end)
       g.pop()
@@ -734,12 +749,15 @@ return function(mod)
       if type(original) ~= "function" then return end
       hud[name] = function(...)
         local args = { ... }
+        local previousBattle = genderBattleContext
+        genderBattleContext = args[1]
         genderBattleDrawDepth = genderBattleDrawDepth + 1
         local result
         local ok, err = xpcall(function()
           result = original(unpack(args))
         end, traceback)
         genderBattleDrawDepth = math.max(0, genderBattleDrawDepth - 1)
+        genderBattleContext = previousBattle
         if not ok then error(err, 0) end
         return result
       end
@@ -811,7 +829,8 @@ return function(mod)
           if stagedGenderCaptureDepth > 0 then
             return STAGED_GENDER_SCRATCH_X, STAGED_GENDER_SCRATCH_Y
           end
-          y = 56
+          y = genderBattleContext and not stagedLayout(genderBattleContext)
+            and not wideLayout(genderBattleContext) and 64 or 56
         end
         return x, y
       end
@@ -821,7 +840,7 @@ return function(mod)
       local originalWideXY = hud.wideGenderXY
       hud.wideGenderXY = function(side, level)
         local x, y = originalWideXY(side, level)
-        if setting() and side == "player" then y = 56 end
+        if setting() and side == "player" then y = 64 end
         return x, y
       end
     end
