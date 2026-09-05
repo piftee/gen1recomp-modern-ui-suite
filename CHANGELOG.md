@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.1.18 - 2026-09-05
+
+- Suppress the original Gen 1 HP bar tiles while drawing the enhanced HUD,
+  including their separate end caps. This removes the old cap protruding
+  beyond the new meter and prevents Battle Art from adding a shadow to it.
+- Apply the fix to classic battles and Battle Art's captured and fallback
+  HUDs. The lower HUD bracket remains, and HUD OFF restores the original bars.
+- Update the embedded Battle Info HUD to 0.10.1.
+
+## 0.1.17 - 2026-09-05
+
+- Replace Gen 1's separate large HP/EXP number rows with compact white
+  readouts inside coloured bars, matching the party menu arrangement.
+- Leave padding between the widescreen EXP bar and the panel's bottom border.
+- Add these meters to Battle Art's captured 3D HUD and native fallback while
+  preserving its HUD positions, scale, text contrast and scene composition.
+- Align Gender Mod's ink, captured artwork and coloured overlay to the same
+  cell, removing the offset edge beside the level. Reserve its cell when a
+  status label is visible in the widescreen panel.
+- Preserve the caught indicator and live HUD toggle; hide additions during
+  catch/nickname screens and avoid duplicate meters after HUD snapping.
+- Update the embedded Battle Info HUD to 0.10.0. Other components are unchanged.
+
 ## 0.1.16 - 2026-09-05
 
 - Fix Battle Art 2.1.0's Gen 2 3D battles being covered by the suite's flat

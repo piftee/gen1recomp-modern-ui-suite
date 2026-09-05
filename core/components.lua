@@ -55,10 +55,10 @@ return {
     key = "battle_hud",
     name = "Battle Info HUD",
     short = "BATTLE HUD",
-    version = "0.9.4",
+    version = "0.10.1",
     installOrder = 2,
     enabledOption = "enabled",
-    files = { "main.lua", "hud.lua", "gen2.lua" },
+    files = { "main.lua", "hud.lua", "meters.lua", "gen2.lua" },
   },
   {
     id = "typed_move_colors",

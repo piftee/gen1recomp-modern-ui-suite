@@ -19,3 +19,8 @@ tests/gen1_game_move_colors_preview.lua
 tests/options_preview_driver.lua
 tests/party_variant_preview_driver.lua
 tests/battle_art_gen2_driver.lua
+tests/gen1_meter_driver.lua
+tests/battle_meters_test.lua
+screenshots/
+screenshots/gen1-wide-hud.png
+screenshots/gen1-battle-art-hud.png
