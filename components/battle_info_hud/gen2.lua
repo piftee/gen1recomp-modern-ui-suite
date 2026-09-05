@@ -224,26 +224,42 @@ return function(mod)
       end
     end
 
-    -- Battle Art publishes a generation-neutral staged-scene descriptor.
-    -- Its current Gen 2 adapter can either own the scene itself or use the
-    -- Stadium canvas as its world pass, so respect that ownership contract as
-    -- well as Stadium's direct session API.
-    api = companionApi("BATTLE_ART_VOXEL_FORK")
-    local stage = type(api) == "table" and api.battleStage
-    if type(stage) == "table" and type(stage.state) == "function" then
-      local expected = screen and (screen.battle or screen)
-      local okState, state = pcall(stage.state, expected)
-      local ownership = okState and type(state) == "table"
-        and state.ownership or nil
-      if type(state) == "table" and state.staged == true
-          and type(ownership) == "table" and ownership.arena == true then
-        return true
+    -- Battle Art 2.x's Gen 2 port has its own mod ID. Its public contract
+    -- identifies the live SCREEN, while older adapters may identify the
+    -- battle model. Query both exact identities; never treat an installed
+    -- provider or a scene belonging to another fight as an active arena.
+    for _, id in ipairs({ "BATTLE_ART_VOXEL_GEN2", "BATTLE_ART_VOXEL_FORK",
+        "DRAMATIC_SHAPE", "DRAMALESS_SHAPE", "potato_voxel" }) do
+      api = companionApi(id)
+      local stage = type(api) == "table" and api.battleStage
+      if type(stage) == "table" and type(stage.state) == "function" then
+        for _, expected in ipairs({ screen, screen and screen.battle }) do
+          local okState, state = pcall(stage.state, expected)
+          local ownership = okState and type(state) == "table"
+            and state.ownership or nil
+          if type(ownership) == "table" and ownership.arena == true
+              and state.staged == true
+              and (state.battle == nil or state.battle == expected) then
+            return true
+          end
+        end
       end
     end
     return false
   end
 
   local function drawWideBattle(screen, winW, winH)
+    screen.modernBattleYieldedTo3D = nil
+    -- The instance wrapper survives a live component toggle. Honour OFF on
+    -- every draw, including the command menu and any later native battle.
+    if mod.options:get("enabled") == false then
+      return screen.classicGen2BattleWidescreen(screen, winW, winH)
+    end
+    if external3DBattleActive(screen)
+        and type(screen.classicGen2BattleWidescreen) == "function" then
+      screen.modernBattleYieldedTo3D = true
+      return screen.classicGen2BattleWidescreen(screen, winW, winH)
+    end
     -- A disabled move renderer must leave real native move controls visible.
     -- The wide bed alone cannot display choices or their PP.
     local moving = screen.phase == "moves" or screen.phase == "moveSelect"
@@ -252,12 +268,6 @@ return function(mod)
     if moving and not cards and type(screen.classicGen2BattleWidescreen) == "function" then
       return screen.classicGen2BattleWidescreen(screen, winW, winH)
     end
-    if external3DBattleActive(screen)
-        and type(screen.classicGen2BattleWidescreen) == "function" then
-      screen.modernBattleYieldedTo3D = true
-      return screen.classicGen2BattleWidescreen(screen, winW, winH)
-    end
-    screen.modernBattleYieldedTo3D = nil
     local G = love.graphics
     local scale = math.max(1, math.floor(math.min(winH / 144, winW / 160)))
     local width = math.max(160, math.min(640, math.floor(winW / scale)))

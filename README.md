@@ -52,8 +52,8 @@ A separate, optional Unlimited PP gameplay setting is OFF by default.
   that preserve white markings and skip different replacement artwork.
 - **More informative battles** — readable colored HP bars, experience progress,
   status, level, gender, and caught indicators add useful information while
-  preserving the battlefield and the native battle flow. On Gen 2, an active
-  Stadium 2 battle keeps ownership of its complete 3D scene.
+  preserving the battlefield and the native battle flow. On Gen 2, active
+  Battle Art and Stadium 2 battles retain their complete 3D scenes.
 - **Type-aware move displays** — move cards and text use their type colors
   consistently in battle, summaries, move learning, move forgetting, Mimic,
   and PP selection, with clearer PP and effectiveness cues where relevant.
@@ -121,6 +121,14 @@ command/dialogue preferences apply to the Typed Move Colors Wide presenter.
 
 ## Compatibility API
 
+**Battle Art 2.1.0 (Gen 2):** enable both mods and leave Battle Art's
+**3D-BTL** option On. The suite retains Battle Art's arena, sprites, camera,
+and attack rendering, with its coloured move cards over the scene. Turning
+3D-BTL Off restores the suite's normal battle layout. Battle HUD and Move
+Colors can each be switched independently, including during an open battle.
+The Gen 2 port's `BATTLE_ART_VOXEL_GEN2` identity and screen-based scene API
+are supported alongside the older `BATTLE_ART_VOXEL_FORK` contract.
+
 The suite exports its component APIs beneath one mod identity:
 
 ```lua
@@ -145,7 +153,7 @@ luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.15.zip
+  -o build/modern_ui_suite-0.1.16.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

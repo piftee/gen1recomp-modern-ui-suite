@@ -32,7 +32,7 @@ local expectedVersions = {
   modern_bag_ui = "0.6.1",
   modern_pc_ui = "0.6.1",
   modern_pokedex_ui = "0.2.13",
-  battle_info_hud = "0.9.3",
+  battle_info_hud = "0.9.4",
   typed_move_colors = "0.5.1",
 }
 
@@ -1223,8 +1223,11 @@ local gen2Hooks = {}
 local stadiumActive = true
 local stadiumScene
 local battleArtState
+local battleArtId = "BATTLE_ART_VOXEL_FORK"
+local stageStateOverride
+local hudEnabled = true
 local gen2Mod = {
-  options = { get = function() return true end },
+  options = { get = function() return hudEnabled end },
   hooks = { wrap = function(_, name, callback)
     gen2Hooks[name] = callback
   end },
@@ -1240,9 +1243,10 @@ local gen2Mod = {
         battleStatus = function() return { active = stadiumActive } end,
       } }
     end
-    if id == "BATTLE_ART_VOXEL_FORK" then
+    if id == battleArtId then
       return { exports = { battleStage = {
         state = function(expected)
+          if stageStateOverride then return stageStateOverride(expected) end
           if battleArtState and expected == battleArtState.battle then
             return battleArtState
           end
@@ -1299,6 +1303,47 @@ T.eq(battleArtBattle:drawWidescreen(1280, 720), "battle-art",
   "a staged Battle Art Gen 2 scene also retains its final draw")
 T.eq(battleArtDraws, 1,
   "the suite honours Battle Art's public arena-ownership contract")
+
+battleArtId = "BATTLE_ART_VOXEL_GEN2"
+battleArtState.battle = battleArtBattle
+T.eq(battleArtBattle:drawWidescreen(1280, 720), "battle-art",
+  "Battle Art 2.1.0's Gen 2 identity and screen-based contract retain 3D")
+T.eq(battleArtDraws, 2, "the new provider is invoked exactly once")
+for _, id in ipairs({ "DRAMATIC_SHAPE", "DRAMALESS_SHAPE", "potato_voxel" }) do
+  battleArtId = id
+  T.eq(battleArtBattle:drawWidescreen(800, 720), "battle-art",
+    id .. " can share the public staged-scene contract")
+end
+hudEnabled = false
+battleArtState = nil
+T.eq(battleArtBattle:drawWidescreen(1280, 720), "battle-art",
+  "disabling HUD during an open fight immediately restores the inherited draw")
+T.eq(battleArtBattle.modernBattleYieldedTo3D, nil,
+  "an inactive provider does not leave a stale 3D ownership flag")
+
+hudEnabled, battleArtId, battleArtBattle.phase = true, "BATTLE_ART_VOXEL_GEN2", "moves"
+for _, case in ipairs({
+  { "installed but inactive", function() return nil end },
+  { "malformed response", function() return "not a scene" end },
+  { "provider error", function() error("unavailable scene") end },
+  { "unstaged response", function(expected)
+      return { battle = expected, staged = false, ownership = { arena = true } }
+    end },
+  { "unclaimed arena", function(expected)
+      return { battle = expected, staged = true, ownership = { hud = true } }
+    end },
+  { "another battle's scene", function()
+      return { battle = {}, staged = true, ownership = { arena = true } }
+    end },
+}) do
+  stageStateOverride = case[2]
+  -- With cards disabled, the regular move path delegates to native too;
+  -- the ownership flag distinguishes it from an incorrectly claimed arena.
+  T.eq(battleArtBattle:drawWidescreen(800, 720), "battle-art",
+    case[1] .. " safely reaches the ordinary move fallback")
+  T.eq(battleArtBattle.modernBattleYieldedTo3D, nil,
+    case[1] .. " cannot claim this screen's 3D scene")
+end
 
 package.loaded["src.ui.gen2.Chrome"] = savedGen2Chrome
 

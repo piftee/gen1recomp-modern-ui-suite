@@ -11,7 +11,7 @@ loaded from the legacy directories.
 | Modern Bag UI | 0.6.1 |
 | Modern PC UI | 0.6.1 |
 | Modern Pokedex UI | 0.2.13 |
-| Battle Info HUD | 0.9.3 |
+| Battle Info HUD | 0.9.4 |
 | Typed Move Colors | 0.5.1 |
 | Unlimited PP (independent QoL, default Off) | 0.1.0 |
 

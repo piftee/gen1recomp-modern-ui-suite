@@ -55,7 +55,7 @@ return {
     key = "battle_hud",
     name = "Battle Info HUD",
     short = "BATTLE HUD",
-    version = "0.9.3",
+    version = "0.9.4",
     installOrder = 2,
     enabledOption = "enabled",
     files = { "main.lua", "hud.lua", "gen2.lua" },
