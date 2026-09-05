@@ -32,7 +32,7 @@ local expectedVersions = {
   modern_bag_ui = "0.6.1",
   modern_pc_ui = "0.6.1",
   modern_pokedex_ui = "0.2.13",
-  battle_info_hud = "0.9.4",
+  battle_info_hud = "0.10.1",
   typed_move_colors = "0.5.1",
 }
 

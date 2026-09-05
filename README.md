@@ -50,8 +50,9 @@ A separate, optional Unlimited PP gameplay setting is OFF by default.
   Pokédex feel like a research tool rather than a long list.
   Native Gen 2 PC/Pokédex portraits use exact-image guarded background cutouts
   that preserve white markings and skip different replacement artwork.
-- **More informative battles** — readable colored HP bars, experience progress,
-  status, level, gender, and caught indicators add useful information while
+- **More informative battles** — colored HP and EXP bars with compact white
+  readouts inside them in Gen 1. Status, level, gender, and caught indicators
+  add useful information while
   preserving the battlefield and the native battle flow. On Gen 2, active
   Battle Art and Stadium 2 battles retain their complete 3D scenes.
 - **Type-aware move displays** — move cards and text use their type colors
@@ -119,6 +120,27 @@ apart from the 161–223-pixel list fallback. Native 160-pixel command layouts,
 Text Only and independently owned third-party panels remain unchanged. Gen 1
 command/dialogue preferences apply to the Typed Move Colors Wide presenter.
 
+## Gen 1 battle presentation
+
+HP and EXP use small white numbers inside their bars, matching the party
+menu's arrangement. EXP shows progress within the current level; long values
+are shortened only when needed, and the level cap displays MAX. The wide
+player panel includes space below EXP before its border.
+
+**Battle Art (Gen 1):** the same bars and caught indicator are available in
+its 3D presentation, including its native HUD fallback. Gender Mod's coloured
+icons share the native level row and use the same position in every drawing
+pass. Keep **Battle HUD → HUD ENABLED** On for these additions; Off restores
+the provider's own HUD. Verified with Battle Art 1.10.1 and Gender Mod 0.3.6.
+
+![Gen 1 wide battle HUD](screenshots/gen1-wide-hud.png)
+
+![Gen 1 Battle Art HUD](screenshots/gen1-battle-art-hud.png)
+
+The separate white move-details window labelled like `NOR P35` belongs to
+**Move Inspector**, which is listed under QOL. Disable that mod to remove its
+window. The suite's move cards have their own Power/PP display.
+
 ## Compatibility API
 
 **Battle Art 2.1.0 (Gen 2):** enable both mods and leave Battle Art's
@@ -150,10 +172,11 @@ at runtime or during packaging.
 
 ```sh
 luajit mods/modern_ui_suite/tests/modern_ui_suite_test.lua
+luajit mods/modern_ui_suite/tests/battle_meters_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.16.zip
+  -o build/modern_ui_suite-0.1.18.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

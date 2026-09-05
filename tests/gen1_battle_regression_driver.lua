@@ -93,7 +93,7 @@ return function(game)
           local tag = size[1] .. "-" .. path[1] .. "-" .. row[1]
           local battle, player = fresh(path, row)
           local draws, draw, drawBox, panelRows = {}, Font.draw, Font.drawBox, {}
-          local expandedFooter = false
+          local compactFooter = false
           Font.draw = function(value, x, y, ...)
             if value == battle.player.name and x == 80 then draws[#draws+1] = y end
             return draw(value, x, y, ...)
@@ -101,7 +101,7 @@ return function(game)
           Font.drawBox = function(tx,ty,tw,th,...)
             if tx == 23 and tw == 15 then
               panelRows[#panelRows+1] = ty
-              if ty == 7 and th == 6 then expandedFooter = true end
+              if ty == 7 and th == 5 then compactFooter = true end
             end
             return drawBox(tx,ty,tw,th,...)
           end
@@ -113,7 +113,7 @@ return function(game)
             for _, y in ipairs(draws) do check(y >= 56, tag .. " player name stays below enemy sprite slot") end
           else
             check(#panelRows>0, tag .. " native wide player panel is drawn")
-            check(expandedFooter, tag .. " wide HUD footer has a separate border row")
+            check(compactFooter, tag .. " wide HUD has compact bars above its border")
             for _, y in ipairs(panelRows) do check(y>=7, tag .. " wide panel stays below enemy sprite slot") end
           end
           tap(battle, "a")
