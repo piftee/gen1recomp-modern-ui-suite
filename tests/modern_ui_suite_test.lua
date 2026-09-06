@@ -28,10 +28,10 @@ local componentKeys = {
 }
 local expectedVersions = {
   modern_start_menu_ui = "0.1.20",
-  modern_party_ui = "0.4.11",
+  modern_party_ui = "0.4.12",
   modern_bag_ui = "0.6.2",
-  modern_pc_ui = "0.6.2",
-  modern_pokedex_ui = "0.2.13",
+  modern_pc_ui = "0.6.3",
+  modern_pokedex_ui = "0.2.14",
   battle_info_hud = "0.10.1",
   typed_move_colors = "0.5.1",
 }

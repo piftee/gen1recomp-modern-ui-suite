@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.21] - 2026-09-05
+
+- Fix Crystal Animated Sprites with Shiny Visuals compatibility in the Gen 2
+  Pokédex, party summary and PC previews. Preserve static and animated source
+  colours, shiny variants and companion animations; keep cartridge palettes
+  for native artwork.
+
 ## 0.1.20 - 2026-09-05
 
 - Gen 2 Party: show native refusal and item-result messages with an A/B

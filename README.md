@@ -1,5 +1,11 @@
 # Modern UI Suite
 
+
+Crystal Animated Sprites with Shiny Visuals 2.0.2 compatibility: Gen 2
+Pokédex, party summary and PC previews retain the companion's colours and
+animations, including shiny party/PC sprites. Native artwork keeps its
+cartridge palettes. Verified in Gold, Silver and Crystal.
+
 **Classic Pokémon, made clearer at a glance.**
 
 Modern UI Suite refreshes the menus and information screens throughout the
@@ -205,7 +211,7 @@ luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.20.zip
+  -o build/modern_ui_suite-0.1.21.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

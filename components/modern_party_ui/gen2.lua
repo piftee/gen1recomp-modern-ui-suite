@@ -490,6 +490,27 @@ return function(mod)
 
   local PIC_PAD = { [7] = { 0, 0 }, [6] = { 1, 1 }, [5] = { 1, 2 } }
 
+  -- Crystal's own drawPicBlock wrapper is bypassed by the modern layout.
+  -- Preserve its exact coloured/shiny/monochrome frame, including animation.
+  local function isCrystalPortrait(image)
+    local provider = mod.find and mod.find("crystal_animated_sprites_with_shiny_visuals")
+    local api = provider and provider.exports
+    return api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image)
+  end
+
+  local function drawPortrait(image, colors, body)
+    if isCrystalPortrait(image) then
+      local shader = love.graphics.getShader()
+      love.graphics.setShader()
+      body()
+      love.graphics.setShader(shader)
+    elseif colors and GbcPalette.available() then
+      GbcPalette.with(colors, body)
+    else
+      body()
+    end
+  end
+
   local function drawSummaryImage(image, colors, x, y, quad, size)
     if not image then return false end
     local wide = math.floor((size or image:getWidth()) / 8)
@@ -502,11 +523,7 @@ return function(mod)
         love.graphics.draw(image, x + pad[1] * 8, y + pad[2] * 8)
       end
     end
-    if colors and GbcPalette.available() then
-      GbcPalette.with(colors, body)
-    else
-      body()
-    end
+    drawPortrait(image, colors, body)
     return true
   end
 
@@ -539,7 +556,11 @@ return function(mod)
     end
     local image = self.picFor and self:picFor(mon)
     local sheet, quad, size
-    if self.picAnimFrame then sheet, quad, size = self:picAnimFrame() end
+    -- A native Crystal entrance animation must not replace the companion's
+    -- selected normal/shiny frame with the cartridge's sprite sheet.
+    if self.picAnimFrame and not isCrystalPortrait(image) then
+      sheet, quad, size = self:picAnimFrame()
+    end
     if sheet then drawSummaryImage(sheet, colors, x, y, quad, size)
     else drawSummaryImage(image, colors, x, y) end
   end
