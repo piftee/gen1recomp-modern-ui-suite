@@ -9,6 +9,7 @@ return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
   local GbcPalette = require("src.render.GbcPalette")
+  local Assets = require("src.render.Assets")
   local Palettes = require("src.world.gen2.Palettes")
   local TypeChart = require("src.battle.TypeChart")
 
@@ -214,6 +215,31 @@ return function(mod)
 
   local PIC_PAD = { [7] = { 0, 0 }, [6] = { 1, 1 }, [5] = { 1, 2 } }
 
+  -- Crystal supplies both coloured and pre-baked monochrome frames. Its
+  -- image predicate also recognizes animated frames without a filename;
+  -- a species flag alone could exempt an unrelated/native replacement.
+  local function drawPortrait(image, colors, body, def)
+    local provider = mod.find and mod.find("crystal_animated_sprites_with_shiny_visuals")
+    local api = provider and provider.exports
+    local authored = api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image)
+    -- Assets loads static pictures through ImageData, so those Images have
+    -- no filename for Crystal's predicate. Match the exact registered source.
+    if not authored and def and def.trueColor and def.spriteFront then
+      local ok, source = pcall(Assets.image, def.spriteFront)
+      authored = ok and source == image
+    end
+    if authored then
+      local shader = love.graphics.getShader()
+      love.graphics.setShader()
+      body()
+      love.graphics.setShader(shader)
+    elseif colors and GbcPalette.available() then
+      GbcPalette.with(colors, body)
+    else
+      body()
+    end
+  end
+
   -- Native drawPic first paints a 56x56 cartridge-paper tile block. Modern
   -- Pokedex panels already provide the type-coloured face, so draw only the
   -- transparent sprite pixels and let that face show through behind them.
@@ -235,11 +261,8 @@ return function(mod)
     local function body()
       love.graphics.draw(image, x + pad[1] * 8, y + pad[2] * 8)
     end
-    if colors and GbcPalette.available() then
-      GbcPalette.with(colors, body)
-    else
-      body()
-    end
+    drawPortrait(image, colors, body, row and row.seen
+      and menu.pokemon and menu.pokemon[row.species])
   end
 
   local function drawList(menu)

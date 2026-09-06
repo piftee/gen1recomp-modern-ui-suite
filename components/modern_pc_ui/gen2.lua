@@ -362,7 +362,21 @@ return function(mod)
       love.graphics.draw(image, rect.x + (rect.w - iw * scale) / 2,
         rect.y + (rect.h - ih * scale) / 2, 0, scale, scale)
     end
-    if colors and GbcPalette.available() then GbcPalette.with(colors, draw) else draw() end
+    -- The modern detail rail bypasses Crystal's native drawPicBlock wrapper.
+    -- Use its image identity predicate, including for animated shiny frames,
+    -- so native/egg art still receives the cartridge palette.
+    local provider = mod.find and mod.find("crystal_animated_sprites_with_shiny_visuals")
+    local api = provider and provider.exports
+    if api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image) then
+      local shader = love.graphics.getShader()
+      love.graphics.setShader()
+      draw()
+      love.graphics.setShader(shader)
+    elseif colors and GbcPalette.available() then
+      GbcPalette.with(colors, draw)
+    else
+      draw()
+    end
   end
   local function details(screen, layout)
     local d = layout.detail

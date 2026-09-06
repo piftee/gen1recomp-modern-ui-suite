@@ -7,10 +7,10 @@ loaded from the legacy directories.
 | Component | Imported version |
 | --- | ---: |
 | Modern Start Menu UI | 0.1.20 |
-| Modern Party UI | 0.4.11 |
+| Modern Party UI | 0.4.12 |
 | Modern Bag UI | 0.6.2 |
-| Modern PC UI | 0.6.2 |
-| Modern Pokedex UI | 0.2.13 |
+| Modern PC UI | 0.6.3 |
+| Modern Pokedex UI | 0.2.14 |
 | Battle Info HUD | 0.10.1 |
 | Typed Move Colors | 0.5.1 |
 | Unlimited PP (independent QoL, default Off) | 0.1.0 |
