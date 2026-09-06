@@ -461,6 +461,9 @@ return function(mod, genderExports, compatibility)
     local mon = summary.mon
     local species = mon and mon.species
     if not species then return nil, false end
+    local selected = mod.suite and mod.suite.battlePortrait
+      and mod.suite.battlePortrait(summary.game, mon)
+    if selected then return selected, true end
     local path, trueColor = Sprites.path(summary.game.data, species, "front",
       { mon = mon, kind = "battle" })
     if summary.modernBattleSpriteSpecies ~= species
@@ -488,9 +491,11 @@ return function(mod, genderExports, compatibility)
       or summary.modernBattleSprite or summary.sprite
     if not source then return nil end
     local sw, sh = source:getDimensions()
+    local scale = math.min(1, 56 / sw, 56 / sh, (layout.railW - 4) / sw)
+    sw, sh = sw * scale, sh * scale
     local x = layout.railX + math.floor((layout.railW - sw) / 2)
     local y = layout.railY + 5 + math.max(0, math.floor((56 - sh) / 2))
-    return x, y, sw, sh
+    return x, y, sw, sh, scale
   end
 
   local function displayType(id)
@@ -606,7 +611,7 @@ return function(mod, genderExports, compatibility)
   local function drawProfile(summary, layout)
     local mon, def = summary.mon, definition(summary)
     drawCard(layout.railX, layout.railY, layout.railW, layout.railH, true)
-    local x, y, sw, sh = spriteGeometry(summary, layout)
+    local x, y, sw, sh, spriteScale = spriteGeometry(summary, layout)
     local protectedFace
     if x then
       -- Composite the card's complete inner face instead of drawing a tight
@@ -650,7 +655,7 @@ return function(mod, genderExports, compatibility)
       love.graphics.setColor(1, 1, 1, 1)
       -- The original status screen mirrors the front sprite. Preserve that
       -- presentation detail and the live sprite supplied by other mods.
-      love.graphics.draw(image, x + sw, y, 0, -1, 1)
+      love.graphics.draw(image, x + sw, y, 0, -spriteScale, spriteScale)
       if shader then love.graphics.setShader() end
     end
 

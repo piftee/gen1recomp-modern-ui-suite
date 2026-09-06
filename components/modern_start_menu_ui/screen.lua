@@ -1,6 +1,7 @@
 return function(mod, icons)
   local Font = require("src.render.Font")
   local Sound = require("src.core.Sound")
+  local Strings = require("src.core.Strings")
   local paletteOK, PaletteFX = pcall(require, "src.render.PaletteFX")
   if not paletteOK then PaletteFX = nil end
   local touchOK, TouchControls = pcall(require, "src.core.TouchControls")
@@ -67,6 +68,21 @@ return function(mod, icons)
     TRAINER = "trainer", PLAYER = "trainer",
   }
   local CUSTOM_ALIAS_LABELS = { DEX = true, PARTY = true, PKMN = true }
+  local TRANSLATED_SOURCES = {
+    { "POKéDEX", "pokedex" }, { "POKéMON", "party" }, { "ITEM", "bag" },
+    { "PACK", "bag" }, { "<PO><KE>GEAR", "pokegear" },
+    { "POKéGEAR", "pokegear" }, { "SAVE", "save" }, { "OPTION", "options" },
+    { "OPTIONS", "options" }, { "LINK", "link" }, { "MODS", "mods" },
+    { "QUIT", "quit" },
+  }
+  local function translatedLabel(label)
+    for _, source in ipairs(TRANSLATED_SOURCES) do
+      local translated = Strings(source[1])
+      if translated ~= source[1] and translated == label then
+        return source[2], source[1]
+      end
+    end
+  end
   local LEGACY_SHORT_LABELS = {
     pokedex = "DEX", party = "PKMN", bag = "BAG", trainer = "ID",
     save = "SAVE", options = "OPT", pokegear = "GEAR", link = "LINK",
@@ -182,6 +198,8 @@ return function(mod, icons)
       return VALUE_IDS[id] or id
     end
     local label = type(item) == "table" and tostring(item.label or "") or ""
+    local translated = translatedLabel(label)
+    if translated then return translated end
     local upper = foldLatin(label):upper()
     local known = LABEL_IDS[upper]
     if known then return known end
@@ -204,7 +222,10 @@ return function(mod, icons)
     if type(item.value) == "string" and item.value ~= "" then
       return "value:" .. item.value
     end
-    local label = miniText(item.label or "UNKNOWN")
+    local _, source = translatedLabel(item.label)
+    -- Preserve non-Latin custom labels instead of collapsing every glyph to
+    -- '?' (which gave unrelated translated actions the same saved icon key).
+    local label = foldLatin(source or item.label or "UNKNOWN"):upper()
     label = label:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
     return "label:" .. (label ~= "" and label or "UNKNOWN")
   end
@@ -215,6 +236,7 @@ return function(mod, icons)
     local value = type(item.value) == "string" and item.value or nil
     if id then return not BUILTIN_IDS[id] end
     if value then return not BUILTIN_IDS[value] end
+    if translatedLabel(item.label) then return false end
     local label = foldLatin(item.label or ""):upper()
     if CUSTOM_ALIAS_LABELS[label] then return true end
     if LABEL_IDS[label] then return false end

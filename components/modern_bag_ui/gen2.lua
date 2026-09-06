@@ -434,6 +434,29 @@ return function(mod, shared)
     if menu.ensureVisible then menu:ensureVisible() end
   end
 
+  -- Native TM rebuilds restore number order; apply the selected sort afterwards.
+  local function sortMachineRows(menu)
+    if menu:pocket().id == "TM_HM" and menu.modernBagSortKind then
+      local descending = menu.modernBagSortDescending
+      table.sort(menu.rows, function(a, b)
+        if menu.modernBagSortKind == "category" then
+          return shared.categoryLess(
+            { id = a.id, name = tostring(a.name or a.id):lower(), def = menu.items[a.id] },
+            { id = b.id, name = tostring(b.name or b.id):lower(), def = menu.items[b.id] },
+            descending)
+        end
+        local av = tostring(a.name or a.id):lower()
+        local bv = tostring(b.name or b.id):lower()
+        if av ~= bv then
+          if descending then return av > bv end
+          return av < bv
+        end
+        if descending then return tostring(a.id) > tostring(b.id) end
+        return tostring(a.id) < tostring(b.id)
+      end)
+    end
+  end
+
   local function rebuildModernRows(menu, baseRebuild)
     local restore = menu.modernBagRestoreState
     menu.modernBagRestoreState = nil
@@ -449,21 +472,7 @@ return function(mod, shared)
       for _, row in ipairs(menu.rows or {}) do
         row.modernBagSourcePocket = view.source
       end
-      -- The native TM/HM controller always restores number order. Name sorts
-      -- are the explicit exception requested by the shared Start sorter.
-      if view.id == "TM_HM" and menu.modernBagSortKind == "name" then
-        local descending = menu.modernBagSortDescending
-        table.sort(menu.rows, function(a, b)
-          local av = tostring(a.name or a.id):lower()
-          local bv = tostring(b.name or b.id):lower()
-          if av ~= bv then
-            if descending then return av > bv end
-            return av < bv
-          end
-          if descending then return tostring(a.id) > tostring(b.id) end
-          return tostring(a.id) < tostring(b.id)
-        end)
-      end
+      sortMachineRows(menu)
     else
       local nativeRows = nativeRowsById(menu, baseRebuild)
       local rows = {}
@@ -546,6 +555,7 @@ return function(mod, shared)
         entries[#entries + 1] = {
           id = itemId,
           original = index,
+          def = def,
           name = tostring(def.name or itemId):lower(),
           category = categoryFor(menu, itemId),
         }
@@ -562,7 +572,7 @@ return function(mod, shared)
           if descending then return av > bv end
           return av < bv
         end
-        return a.original < b.original
+        return shared.categoryLess(a, b, descending)
       end
       if a.name ~= b.name then
         if descending then return a.name > b.name end
@@ -578,15 +588,6 @@ return function(mod, shared)
     end
     for index = #order, 1, -1 do order[index] = nil end
     for index, entry in ipairs(entries) do order[index] = entry.id end
-    if kind == "category" and parityEnabled(menu) then
-      for index, pocket in ipairs(modernPockets(menu)) do
-        if pocket.id == "ALL" then
-          saveModernPocketState(menu)
-          menu.modernBagPocketIndex = index
-          break
-        end
-      end
-    end
     menu.modernBagSortKind = kind
     menu.modernBagSortDescending = descending and true or false
     menu.modernBagRestoreState = { id = selected }
@@ -910,7 +911,14 @@ return function(mod, shared)
         if parityEnabled(self, game) then
           return rebuildModernRows(self, baseRebuild)
         end
-        return baseRebuild(self)
+        local restore = self.modernBagRestoreState
+        self.modernBagRestoreState = nil
+        local selected = restore and restore.id or selectedId(self)
+        local index, scroll = self.index, self.scroll
+        local result = baseRebuild(self)
+        sortMachineRows(self)
+        if restore then restoreRow(self, selected, index, scroll) end
+        return result
       end
 
       menu.storeCursor = function(self)

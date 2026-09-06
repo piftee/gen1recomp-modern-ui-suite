@@ -1895,7 +1895,11 @@ return function(mod)
         or gen3PokemonUIActive(screen and screen.game)
         or not screen.selecting
         or not isTop(screen) then return end
-    local rowBase = screen._typedMoveColorsUsefulInfo and 4 or 5
+    local rowBase = screen._typedMoveColorsUsefulInfo and 4
+      or screen._typedMoveColorsLearnRowBase
+    -- Only colour a native list whose geometry was observed this frame.
+    -- Current engines moved its border from tile row 5 to 7.
+    if not rowBase then return end
     local nativeInkOnly = textOnlyMode() or stagedBattleBehind(screen)
     for i, move in ipairs(screen.mon and screen.mon.moves or {}) do
       local def = moveDef(screen.game, move)
@@ -1937,13 +1941,30 @@ return function(mod)
     end
   end
 
-  local function safeDrawPatch(class, key, renderer)
+  local function drawNativeLearn(screen, draw, ...)
+    local drawBox = Font.drawBox
+    screen._typedMoveColorsLearnRowBase = nil
+    Font.drawBox = function(tx, ty, tw, th, ...)
+      if tx == 4 and tw == 16 then screen._typedMoveColorsLearnRowBase = ty end
+      return drawBox(tx, ty, tw, th, ...)
+    end
+    local ok, result = pcall(draw, screen, ...)
+    Font.drawBox = drawBox
+    if not ok then error(result, 0) end
+    return result
+  end
+
+  local function safeDrawPatch(class, key, renderer, captureLearnLayout)
     local state = rawget(class, key)
     if not state then
       state = { original = class.draw, renderer = renderer }
       rawset(class, key, state)
       class.draw = function(self, ...)
-        state.original(self, ...)
+        if captureLearnLayout then
+          drawNativeLearn(self, state.original, ...)
+        else
+          state.original(self, ...)
+        end
         if state.renderer then
           local ok, err = pcall(state.renderer, self)
           if not ok and not state.warned then
@@ -1959,7 +1980,7 @@ return function(mod)
   end
 
   safeDrawPatch(SummaryMenu, "_typedMoveColorsPatch", renderSummary)
-  safeDrawPatch(MoveLearnMenu, "_typedMoveColorsPatch", renderMoveLearn)
+  safeDrawPatch(MoveLearnMenu, "_typedMoveColorsPatch", renderMoveLearn, true)
 
   -- Useful Move Info owns MoveLearnMenu through the screen registry and
   -- installs its draw method on each instance. Compose with that factory

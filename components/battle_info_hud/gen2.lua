@@ -265,6 +265,7 @@ return function(mod)
     local moving = screen.phase == "moves" or screen.phase == "moveSelect"
     local cards = mod.suite and mod.suite.enabled("typed_move_colors")
       and mod.suite.option("typed_move_colors", "battle_colors") ~= false
+      and not mod.suite.option("typed_move_colors", "text_only")
     if moving and not cards and type(screen.classicGen2BattleWidescreen) == "function" then
       return screen.classicGen2BattleWidescreen(screen, winW, winH)
     end

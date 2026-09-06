@@ -408,6 +408,9 @@ return function(mod, genderExports, compatibility)
   -- the PC detail rail now previews what the Pokémon actually looks like in
   -- battle rather than enlarging a separate menu-icon design.
   local function battleProfileSprite(screen, mon)
+    local selected = mod.suite and mod.suite.battlePortrait
+      and mod.suite.battlePortrait(screen.game, mon)
+    if selected then return selected end
     local path, trueColor = Sprites.path(screen.game.data, mon.species,
       "front", { mon = mon, kind = "battle" })
     if not path then return nil end
@@ -1439,6 +1442,24 @@ return function(mod, genderExports, compatibility)
     if not mon then return end
     scale = math.max(1, math.floor(tonumber(scale) or 1))
     x, y = math.floor(x), math.floor(y)
+    -- AUTO retains the installed icon renderer. Explicit small-icon choices
+    -- reuse the Party presenter; portrait selection never reaches this path.
+    local source = mod.suite and mod.suite.option("modern_party_ui", "sprite_source")
+    local party = source and source ~= "auto" and mod.find("modern_party_ui")
+    local draw = party and party.exports and party.exports.drawPartyToolIcon
+    if draw then
+      local mark = PaletteFX.markTrueColor
+      PaletteFX.markTrueColor = function(rx, ry, rw, rh)
+        addTrueColorRegion(trueColorRegions, rx, ry, rw, rh, clip)
+      end
+      local ok, drawn = pcall(draw, screen.game, mon, x, y, {
+        size = 16 * scale, counter = animationCounter(screen),
+        selected = animate, background = background,
+      })
+      PaletteFX.markTrueColor = mark
+      if not ok then error(drawn, 0) end
+      if drawn then return end
+    end
     local entry = iconEntry(screen, mon)
     local hgss = isHgssIcon(screen, mon)
     if hgss then

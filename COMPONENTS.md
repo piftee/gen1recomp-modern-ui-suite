@@ -4,15 +4,15 @@ Modern UI Suite 0.1.0 was initialized from the workspace working trees on
 2026-09-03. These copies are now maintained as suite components rather than
 loaded from the legacy directories.
 
-| Component | Imported version |
+| Component | Embedded version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.20 |
-| Modern Party UI | 0.4.12 |
-| Modern Bag UI | 0.6.2 |
-| Modern PC UI | 0.6.3 |
-| Modern Pokedex UI | 0.2.14 |
-| Battle Info HUD | 0.10.1 |
-| Typed Move Colors | 0.5.1 |
+| Modern Start Menu UI | 0.1.21 |
+| Modern Party UI | 0.4.13 |
+| Modern Bag UI | 0.6.3 |
+| Modern PC UI | 0.6.4 |
+| Modern Pokedex UI | 0.2.15 |
+| Battle Info HUD | 0.10.2 |
+| Typed Move Colors | 0.5.2 |
 | Unlimited PP (independent QoL, default Off) | 0.1.0 |
 
 All component code is MIT licensed. The Start Menu icon atlas also contains
@@ -28,6 +28,8 @@ CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
   one-way migration from the legacy option buckets. Bulk UI actions exclude
   the independent default-off QoL component.
 - `core/hub.lua` owns the only ordinary Options-menu entry.
+- `core/battle_portraits.lua` resolves optional large portraits;
+  `core/menu_icons.lua` independently resolves small menu icons.
 - `components/<legacy-id>/` contains each maintained feature implementation.
 
 Hooks and ordinary lifecycle listeners consult their component switch at call time.
@@ -58,3 +60,6 @@ the suite’s existing header money, description scrolling and Gen 2 pockets.
 The 0.1.20 update shares the Gen 2 catch-storage routing helper with standalone
 Modern PC UI 0.6.2, and the visible Gen 2 party-refusal messages with
 standalone Modern Party UI 0.4.10. Unlimited PP has its own standalone.
+
+The 0.1.22 embedded versions record suite-specific sorting, artwork, icon and
+battle presentation changes. They do not indicate new standalone releases.

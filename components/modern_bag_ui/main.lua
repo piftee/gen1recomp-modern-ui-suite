@@ -106,6 +106,10 @@ return function(mod)
     end
   end
 
+  local makeSorting = loadFactory("sorting.lua")
+  if not makeSorting then return end
+  local categoryLess = makeSorting()
+
   local makePockets = loadFactory("pockets.lua")
   if not makePockets then return end
   local pockets = makePockets(mod, function(game, key, value)
@@ -233,6 +237,7 @@ return function(mod)
       and GameVersion.generation() == 2 then
     return assert(loadFactory("gen2.lua"))(mod, {
       pockets = pockets,
+      categoryLess = categoryLess,
       skins = SKINS,
       skinIndex = skinIndex,
     })
@@ -250,6 +255,7 @@ return function(mod)
   local upstreamBagScreen = mod.content.screens:get("BagMenu")
   local compatibility = {
     pockets = pockets,
+    categoryLess = categoryLess,
     usefulBag = mod.find("useful_bag") ~= nil,
     kantoReforged = kantoReforged ~= nil,
     upstreamBagScreen = kantoReforged and upstreamBagScreen or nil,

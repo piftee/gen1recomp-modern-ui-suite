@@ -172,6 +172,63 @@ return function(parent, components)
     return self:set(game, component, "__enabled", value ~= false, quiet)
   end
 
+  local spriteSources = {
+    { "BATTLE ART", "battle_art" }, { "CRYSTAL", "crystal" },
+    { "DEFAULT", "default" },
+  }
+  function Settings:menuSpriteSource()
+    local value = self.parent.options:get("menu_sprite_source")
+    if value == "hgss" then return "default" end
+    for _, choice in ipairs(spriteSources) do
+      if value == choice[2] then return value end
+    end
+    return "battle_art"
+  end
+
+  function Settings:menuSpriteLabel()
+    for _, choice in ipairs(spriteSources) do
+      if self:menuSpriteSource() == choice[2] then return choice[1] end
+    end
+  end
+
+  function Settings:toggleMenuSpriteSource(game, direction)
+    local index = 1
+    for i, choice in ipairs(spriteSources) do
+      if self:menuSpriteSource() == choice[2] then index = i break end
+    end
+    local value = spriteSources[(index - 1 + (direction or 1)) % #spriteSources + 1][2]
+    local saved, live = optionTables(game, self.parent.id, true)
+    if saved then saved.menu_sprite_source = value end
+    if live then live.menu_sprite_source = value end
+    if game.mods and game.mods.events then
+      game.mods.events:emit("mod.options_changed", {
+        mod = self.parent.id, key = "menu_sprite_source", value = value,
+      })
+    end
+    return self:persist(game)
+  end
+
+  local iconSources = {
+    { "AUTO", "auto" }, { "ORIGINAL", "original" },
+    { "MENU PACK", "menu_pack" }, { "FOLLOWERS", "follower_pack" },
+  }
+  function Settings:menuIconLabel()
+    local value = self:get("modern_party_ui", "sprite_source")
+    for _, choice in ipairs(iconSources) do
+      if value == choice[2] then return choice[1] end
+    end
+    return "AUTO"
+  end
+  function Settings:toggleMenuIconSource(game, direction)
+    local index = 1
+    for i, choice in ipairs(iconSources) do
+      if self:get("modern_party_ui", "sprite_source") == choice[2] then index = i break end
+    end
+    self:set(game, "modern_party_ui", "sprite_source",
+      iconSources[(index - 1 + (direction or 1)) % #iconSources + 1][2])
+    return self:persist(game)
+  end
+
   function Settings:setAll(game, value)
     for _, component in ipairs(self.components) do
       -- Bulk UI actions must not opt a player into gameplay changes or
@@ -195,6 +252,13 @@ return function(parent, components)
     local saved, live = optionTables(game, self.parent.id, true)
     if not saved and not live then return false end
     local changed = false
+    -- Retire the former explicit HGSS source without altering other choices.
+    for _, bucket in pairs({ saved, live }) do
+      if bucket.menu_sprite_source == "hgss" then
+        bucket.menu_sprite_source = "default"
+        changed = true
+      end
+    end
 
     local function targetMissing(fullKey)
       return (not saved or saved[fullKey] == nil)
@@ -255,7 +319,10 @@ return function(parent, components)
   end
 
   function Settings:aggregateSchema()
-    local schema = {}
+    local schema = {
+      { key = "menu_sprite_source", label = "MENU SPRITES", type = "choice",
+        default = "battle_art", choices = copy(spriteSources) },
+    }
     for _, component in ipairs(self.components) do
       schema[#schema + 1] = {
         key = self:keyFor(component, "__enabled"),

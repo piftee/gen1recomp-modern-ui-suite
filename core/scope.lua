@@ -36,6 +36,8 @@ return function(parent, settings, state, component)
     end,
   }
   api.suite = {
+    battlePortrait = state.battlePortrait,
+    drawMenuIcon = state.drawMenuIcon,
     option = function(id, key) return settings:get(id, key) end,
     enabled = function(id) return settings:isEnabled(id) end,
   }

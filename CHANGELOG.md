@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.1.22] - 2026-09-06
+
+- Fix Category Asc/Desc sorting within individual Bag pockets in Gen 1 and
+  Gen 2. Use consistent item-family priorities and numeric TM/HM order,
+  preserve the selected pocket/item and quantities, and retain sorting after
+  Gen 2 rebuilds its machine list.
+- Add independent SPRITE and ICONS controls to the suite hub. Large summary,
+  Pokédex and PC portraits can follow Battle Art or Crystal Animated Sprites,
+  or retain the existing Default handling. Preserve front-generation choices,
+  animation, shiny variants and source colours in both generations.
+- Keep small Party/PC icons separate from battle portraits. Auto, Original,
+  Menu Pack and Followers share Party's existing Icon Source preference;
+  unavailable providers fall back to the existing renderer.
+- Fix grey battle-HUD patches appearing over the Gen 1 Bag. Remember the
+  current pocket, item and scroll position across Bag visits during play,
+  including after using an item in battle.
+- Fix Gen 2 Text Only moves: retain the native list, cursor, TYPE/PP box and
+  move-reordering controls while applying legible type colours.
+- Align Gen 1 move-learning colours with the engine's actual native rows;
+  preserve native text when the layout is unknown.
+- Make the Gen 2 party selection visible on pale cards and recognize
+  translated built-in START actions when selecting their icons.
+- Draw one caught-species marker instead of a deferred six-slot party row
+  in Gen 1 battles with sprite companions. Preserve its red/white colours,
+  monochrome modes, Battle Art capture and native trainer rows.
+- Retain the Crystal sprite fixes from 0.1.21. Gen 4 source-frame padding is
+  unchanged; some animations still appear smaller in fitted menu portraits.
+
 ## [0.1.21] - 2026-09-05
 
 - Fix Crystal Animated Sprites with Shiny Visuals compatibility in the Gen 2

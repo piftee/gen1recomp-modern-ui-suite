@@ -13,6 +13,9 @@ return {
       "Seven independently switchable UI components",
       "Independent QOL: player-only Unlimited PP, OFF by default and excluded from bulk UI switches",
       "Start-button Bag sorting by category or item name",
+      "Category sorting within each pocket, including numeric TMs/HMs and retained selection",
+      "Separate large-portrait and small-menu-icon source controls",
+      "Gen 1 battle Bag colour isolation and remembered pocket/item/scroll position",
       "Money in both Bag headers and overflow-only description scrolling with selection reset",
       "Safe PC group selections, whole-party swaps and optional box-local navigation",
       "Stable battle text alignment, full-opacity neutral colors and responsive information placement",
@@ -31,6 +34,7 @@ return {
       "Expanded item storage remains active when Bag presentation is disabled to protect saves",
       "Original cartridge save export remains limited to cartridge-era inventory limits",
       "Uses engine_internals to preserve and decorate native controllers",
+      "Some Gen 4 portrait animations retain extra padding in their source frames",
     },
   },
   credits = {

@@ -33,6 +33,10 @@ return function(mod, compatibility)
   local DARK = 85 / 255
   local BLACK = 0
 
+  -- Follow the loaded save through newly constructed Bag menus without
+  -- storing transient cursor state in saves or leaking it to another game.
+  local selections = setmetatable({}, { __mode = "k" })
+
   local function classicSkin()
     return mod.options:get("skin") == "classic_pocket"
   end
@@ -835,6 +839,18 @@ return function(mod, compatibility)
     return item and item.value or nil
   end
 
+  local function rememberSelection(menu)
+    if not menu.modernBagRememberSelection then return end
+    local pocket = pocketFor(menu).key
+    menu.modernBagPocketState[pocket] = {
+      id = selectedId(menu), index = menu.index, scroll = menu.scroll,
+    }
+    selections[menu.game.save] = {
+      pocket = pocket, states = menu.modernBagPocketState,
+      openOn = menu.modernBagOpeningPreference,
+    }
+  end
+
   local function swapId(menu)
     if menu.modernBagSwapId then return menu.modernBagSwapId end
     local item = menu.swapIndex and menu.items and menu.items[menu.swapIndex]
@@ -935,11 +951,7 @@ return function(mod, compatibility)
     return ranks, nextRank
   end
 
-  -- Sort the canonical Bag order in place so quantities, item ownership and
-  -- every native item action remain untouched. Category sorts deliberately
-  -- preserve the player's existing order inside each pocket; this makes the
-  -- operation useful as a quick grouping command without destroying a
-  -- carefully arranged medicine or TM list.
+  -- Sort storage order while retaining quantities, native actions and the active tab.
   local function sortBag(menu, kind, descending)
     if listConfig(menu) then return false end
     local save = menu.game and menu.game.save
@@ -954,6 +966,7 @@ return function(mod, compatibility)
         entries[#entries + 1] = {
           id = id,
           original = index,
+          def = def,
           name = tostring(def.name or id):lower(),
           category = categoryFor(menu.game, id),
         }
@@ -969,7 +982,7 @@ return function(mod, compatibility)
           if descending then return av > bv end
           return av < bv
         end
-        return a.original < b.original
+        return compatibility.categoryLess(a, b, descending)
       end
       if a.name ~= b.name then
         if descending then return a.name > b.name end
@@ -987,16 +1000,6 @@ return function(mod, compatibility)
     for index = #order, 1, -1 do order[index] = nil end
     for index, entry in ipairs(entries) do order[index] = entry.id end
     menu.modernBagSwapId = nil
-    if kind == "category" then
-      -- Grouping the whole inventory is otherwise invisible from a single
-      -- filtered pocket. Respect Hide All; never recreate a disabled tab.
-      for index, pocket in ipairs(pocketsFor(menu)) do
-        if pocket.key == "all" and index ~= menu.modernBagPocket then
-          switchPocket(menu, index - menu.modernBagPocket)
-          break
-        end
-      end
-    end
     rebuildPocket(menu, selected)
     return true
   end
@@ -1877,6 +1880,12 @@ return function(mod, compatibility)
 
   local function draw(menu)
     confineNativeViewport(menu)
+    -- A world-background battle still draws below this opaque surface.
+    -- Its RGB opt-out rectangles would otherwise re-blit pieces of the
+    -- Bag without its palette, leaving grey HUD-shaped blocks. The world
+    -- pass remains visible around the Bag and keeps its own colour marks.
+    local rects = PaletteFX.trueColorRects("ui")
+    for index = #rects, 1, -1 do rects[index] = nil end
     syncInventory(menu)
     local layout = layoutFor(menu)
     menu.rows = layout.rows
@@ -2230,6 +2239,7 @@ return function(mod, compatibility)
         and type(menu.gen1ModernUi) == "table"
         and type(menu.gen1ModernUi.switchPocket) == "function"
       local baseChoose = menu.onChoose
+      local baseClose = menu.close
       menu.modernBagBaseUpdate = menu.update
       -- Bag lists are circular: moving past either end continues from the
       -- opposite end. ListMenu owns the actual movement, scrolling and key
@@ -2238,6 +2248,8 @@ return function(mod, compatibility)
       menu.wrap = true
       menu.modernBagPocket = 1
       menu.modernBagPocketState = {}
+      menu.modernBagRememberSelection = not (opts and opts.battle and opts.battle.demo)
+      menu.modernBagOpeningPreference = mod.options:get("open_on") or "all"
       menu.modernBagSwapId = nil
       menu.modernBagExternalController = externalController
       local sourcePockets = externalController and KANTO_POCKETS or POCKETS
@@ -2256,9 +2268,14 @@ return function(mod, compatibility)
           finishSwap(list, item and item.value)
           return
         end
+        rememberSelection(list)
         local result = baseChoose(item, list)
         if item and item.value then installTossPrompts(list, item) end
         return result
+      end
+      menu.close = function(self, ...)
+        rememberSelection(self)
+        return baseClose(self, ...)
       end
 
       menu.draw = draw
@@ -2285,9 +2302,18 @@ return function(mod, compatibility)
       menu.modernBagSort = sortBag
       menu.modernBagOpenSort = openSortMenu
       local initial = compatibility.pockets and compatibility.pockets.opening(menu.modernBagPockets) or 1
+      local saved = menu.modernBagRememberSelection and selections[game.save]
+      if saved and saved.openOn == menu.modernBagOpeningPreference then
+        menu.modernBagPocketState = saved.states
+        for index, pocket in ipairs(menu.modernBagPockets) do
+          if pocket.key == saved.pocket then initial = index break end
+        end
+      end
       if externalController then switchPocket(menu, initial - menu.modernBagPocket)
       else menu.modernBagPocket = initial end
-      rebuildPocket(menu)
+      local cursor = menu.modernBagPocketState[pocketFor(menu).key]
+      menu.index, menu.scroll = cursor and cursor.index or 1, cursor and cursor.scroll or 0
+      rebuildPocket(menu, cursor and cursor.id)
       return menu
     end,
   }
