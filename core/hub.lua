@@ -165,6 +165,11 @@ return function(mod, settings, state, components)
           component = component,
         }
       end
+      items[#items + 1] = { id = "menu_sprite_source", label = "SPRITE",
+        right = settings:menuSpriteLabel(),
+        action = "sprites" }
+      items[#items + 1] = { id = "party.sprite_source", label = "ICONS",
+        right = settings:menuIconLabel(), action = "icons" }
       items[#items + 1] = { id = "back", label = "BACK", cancel = true }
       return items
     end
@@ -190,6 +195,10 @@ return function(mod, settings, state, components)
           settings:setAll(game, true); settings:persist(game); refresh(item.id)
         elseif item.action == "disable" then
           settings:setAll(game, false); settings:persist(game); refresh(item.id)
+        elseif item.action == "sprites" then
+          settings:toggleMenuSpriteSource(game); refresh(item.id)
+        elseif item.action == "icons" then
+          settings:toggleMenuIconSource(game); refresh(item.id)
         elseif item.component then
           openComponent(game, item.component)
         end
@@ -200,6 +209,16 @@ return function(mod, settings, state, components)
     menu.update = function(self, dt)
       local item = self.items and self.items[self.index]
       local input = self.game and self.game.input
+      if item and item.action == "sprites" and input
+          and (input:wasPressed("left") or input:wasPressed("right")) then
+        settings:toggleMenuSpriteSource(self.game, input:wasPressed("left") and -1 or 1)
+        refresh(item.id); return
+      end
+      if item and item.action == "icons" and input
+          and (input:wasPressed("left") or input:wasPressed("right")) then
+        settings:toggleMenuIconSource(self.game, input:wasPressed("left") and -1 or 1)
+        refresh(item.id); return
+      end
       if item and item.component and input
           and (input:wasPressed("left") or input:wasPressed("right")) then
         settings:setEnabled(self.game, item.component,

@@ -1,13 +1,14 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "api": 2,
   "games": [
     "gen1",
     "gen2"
   ],
   "entry": "main.lua",
+  "assets_transforms": "transforms.lua",
   "profile": "content",
   "game_version": ">=0.0.0-dev <1.0.0",
   "category": "UI",

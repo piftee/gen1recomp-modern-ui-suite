@@ -346,12 +346,16 @@ return function(mod)
   local function icon(screen, mon, x, y)
     local renderer = screen.modernPCIconRenderer
     renderer.clock = screen.blink
+    if mod.suite and mod.suite.drawMenuIcon
+        and mod.suite.drawMenuIcon(screen.game, renderer, mon, math.floor(x), math.floor(y)) then return end
     renderer:drawIcon(mon, math.floor(x), math.floor(y))
   end
   local function portrait(screen, mon, rect)
     local renderer = screen.modernPCPicRenderer
-    local image = mon.isEgg and renderer:image(
-      ((screen.game.data.gen2MenuGfx or {}).eggHatch or {}).egg) or renderer:picFor(mon)
+    local selected = mod.suite and mod.suite.battlePortrait
+      and mod.suite.battlePortrait(screen.game, mon)
+    local image = selected or (mon.isEgg and renderer:image(
+      ((screen.game.data.gen2MenuGfx or {}).eggHatch or {}).egg) or renderer:picFor(mon))
     if not image then return icon(screen, mon, rect.x, rect.y) end
     local iw, ih = image:getDimensions()
     local scale = math.min(1, rect.w / iw, rect.h / ih)
@@ -367,7 +371,7 @@ return function(mod)
     -- so native/egg art still receives the cartridge palette.
     local provider = mod.find and mod.find("crystal_animated_sprites_with_shiny_visuals")
     local api = provider and provider.exports
-    if api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image) then
+    if selected or (api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image)) then
       local shader = love.graphics.getShader()
       love.graphics.setShader()
       draw()

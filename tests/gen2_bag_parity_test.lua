@@ -226,7 +226,7 @@ save.bagOrder = { "POTION", "ESCAPE_ROPE", "POKE_BALL", "BICYCLE",
   "TM_Z", "ANTIDOTE", "NUGGET", "TM_A" }
 local game = { save = save, data = { items = itemDefs }, input = input }
 
-dofile("mods/modern_ui_suite/components/modern_bag_ui/gen2.lua")(mod, {})
+dofile("mods/modern_ui_suite/components/modern_bag_ui/gen2.lua")(mod, { categoryLess = dofile("mods/modern_ui_suite/components/modern_bag_ui/sorting.lua")() })
 local menu = screens.Gen2PackMenu.new(game, { save = save, items = itemDefs })
 
 eq(menu:modernBagLayoutInfo().pockets, 6,
@@ -311,6 +311,39 @@ end
 eq(table.concat(categories, ","),
   "KEY_ITEM,TM_HM,TM_HM,BALL,MEDICINE,MEDICINE,ITEMS,ITEMS",
   "category descending reverses the shared tab order")
+-- Category sorts must also operate inside the visible pocket, in either skin.
+for _, chosenSkin in ipairs({"modern"}) do
+  skin = chosenSkin
+  menu.modernBagPocketIndex = 3
+  menu.modernBagRestoreState = { id = "ANTIDOTE" }
+  menu:rebuild()
+  menu:modernBagSort("category", false)
+  eq(menu:modernBagLayoutInfo().pocket, "MEDICINE", "category sort retains Medicine")
+  eq(ids(menu.rows), "POTION,ANTIDOTE", "medicine progression beats prior name order")
+  eq(menu.rows[menu.index].id, "ANTIDOTE", "selected item survives category sorting")
+  menu:modernBagSort("category", true)
+  eq(ids(menu.rows), "ANTIDOTE,POTION", "descending reverses medicine priority")
+  menu.modernBagPocketIndex = 5
+  menu:rebuild()
+  eq(ids(menu.rows), "TM_A,TM_Z", "descending category sort survives native TM rebuild")
+  menu:modernBagSort("category", false)
+  eq(ids(menu.rows), "TM_Z,TM_A", "TM category sort is numeric")
+end
+skin = "classic_pocket"
+menu.pocketIndex = 1
+menu.modernBagRestoreState = { id = "ANTIDOTE" }
+menu:rebuild()
+menu:modernBagSort("category", false)
+eq(menu:pocket().id, "ITEM", "Pocket skin retains physical pocket")
+eq(ids(menu.rows), "ESCAPE_ROPE,NUGGET,POTION,ANTIDOTE", "Pocket skin orders item subcategories")
+eq(menu.rows[menu.index].id, "ANTIDOTE", "Pocket skin retains selection after sort")
+menu.pocketIndex = 4
+menu:rebuild()
+menu:modernBagSort("category", true)
+eq(ids(menu.rows), "TM_A,TM_Z", "Pocket skin honours descending TM order")
+menu:modernBagSort("category", false)
+eq(ids(menu.rows), "TM_Z,TM_A", "Pocket skin honours ascending TM order")
+skin = "modern"
 menu:modernBagSort("name", true)
 eq(table.concat(save.bagOrder, ","),
   "TM_Z,POTION,POKE_BALL,NUGGET,ESCAPE_ROPE,BICYCLE,ANTIDOTE,TM_A",

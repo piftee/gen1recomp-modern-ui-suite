@@ -297,11 +297,17 @@ return function(mod)
       chamfer("fill", x + 2, y + 2, w - 1, h - 1, 3)
       setColor(face, mon and 0.96 or 0.80)
       chamfer("fill", x, y, w - 2, h - 2, 3)
-      setColor(selected and INK_WHITE or (held and HEADER or { 0.26, 0.28, 0.34 }))
+      -- A dark outer edge and blue inset remain visible on pale type cards.
+      setColor(selected and { 0.04, 0.08, 0.16 } or (held and HEADER or { 0.26, 0.28, 0.34 }))
       G.setLineWidth(selected and 2 or 1)
       chamfer("line", x + 0.5, y + 0.5, w - 3, h - 3, 3)
       if selected then
-        setColor(INK_WHITE)
+        setColor({ 0.10, 0.32, 0.78 })
+        G.setLineWidth(1)
+        chamfer("line", x + 1.5, y + 1.5, w - 5, h - 5, 2)
+        setColor({ 0.04, 0.08, 0.16 })
+        G.rectangle("fill", x + 2, y + 4, 4, h - 10)
+        setColor({ 0.20, 0.55, 1 })
         G.rectangle("fill", x + 3, y + 5, 2, h - 12)
       elseif held then
         setColor(HEADER)
@@ -309,7 +315,11 @@ return function(mod)
       end
 
       if mon then
-        self:drawIcon(mon, x + 3, y + 6 + self:iconBob(i))
+        local ix, iy = x + 3, y + 6 + self:iconBob(i)
+        if not (mod.suite and mod.suite.drawMenuIcon
+            and mod.suite.drawMenuIcon(self.game, self, mon, ix, iy)) then
+          self:drawIcon(mon, ix, iy)
+        end
         local data = PartyMenu.rowFor(mon)
         drawInk(data.name, x + 21, y + 3, w - 25, INK_BLACK)
         if self.tmhm then
@@ -530,6 +540,18 @@ return function(mod)
   local function drawSummarySprite(self, x, y)
     local mon = self.mon
     if not mon then return end
+    local selected = mod.suite and mod.suite.battlePortrait
+      and mod.suite.battlePortrait(self.game, mon)
+    if selected then
+      local w, h = selected:getDimensions()
+      local scale = math.min(1, 56 / w, 56 / h)
+      love.graphics.push("all"); love.graphics.setShader()
+      love.graphics.setColor(1, 1, 1, 1)
+      love.graphics.draw(selected, x + (56 - w * scale) / 2,
+        y + (56 - h * scale) / 2, 0, scale, scale)
+      love.graphics.pop()
+      return
+    end
     local colors = self.palettes and Palettes.monColors(self.palettes,
       mon.isEgg and "EGG" or mon.species, mon.shiny)
     if mon.isEgg then

@@ -22,6 +22,8 @@ tests/options_preview_driver.lua
 tests/party_variant_preview_driver.lua
 tests/battle_art_gen2_driver.lua
 tests/gen1_meter_driver.lua
+tests/gen1_caught_marker_driver.lua
+tests/gen1_caught_marker_test.lua
 tests/battle_meters_test.lua
 screenshots/
 screenshots/gen1-wide-hud.png
@@ -31,3 +33,15 @@ tests/gen2_catch_storage_test.lua
 tests/gen2_catch_storage_driver.lua
 tests/gen2_party_refusal_driver.lua
 tests/gen2_party_navigation_test.lua
+
+tests/menu_sprites_test.lua
+tests/menu_sprites_driver.lua
+tests/battle_bag_driver.lua
+tests/battle_bag_test.lua
+
+tests/menu_icons_test.lua
+tests/discord_gen1_driver.lua
+tests/discord_gen2_driver.lua
+tests/discord_reports_test.lua
+tests/discord_shadows_driver.lua
+tests/gen2_text_only_driver.lua

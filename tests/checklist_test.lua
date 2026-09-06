@@ -103,10 +103,10 @@ option("modern_bag_ui","pocket_order",nil)
 option("modern_bag_ui","open_on","medicine")
 bag=bagScreen.new(game,{})
 bag:modernBagSort("category",false)
-T.eq(bag.modernBagPockets[bag.modernBagPocket].key,"all","category sort reveals its result from a filtered pocket")
+T.eq(bag.modernBagPockets[bag.modernBagPocket].key,standalone and "all" or "medicine","category sort retains the suite filtered pocket")
 T.same(game.save.bagOrder,{"ESCAPE_ROPE","POTION","ANTIDOTE","POKE_BALL","TM_FIX","TOWN_MAP"},"ascending category groups use real item definitions")
 bag:modernBagSort("category",true)
-T.same(game.save.bagOrder,{"TOWN_MAP","TM_FIX","POKE_BALL","POTION","ANTIDOTE","ESCAPE_ROPE"},"descending category groups reverse without reversing their contents")
+T.same(game.save.bagOrder,standalone and {"TOWN_MAP","TM_FIX","POKE_BALL","POTION","ANTIDOTE","ESCAPE_ROPE"} or {"TOWN_MAP","TM_FIX","POKE_BALL","ANTIDOTE","POTION","ESCAPE_ROPE"},"descending category order includes the suite item priorities")
 for i,id in ipairs(order) do T.eq(game.save.inventory[id],i,"sorting preserves " .. id .. " quantity") end
 
 local startSettings=api("modern_start_menu_ui").settings

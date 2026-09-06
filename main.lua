@@ -17,6 +17,8 @@ return function(mod)
     optionsHooks = {},
     screenTouches = {},
     bootErrors = {},
+    battlePortrait = loadLocal("core/battle_portraits.lua")(mod),
+    drawMenuIcon = loadLocal("core/menu_icons.lua")(mod),
   }
 
   -- Validate the complete archive before any component gets a chance to
@@ -136,6 +138,7 @@ return function(mod)
     local component = settings.byId[id]
     return component and settings:isEnabled(component) or false
   end
+  mod.exports.menuPortrait = state.battlePortrait
   mod.exports.settings = hub
   mod.exports.apiVersion = 1
   mod.log:info(tostring(#components) .. "-component Modern UI Suite initialized")

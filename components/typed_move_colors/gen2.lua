@@ -94,6 +94,7 @@ return function(mod)
   -- Explicit side panels are reserved for widths that fit the same 2x2 grid.
   local function gridEnabled()
     return componentEnabled() and option("battle_colors", true) ~= false
+      and not option("text_only", false)
   end
 
   local function movePhase(screen)
@@ -191,6 +192,46 @@ return function(mod)
         math.floor(ink[3] * 0.5) },
       ink,
     }
+  end
+
+  -- Text Only keeps the engine's list, cursor, TYPE/PP box and input. Tint
+  -- its actual glyph writes rather than repainting a guessed set of rows.
+  local function drawNativeTextOnly(screen, native, ...)
+    local colors = {}
+    for _, move in ipairs(playerMoves(screen)) do
+      local def = moveDef(screen, move)
+      if def then
+        local kind = tostring(def.type or "normal"):lower()
+        local color = COLORS[kind]
+        colors[def.name or move.id] = color and kind ~= "normal"
+          and { color[1] * 0.65, color[2] * 0.65, color[3] * 0.65 }
+          or { 0, 0, 0 }
+      end
+    end
+    local moves = playerMoves(screen)
+    local selected = moves[screen.moveIndex or 1]
+    local selectedDef = moveDef(screen, selected)
+    local selectedColor = selectedDef and colors[selectedDef.name or selected.id]
+    local printThrough = Chrome.printThrough
+    screen.typedMoveColorsTextRuns = 0
+    screen.typedMoveColorsLayout = "native"
+    screen.typedMoveColorsColumns = nil
+    screen.typedMoveColorsInfoPanel = nil
+    Chrome.printThrough = function(text, x, y, palette, ...)
+      local color = colors[text]
+      -- The native selected-type label occupies (2,10). Never recolour the
+      -- separate Disabled! message, cursor, PP or held-slot indicator.
+      if x == 2 and y == 10 then color = selectedColor end
+      if color then
+        palette = inkPalette(color)
+        screen.typedMoveColorsTextRuns = screen.typedMoveColorsTextRuns + 1
+      end
+      return printThrough(text, x, y, palette, ...)
+    end
+    local result = { pcall(native, screen, ...) }
+    Chrome.printThrough = printThrough
+    if not result[1] then error(result[2], 0) end
+    return unpack(result, 2)
   end
 
   -- Every string on a type card uses ink-only rendering. Chrome.print and
@@ -474,8 +515,6 @@ return function(mod)
       local color = typeColor(def)
       local r, g, b = strength(color)
       local face = { r, g, b }
-      local textOnly = option("text_only", false)
-      if textOnly then face = { 0.94, 0.94, 0.94 } end
       if columns == 1 then
         drawListRowFace(x, y, colW, rowH, face, selected, i == source)
       else
@@ -507,7 +546,6 @@ return function(mod)
       local color = typeColor(def)
       local r, g, b = strength(color)
       local face = { r, g, b }
-      if option("text_only", false) then face = { 0.94, 0.94, 0.94 } end
       local power, current, maximum = moveDetails(def, selected)
       local battle = screen.battle
       local ppText = battle and type(battle.modUnlimitedPP) == "function"
@@ -635,6 +673,7 @@ return function(mod)
   -- sprite on square/classic surfaces.
   mod.hooks:wrap("battle.bottom_ui_visible", function(next, screen)
     local downstream = next(screen)
+    screen.typedMoveColorsOwnsBottom = nil
     if gridEnabled() and movePhase(screen) then
       screen.typedMoveColorsOwnsBottom = true
       return false
@@ -650,6 +689,10 @@ return function(mod)
         or screen.drawBottom == screen.typedMoveColorsBottomDraw then return end
     local native = screen.drawBottom
     local draw = function(self, ox)
+      if componentEnabled() and option("battle_colors", true) ~= false
+          and option("text_only", false) and movePhase(self) then
+        return drawNativeTextOnly(self, native, ox)
+      end
       if not gridEnabled() or option("text_only", false) then return native(self, ox) end
       ox = tonumber(ox) or 0
       local width = (20 + ox) * 8

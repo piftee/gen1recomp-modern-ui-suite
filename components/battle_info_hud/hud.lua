@@ -1,13 +1,14 @@
 return function(mod)
   local Font = require("src.render.Font")
+  local Assets = require("src.render.Assets")
   local Meters = mod:load("meters.lua")()
   local HudTiles = require("src.render.HudTiles")
   local PaletteFX = require("src.render.PaletteFX")
   local BattleState = require("src.battle.BattleState")
   local WideBattle = require("src.battle.WideBattle")
 
+  local classicHudDepth = 0
   local exposedStatuses = setmetatable({}, { __mode = "k" })
-  local CAUGHT_ROW = { { hp = 1 } }
   local GENDER_MOD_ID = "gender_mod"
   local CRYSTAL_251_MOD_ID = "CRYSTAL_251"
   local STAGED_GENDER_SCRATCH_X = 0
@@ -89,14 +90,20 @@ return function(mod)
     return species ~= nil and owned and owned[species] == true or false
   end
 
-  local function drawCaughtBall(battle, x, y)
-    if type(battle.drawBallRow) ~= "function" then return end
+  local function drawCaughtBall(x, y)
+    -- A caught marker is one tile, not a party row. Companion renderers can
+    -- defer drawBallRow to an overlay (Crystal sprites) or disable scissors
+    -- during HUD capture (Battle Art), exposing all six slots after clipping.
+    local mono = PaletteFX.mode == "og" or PaletteFX.mode == "og_inv"
+      or PaletteFX.mode == "classic"
+    local file = mono and "caught_ball_mono.png" or "caught_ball.png"
+    local ok, img = pcall(Assets.image,
+      "save/mod-derived/modern_ui_suite/battle/" .. file)
+    if not ok then return false end
     local g = love.graphics
-    local sx, sy, sw, sh = g.getScissor()
-    g.setScissor(x, y, 8, 8)
-    love.graphics.setColor(1, 1, 1, 1)
-    battle:drawBallRow(CAUGHT_ROW, x, y, 8)
-    if sx then g.setScissor(sx, sy, sw, sh) else g.setScissor() end
+    g.setColor(1, 1, 1, 1)
+    g.draw(img, x, y)
+    return true, not mono
   end
 
   local function drawPlayerMeters(battle, ink, markColor, dx, dy)
@@ -211,6 +218,17 @@ return function(mod)
     return x + Font.width(label) + 2
   end
 
+  -- The classic SGB pass also covers the name row with the HP palette.
+  -- Keep the marker out of that canvas and draw it once on the finished HUD.
+  local function drawClassicCaughtMarker(battle, sx, sy)
+    if not enemyVisible(battle) or not isCaught(battle, battle.enemy) then return end
+    local x = caughtBallX(battle.enemy.name, nameX(1, battle.enemy.name))
+      + (sx or 0) + (battle.fx and battle.fx.hudShakeX or 0)
+    local y = sy or 0
+    local drawn, color = drawCaughtBall(x, y)
+    if drawn and color then PaletteFX.markTrueColor(x, y, 8, 8) end
+  end
+
   local function drawPlayerUnderline(y)
     HudTiles.tile(0x73, 144, y - 8)
     HudTiles.tile(0x77, 144, y)
@@ -281,9 +299,11 @@ return function(mod)
         love.graphics.push()
         love.graphics.translate(battle.fx and battle.fx.hudShakeX or 0, 0)
         drawStatusAfterLevel(battle, battle.enemy, 40, 8, 88)
-        if isCaught(battle, battle.enemy) then
+        if isCaught(battle, battle.enemy)
+          and not (classicHudDepth > 0 and type(battle.colorMode) == "function"
+            and battle:colorMode()) then
           local x = nameX(1, battle.enemy.name)
-          drawCaughtBall(battle, caughtBallX(battle.enemy.name, x), 0)
+          drawCaughtBall(caughtBallX(battle.enemy.name, x), 0)
         end
         love.graphics.pop()
       end
@@ -324,7 +344,11 @@ return function(mod)
       drawStatusAfterLevel(battle, battler, 96, 8, 144)
       Meters.draw(battle.data, battle.enemy, "HP", 24, 17, 104, false)
       if isCaught(battle, battle.enemy) then
-        drawCaughtBall(battle, caughtBallX(enemyName, 8), 8)
+        local x = caughtBallX(enemyName, 8)
+        local drawn, color = drawCaughtBall(x, 8)
+        if drawn and color then
+          PaletteFX.markTrueColor(x + sx + hudShake, 8 + sy, 8, 8)
+        end
       end
       if hudShake ~= 0 then love.graphics.pop() end
     end
@@ -347,6 +371,12 @@ return function(mod)
   -- matching renderer then adds that saved status just to the left. No panel
   -- pixels are cleared or replaced, preserving the frosted background.
   local function withNativeLevels(battle, shortenNames, draw)
+    -- Newer engines expose their own marker, enabled by companions such as
+    -- Kanto Gear. Suppress it only while this HUD owns the same wild marker.
+    local nativeCaughtBall = rawget(battle, "drawCaughtBall")
+    local ownsCaught = isCaught(battle, battle.enemy)
+      and type(battle.drawCaughtBall) == "function"
+    if ownsCaught then battle.drawCaughtBall = function() end end
     local restores = {}
     local result
     local function expose(battler, nameWidth)
@@ -371,6 +401,7 @@ return function(mod)
       item.battler.name = item.name
       exposedStatuses[item.battler] = nil
     end
+    if ownsCaught then battle.drawCaughtBall = nativeCaughtBall end
     if not ok then error(err, 0) end
     return result
   end
@@ -431,6 +462,7 @@ return function(mod)
     local previous = g.getCanvas()
     local result
     local pushed = false
+    classicHudDepth = classicHudDepth + 1
     local ok, err = xpcall(function()
       g.push("all")
       pushed = true
@@ -455,6 +487,7 @@ return function(mod)
       pushed = false
     end, traceback)
 
+    classicHudDepth = classicHudDepth - 1
     if pushed then pcall(g.pop) end
     if previous then g.setCanvas(previous) else g.setCanvas() end
     if not ok then error(err, 0) end
@@ -474,6 +507,7 @@ return function(mod)
     local result = originalClassicZonePass(battle, src, sx, sy, ...)
     if classicEnhancementActive(battle, 0) and not stagedLayout(battle) then
       drawClassicMeters(battle, sx, sy)
+      drawClassicCaughtMarker(battle, sx, sy)
     end
     return result
   end
@@ -1006,7 +1040,7 @@ return function(mod)
             if enemyVisible(liveBattle) then
               drawStatusAfterLevel(liveBattle, liveBattle.enemy, 40, 8, 88)
               if isCaught(liveBattle, liveBattle.enemy) then
-                drawCaughtBall(liveBattle, caughtBallX(liveBattle.enemy.name,
+                drawCaughtBall(caughtBallX(liveBattle.enemy.name,
                   nameX(1, liveBattle.enemy.name)), 0)
               end
             end
@@ -1094,6 +1128,7 @@ return function(mod)
             sx = (battle.frame or 0) % 4 < 2 and 2 or -2
           end
           drawClassicMeters(battle, sx, sy)
+          drawClassicCaughtMarker(battle, sx, sy)
         end
       end
       return result

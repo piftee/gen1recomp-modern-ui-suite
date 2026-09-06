@@ -27,13 +27,13 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.20",
-  modern_party_ui = "0.4.12",
-  modern_bag_ui = "0.6.2",
-  modern_pc_ui = "0.6.3",
-  modern_pokedex_ui = "0.2.14",
-  battle_info_hud = "0.10.1",
-  typed_move_colors = "0.5.1",
+  modern_start_menu_ui = "0.1.21",
+  modern_party_ui = "0.4.13",
+  modern_bag_ui = "0.6.3",
+  modern_pc_ui = "0.6.4",
+  modern_pokedex_ui = "0.2.15",
+  battle_info_hud = "0.10.2",
+  typed_move_colors = "0.5.2",
 }
 
 local exports = run.loader.exports.modern_ui_suite
@@ -54,8 +54,8 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 38,
-  "seven UI toggles, independent QoL and all 30 detailed preferences share one schema")
+T.eq(#schema, 39,
+  "UI, QoL, shared sprite source and component preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
   schemaByKey[row.key] = row
@@ -166,8 +166,8 @@ optionRows[2].activate(game)
 local hub = stack:top()
 T.eq(hub and hub.screenId, "modern_ui_suite:settings",
   "the consolidated row opens the unified settings hub")
-T.eq(hub and #hub.items, 11,
-  "the hub contains UI bulk actions, seven interfaces, independent QoL and Back")
+T.eq(hub and #hub.items, 13,
+  "the hub contains components, separate portrait/icon settings and Back")
 T.eq(hub.items[1].id, "enable_all", "Enable All is the first bulk action")
 T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 
@@ -192,6 +192,45 @@ local function pressPage(page, button)
   page:update(0)
   input.pressed[button] = nil
 end
+hub.index = 11
+T.eq(hub.items[11].id, "menu_sprite_source", "shared sprite setting is in the hub")
+T.same(schemaByKey.menu_sprite_source.choices, {
+  { "BATTLE ART", "battle_art" }, { "CRYSTAL", "crystal" }, { "DEFAULT", "default" },
+}, "sprite schema advertises only the three supported choices")
+T.eq(hub.items[11].right, "BATTLE ART", "menus follow Battle Art by default")
+for _, choice in ipairs({ { "CRYSTAL", "crystal" },
+    { "DEFAULT", "default" }, { "BATTLE ART", "battle_art" } }) do
+  local before = writes
+  pressPage(hub, "right")
+  T.eq(hub.items[11].right, choice[1], "source name updates live")
+  T.eq(run.loader.modOptions.modern_ui_suite.menu_sprite_source, choice[2], "source updates live bucket")
+  T.eq(game.save.options.modOptions.modern_ui_suite.menu_sprite_source, choice[2], "source updates save bucket")
+  T.check(writes > before, "source is persisted")
+end
+pressPage(hub, "left")
+T.eq(hub.items[11].right, "DEFAULT", "left cycles sources backwards")
+hub.onChoose(hub.items[11], hub)
+T.eq(hub.items[11].right, "BATTLE ART", "A cycles sources forward")
+visitedRows.menu_sprite_source = true
+local portraitSource = run.loader.modOptions.modern_ui_suite.menu_sprite_source
+hub.index = 12
+T.eq(hub.items[12].id, "party.sprite_source", "Icons shortcut uses the existing Party preference")
+T.eq(hub.items[12].right, "AUTO", "small icons default to installed mods")
+for _, choice in ipairs({ {"ORIGINAL", "original"}, {"MENU PACK", "menu_pack"},
+    {"FOLLOWERS", "follower_pack"}, {"AUTO", "auto"} }) do
+  local before = writes
+  pressPage(hub, "right")
+  T.eq(hub.items[12].right, choice[1], "Icons label updates")
+  T.eq(run.loader.modOptions.modern_ui_suite["party.sprite_source"], choice[2], "Icons updates Party source")
+  T.eq(game.save.options.modOptions.modern_ui_suite["party.sprite_source"], choice[2], "Icons persists source")
+  T.eq(run.loader.modOptions.modern_ui_suite.menu_sprite_source, portraitSource, "Icons never changes large portraits")
+  T.check(writes > before, "Icons requests persistence")
+end
+pressPage(hub, "left")
+T.eq(hub.items[12].right, "FOLLOWERS", "Icons supports backward wrap")
+hub.onChoose(hub.items[12], hub)
+T.eq(hub.items[12].right, "AUTO", "Icons supports A and forward wrap")
+
 for hubIndex = 3, 10 do
   local item = hub.items[hubIndex]
   hub.onChoose(item, hub)
@@ -257,7 +296,7 @@ for hubIndex = 3, 10 do
 end
 for _, row in ipairs(schema) do
   T.check(visitedRows[row.key] == true,
-    row.key .. " is reachable from a component page")
+    row.key .. " is reachable from the suite settings")
 end
 
 hub.index = 3
@@ -789,9 +828,9 @@ end
 stack:push(openModern)
 chooseSort(1)
 T.same(game.save.bagOrder, {
-  "SORT_ZINC", "SORT_BERRY", "SORT_MED",
+  "SORT_BERRY", "SORT_ZINC", "SORT_MED",
   "SORT_BALL", "SORT_TM", "SORT_KEY",
-}, "category ascending follows pocket order and preserves pocket contents")
+}, "category ascending uses alphabetical fallback for unknown items")
 T.eq(openModern.items[openModern.index].value, "SORT_KEY",
   "sorting keeps the previously selected item highlighted")
 
@@ -828,7 +867,7 @@ T.eq(run.data.screens.BagMenu.new(game, {}).modernBagUI, true,
 -- values win, missing values are copied, and legacy buckets remain untouched.
 local legacyIcons = { custom_entry = "star" }
 game.save.options.modOptions = {
-  modern_ui_suite = { ["party.card_color"] = "blue" },
+  modern_ui_suite = { ["party.card_color"] = "blue", menu_sprite_source = "hgss" },
   modern_party_ui = { card_color = "health", animate_icons = false },
   modern_start_menu_ui = { theme = "red", icons = legacyIcons },
   modern_pokedex_ui = { pattern = "plain" },
@@ -836,7 +875,7 @@ game.save.options.modOptions = {
   typed_move_colors = { strength = "vibrant" },
 }
 run.loader.modOptions = {
-  modern_ui_suite = { ["party.card_color"] = "blue" },
+  modern_ui_suite = { ["party.card_color"] = "blue", menu_sprite_source = "hgss" },
   modern_party_ui = { card_color = "health", animate_icons = false },
   modern_start_menu_ui = { theme = "red", icons = legacyIcons },
   modern_pokedex_ui = { pattern = "plain" },
@@ -846,6 +885,9 @@ run.loader.modOptions = {
 local writesBeforeMigration = writes
 run.loader.events:emit("game.ready", { game = game })
 local migrated = run.loader.modOptions.modern_ui_suite
+T.eq(migrated.menu_sprite_source, "default", "retired HGSS choice becomes Default live")
+T.eq(game.save.options.modOptions.modern_ui_suite.menu_sprite_source, "default",
+  "retired HGSS choice becomes Default in saved options")
 T.eq(migrated["party.card_color"], "blue",
   "an existing suite value wins over its legacy equivalent")
 T.eq(migrated["party.animate_icons"], false,
@@ -1207,6 +1249,53 @@ T.eq(roomyGen2Moves.moveIndex, 4,
 T.eq(gen2BattleFont, false,
   "the Gen 2 move presenter restores the caller's font page")
 
+-- Text Only delegates the complete native menu and colours its live writes.
+local textChrome = package.loaded["src.ui.gen2.Chrome"]
+local nativeWrites, textOnly, battleColors = {}, true, true
+local ordinaryOptions = gen2MoveMod.options.get
+gen2MoveMod.options.get = function(self, key)
+  if key == "text_only" then return textOnly end
+  if key == "battle_colors" then return battleColors end
+  return ordinaryOptions(self, key)
+end
+local nativePalette = { {255,255,255}, {170,170,170}, {85,85,85}, {0,0,0} }
+textChrome.printThrough = function(text, x, y, palette)
+  nativeWrites[text] = { x = x, y = y, palette = palette }
+end
+local nativePrinter = textChrome.printThrough
+local textScreen = gen2MoveScreen(304)
+textScreen.moveIndex = 4
+textScreen.drawBottom = function()
+  textChrome.printThrough("EARTHQUAKE", 6, 16, nativePalette)
+  textChrome.printThrough("GROUND", 2, 10, nativePalette)
+  textChrome.printThrough("10/10", 5, 11, nativePalette)
+  textChrome.printThrough("Disabled!", 1, 10, nativePalette)
+  return "native-result"
+end
+drawGen2Moves(textScreen)
+T.eq(textScreen:drawBottom(), "native-result", "Text Only preserves native draw result")
+T.eq(textScreen.typedMoveColorsLayout, "native", "Text Only retains native layout")
+T.eq(#gen2MovePrints, 0, "Text Only draws no cards or replacement labels")
+T.check(nativeWrites.EARTHQUAKE.palette[4][1] > nativeWrites.EARTHQUAKE.palette[4][3],
+  "native move ink follows the live GROUND type")
+T.same(nativeWrites.GROUND.palette, nativeWrites.EARTHQUAKE.palette,
+  "selected type uses the same ink as its move")
+T.eq(nativeWrites["10/10"].palette, nativePalette, "PP keeps native palette")
+T.eq(nativeWrites["Disabled!"].palette, nativePalette, "Disabled message keeps native palette")
+T.eq(textChrome.printThrough, nativePrinter, "scoped printer is restored after drawing")
+T.eq(gen2MoveHooks["battle.move_grid_navigation"](function() return false end, textScreen), false,
+  "Text Only preserves native list navigation")
+T.eq(gen2MoveHooks["battle.bottom_ui_visible"](function() return true end, textScreen), true,
+  "Text Only leaves native bottom controls visible")
+battleColors = false; nativeWrites = {}; textScreen:drawBottom()
+T.eq(nativeWrites.EARTHQUAKE.palette, nativePalette, "battle colours OFF immediately removes tint")
+battleColors = true
+textScreen.drawBottom = function() error("native text failure") end
+pushedGen2Move({ state = textScreen })
+T.eq(pcall(textScreen.drawBottom, textScreen), false, "native draw failure propagates")
+T.eq(textChrome.printThrough, nativePrinter, "native failure restores the scoped printer")
+gen2MoveMod.options.get = ordinaryOptions
+
 package.loaded["src.ui.gen2.Chrome"] = savedGen2MoveChrome
 package.loaded["src.render.Font"] = savedGen2MoveFont
 package.loaded["src.ui.gen2.SummaryMenu"] = savedGen2MoveSummary
@@ -1348,6 +1437,13 @@ for _, case in ipairs({
   T.eq(battleArtBattle.modernBattleYieldedTo3D, nil,
     case[1] .. " cannot claim this screen's 3D scene")
 end
+
+gen2Mod.suite = {
+  enabled = function() return true end,
+  option = function(_, key) return key == "battle_colors" or key == "text_only" end,
+}
+T.eq(battleArtBattle:drawWidescreen(800, 720), "battle-art",
+  "HUD yields to native move list when the enabled move component uses Text Only")
 
 package.loaded["src.ui.gen2.Chrome"] = savedGen2Chrome
 

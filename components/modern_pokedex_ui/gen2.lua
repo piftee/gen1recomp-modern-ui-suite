@@ -245,6 +245,19 @@ return function(mod)
   -- transparent sprite pixels and let that face show through behind them.
   local function drawPanelPic(menu, row, x, y, ownColors)
     local image, colors
+    if row and row.seen and mod.suite and mod.suite.battlePortrait then
+      image = mod.suite.battlePortrait(menu.game, row.species)
+      if image then
+        local w, h = image:getDimensions()
+        local scale = math.min(1, 56 / w, 56 / h)
+        love.graphics.push("all"); love.graphics.setShader()
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(image, x + (56 - w * scale) / 2,
+          y + (56 - h * scale) / 2, 0, scale, scale)
+        love.graphics.pop()
+        return
+      end
+    end
     if row and row.seen then
       image = menu:picFor(row.species)
       colors = ownColors and menu.palettes

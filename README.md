@@ -1,10 +1,10 @@
 # Modern UI Suite
 
 
-Crystal Animated Sprites with Shiny Visuals 2.0.2 compatibility: Gen 2
-Pokédex, party summary and PC previews retain the companion's colours and
-animations, including shiny party/PC sprites. Native artwork keeps its
-cartridge palettes. Verified in Gold, Silver and Crystal.
+**0.1.22:** category sorting now orders items within each pocket. New SPRITE
+and ICONS controls choose large portraits and small menu icons independently.
+This release also fixes battle Bag colours, Gen 2 Text Only moves and several
+menu indicators, while retaining the Crystal colour and animation fixes.
 
 **Classic Pokémon, made clearer at a glance.**
 
@@ -91,6 +91,38 @@ Open **Options → Modern UI Suite**. The hub provides **Enable All UI**, **Disa
 All UI**, and a page for each component. Left or Right on a component in the
 hub toggles it directly; A opens its detailed settings.
 
+**SPRITE** selects the artwork used by the Pokédex, Pokémon stat screen and
+large PC detail portrait. It never replaces the small icons. Use Left/Right
+or A to cycle the saved portrait choice:
+
+| Choice | Menu artwork |
+| --- | --- |
+| **BATTLE ART** (default) | Follows Battle Art's front generation and Static/Animated selection, including shiny variants. Supports the Gen 1 Voxel Fork and Gen 2 Battle Art. |
+| **CRYSTAL** | Uses Crystal Animated Sprites with Shiny Visuals, including its normal/shiny art, animation mode and display colours. |
+| **DEFAULT** | Keeps the suite's existing sprite handling and other mods' normal replacements. |
+
+Provider mods must be installed and enabled separately. Missing or unsupported
+artwork or Battle Art's ROM/MODDED mode uses the existing menu sprite.
+A saved HGSS source from an earlier test build changes to Default. Eggs and
+unseen Pokédex entries keep their placeholders.
+Changes apply on the next draw. Large portraits animate. The setting chooses
+a front portrait collection;
+it does not put Battle Art's 3D models or player-facing back sprites into menus.
+Some Gen 4 animations have extra transparent space in their source frames and
+can look smaller when fitted into menu portraits.
+
+**ICONS** independently controls the small icons in Party and PC menus. It
+shares **Party → Icon Source**, so either control updates the same saved choice:
+
+- **AUTO** (default): use the installed mods' icon handling.
+- **ORIGINAL**: use the game's original small icons.
+- **MENU PACK**: prefer a mod that supplies menu icons, such as Unique Menu Icons.
+- **FOLLOWERS**: prefer the installed follower pack's icons when available.
+
+An unavailable pack falls back to the existing icon handling. These are actual
+icon sheets, never resized battle portraits. **Party → Icon Animation** applies
+to explicit icon choices. Auto retains the installed renderer's normal animation.
+
 Hooks such as battle overlays respond immediately. Screen replacements switch
 the next time the affected screen is opened; an already-open menu is never
 rebuilt underneath the player.
@@ -146,11 +178,18 @@ mod-added actions are included, and the saved order applies when Start reopens.
 
 Bag **HIDE ALL ITEMS** removes the combined tab. **OPEN ON** chooses All, Items,
 Medicine, Balls, TMs/HMs or Key; an unavailable choice falls back to Items.
+In Gen 1, the Bag remembers the last pocket, item and scroll position during
+play, including after using an item in battle. A depleted item leaves the
+cursor on the nearest remaining row. **OPEN ON** controls the first opening
+and changing it resets the remembered opening pocket.
 **BAG POCKET ORDER** opens one editor: Select picks up a tab, Select swaps it
 with another, and B cancels the hold. The editor follows the available tabs,
 including Kanto Reforged and the four native pockets in Gen 2's Pocket skin.
-Category sorting groups the item list in tab order (or its reverse) and opens
-All Items to show the result when that tab is enabled.
+Category sorting groups items in tab order, then orders items within each
+category: Balls, healing items, status cures, boosters and other item families
+follow a consistent sequence; TMs/HMs use their numbers. Descending reverses
+the order. Sorting keeps the current pocket, selected item and quantities.
+Unknown items use their names and IDs as a stable fallback.
 
 ## Gen 1 battle presentation
 
@@ -211,7 +250,7 @@ luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.21.zip
+  -o build/modern_ui_suite-0.1.22.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted
