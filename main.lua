@@ -19,6 +19,7 @@ return function(mod)
     bootErrors = {},
     battlePortrait = loadLocal("core/battle_portraits.lua")(mod),
     drawMenuIcon = loadLocal("core/menu_icons.lua")(mod),
+    uiSurfaces = loadLocal("core/ui_surfaces.lua")(mod, settings),
   }
 
   -- Validate the complete archive before any component gets a chance to

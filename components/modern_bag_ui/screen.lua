@@ -473,6 +473,10 @@ return function(mod, compatibility)
   end
 
   local function responsiveSize()
+    if mod.suite and mod.suite.fixedUISize then
+      local fixedW, fixedH = mod.suite.fixedUISize()
+      if fixedW then return fixedW, fixedH end
+    end
     local width, height = displayPixels()
     local portraitWindow = height > width
 
@@ -2034,6 +2038,8 @@ return function(mod, compatibility)
       end
 
       if owner and state and not state.modernBagUI
+          and not (mod.suite and mod.suite.isNativeEvolution
+            and mod.suite.isNativeEvolution(state))
           and (not state.uiSize or not state.isOpaque)
           and not state.__modernBagResponsiveOverlay then
         state.__modernBagResponsiveOverlay = true

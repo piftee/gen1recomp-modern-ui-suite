@@ -1,10 +1,9 @@
 # Modern UI Suite
 
 
-**0.1.22:** category sorting now orders items within each pocket. New SPRITE
-and ICONS controls choose large portraits and small menu icons independently.
-This release also fixes battle Bag colours, Gen 2 Text Only moves and several
-menu indicators, while retaining the Crystal colour and animation fixes.
+**0.1.23:** choose Fill, 16:9 or 4:3 independently for Party, Bag, PC and
+Pokédex. Follow messages retain one correctly sized party view, and native
+evolution scenes cover the menu underneath while preserving their dialogue.
 
 **Classic Pokémon, made clearer at a glance.**
 
@@ -90,6 +89,20 @@ settings are left untouched.
 Open **Options → Modern UI Suite**. The hub provides **Enable All UI**, **Disable
 All UI**, and a page for each component. Left or Right on a component in the
 hub toggles it directly; A opens its detailed settings.
+
+**ASPECT RATIO** appears on the **Party**, **Bag**, **PC** and **Pokédex** pages:
+
+- **FILL** (default) keeps the existing responsive layout for your display.
+- **16:9** centers a widescreen layout with a filled surround.
+- **4:3** centers a narrower layout suited to wide phone displays.
+
+Party's setting also applies to Summary and its related pages. Native child
+scenes keep their artwork centered and cover the surrounding menu; evolution
+retains its original dialogue throughout the animation. Transparent prompts,
+including Wilds of Kanto's Follow message, retain the parent's size.
+The existing Party/Pokédex **WIDESCREEN OFF** setting and the game's **Faithful
+Ratio** keep their native-size behavior. On Gen 1, a party picker opened from
+the Bag inherits the Bag's surface to avoid a size jump during item use.
 
 **SPRITE** selects the artwork used by the Pokédex, Pokémon stat screen and
 large PC detail portrait. It never replaces the small icons. Use Left/Right
@@ -250,7 +263,7 @@ luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.22.zip
+  -o build/modern_ui_suite-0.1.23.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

@@ -13,6 +13,7 @@ return {
   {
     id = "modern_party_ui",
     key = "party",
+    aspectRatio = true,
     name = "Modern Party UI",
     short = "PARTY",
     version = "0.4.13",
@@ -25,6 +26,7 @@ return {
   {
     id = "modern_bag_ui",
     key = "bag",
+    aspectRatio = true,
     name = "Modern Bag UI",
     short = "BAG",
     version = "0.6.3",
@@ -36,6 +38,7 @@ return {
   {
     id = "modern_pc_ui",
     key = "pc",
+    aspectRatio = true,
     name = "Modern PC UI",
     short = "PC",
     version = "0.6.4",
@@ -45,6 +48,7 @@ return {
   {
     id = "modern_pokedex_ui",
     key = "pokedex",
+    aspectRatio = true,
     name = "Modern Pokedex UI",
     short = "POKEDEX",
     version = "0.2.15",

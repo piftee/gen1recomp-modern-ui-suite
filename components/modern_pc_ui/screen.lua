@@ -228,6 +228,10 @@ return function(mod, genderExports, compatibility)
   end
 
   local function responsiveSize()
+    if mod.suite and mod.suite.fixedUISize then
+      local fixedW, fixedH = mod.suite.fixedUISize()
+      if fixedW then return fixedW, fixedH end
+    end
     local width, height = displayPixels()
     local portraitScale = math.max(1, math.floor(width / 160))
     local portraitHeight = math.min(PORTRAIT_MAX_H,

@@ -252,6 +252,10 @@ return function(mod, compatibility)
 
   local function windowSize()
     if not setting("responsive", true) then return 160, SCREEN_H end
+    if mod.suite and mod.suite.fixedUISize then
+      local fixedW, fixedH = mod.suite.fixedUISize()
+      if fixedW then return fixedW, fixedH end
+    end
     local width, height
     if love.graphics.getPixelDimensions then
       width, height = love.graphics.getPixelDimensions()

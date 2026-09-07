@@ -550,11 +550,16 @@ return function(mod)
         scale = math.max(1, math.floor(winW / 160))
         width, height = 160, math.min(256, math.floor(winH / scale))
       end
+      if mod.suite and mod.suite.uiGeometry then
+        width, height, scale = mod.suite.uiGeometry(self, winW, winH, width, height, scale)
+      end
       self.modernPCDrawWidth, self.modernPCDrawHeight = width, height
       self.modernPCLastWideWidth = width
       self.modernPCLastWideHeight = height
       color(PAPER); G.rectangle("fill", 0, 0, winW, winH)
       G.push("all")
+      G.setScissor(math.floor((winW - width * scale) / 2),
+        math.floor((winH - height * scale) / 2), width * scale, height * scale)
       G.translate(math.floor((winW - width * scale) / 2), math.floor((winH - height * scale) / 2))
       G.scale(scale, scale)
       local ok, err = pcall(self.draw, self)

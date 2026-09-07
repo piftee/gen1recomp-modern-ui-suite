@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.23] - 2026-09-07
+
+- Add independent Fill, 16:9 and 4:3 aspect-ratio controls to Party, Bag,
+  PC and Pokédex, including their related full-page views. Preserve native
+  Widescreen Off and Faithful Ratio preferences.
+- Prevent Gen 2's native overlay pass from drawing a second compact copy of
+  a modern menu underneath messages such as Wilds of Kanto's Follow action.
+  Native messages inherit the menu's scale on narrow displays.
+- Give Gen 1 native child scenes a complete backing at their parent's size.
+  The newer transparent evolution controller retains its actual intro
+  TextBox over opaque paper, including evolution entered through the Bag.
+  Keep centered artwork and palette/true-colour regions aligned.
+- Clip Gen 2 menu decoration to the selected aspect ratio so backdrop lines
+  cannot spill into the surrounding margins.
+
 ## [0.1.22] - 2026-09-06
 
 - Fix Category Asc/Desc sorting within individual Bag pockets in Gen 1 and
