@@ -38,6 +38,9 @@ return function(parent, settings, state, component)
   api.suite = {
     battlePortrait = state.battlePortrait,
     drawMenuIcon = state.drawMenuIcon,
+    fixedUISize = function() return state.uiSurfaces.fixedSize(component) end,
+    isNativeEvolution = state.uiSurfaces.isNativeEvolution,
+    uiGeometry = function(screen, ...) return state.uiSurfaces.geometry(component, screen, ...) end,
     option = function(id, key) return settings:get(id, key) end,
     enabled = function(id) return settings:isEnabled(id) end,
   }
@@ -126,7 +129,11 @@ return function(parent, settings, state, component)
       for key, value in pairs(record) do out[key] = value end
     end
     out.new = function(game, ...)
-      if gated() then return new(game, ...) end
+      if gated() then
+        local screen = new(game, ...)
+        if component.aspectRatio then state.uiSurfaces.decorate(screen, component) end
+        return screen
+      end
       local fallback = constructor(downstream)
       if fallback then return fallback(game, ...) end
       return nativeNew(id, game, ...)

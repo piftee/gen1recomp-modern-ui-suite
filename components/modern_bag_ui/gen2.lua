@@ -252,11 +252,16 @@ return function(mod, shared)
       local G = love.graphics
       local scale = math.max(1, math.floor(math.min(winH / 144, winW / 160)))
       local width = math.max(160, math.min(400, math.floor(winW / scale)))
+      if mod.suite and mod.suite.uiGeometry then
+        local height
+        width, height, scale = mod.suite.uiGeometry(self, winW, winH, width, 144, scale)
+      end
       local ox = math.floor((winW - width * scale) / 2)
       local oy = math.floor((winH - 144 * scale) / 2)
       setColor(surround)
       G.rectangle("fill", 0, 0, winW, winH)
-      G.push()
+      G.push("all")
+      G.setScissor(ox, oy, width * scale, 144 * scale)
       G.translate(ox, oy)
       G.scale(scale, scale)
       self.modernBagLastWideWidth = width

@@ -28,6 +28,8 @@ CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
   one-way migration from the legacy option buckets. Bulk UI actions exclude
   the independent default-off QoL component.
 - `core/hub.lua` owns the only ordinary Options-menu entry.
+- `core/ui_surfaces.lua` shares fixed aspect ratios, native-child backings
+  and Gen 2 overlay composition across the four full-page menu components.
 - `core/battle_portraits.lua` resolves optional large portraits;
   `core/menu_icons.lua` independently resolves small menu icons.
 - `components/<legacy-id>/` contains each maintained feature implementation.

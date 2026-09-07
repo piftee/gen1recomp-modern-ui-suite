@@ -11,6 +11,8 @@ return {
     added = {
       "One Modern UI Suite settings hub",
       "Seven independently switchable UI components",
+      "Independent Fill, 16:9 and 4:3 aspect ratios for Party, Bag, PC and Pokedex",
+      "Stable Follow messages and full-surface native evolution backings",
       "Independent QOL: player-only Unlimited PP, OFF by default and excluded from bulk UI switches",
       "Start-button Bag sorting by category or item name",
       "Category sorting within each pocket, including numeric TMs/HMs and retained selection",

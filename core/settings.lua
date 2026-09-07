@@ -74,6 +74,13 @@ return function(parent, components)
 
   function Settings:registerSchema(component, schema)
     component = componentFor(self, component)
+    if component.aspectRatio then
+      schema = copy(schema or {})
+      schema[#schema + 1] = {
+        key = "aspect_ratio", label = "ASPECT RATIO", type = "choice", default = "fill",
+        choices = { { "FILL", "fill" }, { "16:9", "16:9" }, { "4:3", "4:3" } },
+      }
+    end
     self.schemas[component.id] = schema or {}
     component.schema = schema or {}
     component.defaults = component.defaults or {}
@@ -99,7 +106,8 @@ return function(parent, components)
     local prefix = MANAGER_PREFIX[component.key] or component.short
     if not row then return component.managerEnabledLabel or (prefix .. " ENABLED") end
     local details = MANAGER_DETAIL[component.key] or {}
-    local detail = details[row.key] or self:detailLabel(component, row)
+    local detail = row.key == "aspect_ratio" and "RATIO"
+      or details[row.key] or self:detailLabel(component, row)
     -- Do not repeat a component prefix already present in a fallback label.
     if detail:sub(1, #prefix + 1) == prefix .. " " then return detail end
     return prefix .. " " .. detail

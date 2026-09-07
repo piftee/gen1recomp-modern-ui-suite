@@ -54,7 +54,7 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 39,
+T.eq(#schema, 43,
   "UI, QoL, shared sprite source and component preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
@@ -179,10 +179,10 @@ T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 local visitedRows = {}
 local expectedPageRows = {
   modern_start_menu_ui = 6, -- enabled + 3 choices + icon picker + order
-  modern_party_ui = 11,
-  modern_bag_ui = 5,
-  modern_pc_ui = 2,
-  modern_pokedex_ui = 4,
+  modern_party_ui = 12,
+  modern_bag_ui = 6,
+  modern_pc_ui = 3,
+  modern_pokedex_ui = 5,
   battle_info_hud = 1,
   typed_move_colors = 11,
   unlimited_pp = 1,
@@ -314,8 +314,8 @@ hub.onChoose(hub.items[4], hub)
 local partyPage = stack:top()
 T.eq(partyPage and partyPage.modernUiSuiteComponent, "modern_party_ui",
   "A opens the selected component's detailed page")
-T.eq(partyPage and #partyPage.rows, 11,
-  "the Party page has one master switch plus all ten Party preferences")
+T.eq(partyPage and #partyPage.rows, 12,
+  "the Party page has one master switch plus all eleven Party preferences")
 T.eq(partyPage.rows[1].id, "party.enabled",
   "every detail page starts with its component master switch")
 partyPage.rows[1].step(game, 1)
@@ -948,9 +948,9 @@ compatibilityRows[1].activate(compatibilityGame)
 local compatibilityHub = compatibilityStack:top()
 compatibilityHub.onChoose(compatibilityHub.items[5], compatibilityHub)
 local bagPage = compatibilityStack:top()
-T.eq(bagPage.rows[6] and bagPage.rows[6].id, "bag.companions",
+T.eq(bagPage.rows[7] and bagPage.rows[7].id, "bag.companions",
   "the Bag page offers companion settings without another root entry")
-bagPage.rows[6].activate(compatibilityGame)
+bagPage.rows[7].activate(compatibilityGame)
 local companionPage = compatibilityStack:top()
 T.eq(#(companionPage.rows or {}), 1,
   "the companion page removes the duplicate suite-owned skin setting")
