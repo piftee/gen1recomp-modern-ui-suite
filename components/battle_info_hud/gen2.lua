@@ -191,6 +191,19 @@ return function(mod)
       printInkPx("▼", width - 14, 132)
     end
     drawChoices(screen, width)
+    -- drawWideBattle suppresses the native bottom pass, which also owns the
+    -- four-slot forget list above the dialogue. Restore that native list:
+    -- otherwise A confirms an invisible cursor (initially slot one).
+    if screen.phase == "choose-forget" and (screen.messageTimer or 0) <= 0 then
+      local learn = screen.pendingLearn
+      local mon = learn and screen.battle and screen.battle.party[learn.index]
+      local moves = mon and mon.moves or screen:playerMoves()
+      G.push("all")
+      G.translate(math.floor((width - 160) / 2), 0)
+      require("src.ui.gen2.ForgetMoveList").draw(moves, screen.forgetIndex,
+        screen.game.data.moves, Chrome.DEFAULT_BOX_PALETTE)
+      G.pop()
+    end
   end
 
   -- A full-window battle presenter may already have wrapped the Gen 2 class
@@ -250,6 +263,7 @@ return function(mod)
 
   local function drawWideBattle(screen, winW, winH)
     screen.modernBattleYieldedTo3D = nil
+    screen.modernBattleViewport = nil
     -- The instance wrapper survives a live component toggle. Honour OFF on
     -- every draw, including the command menu and any later native battle.
     if mod.options:get("enabled") == false then
@@ -266,17 +280,25 @@ return function(mod)
     local cards = mod.suite and mod.suite.enabled("typed_move_colors")
       and mod.suite.option("typed_move_colors", "battle_colors") ~= false
       and not mod.suite.option("typed_move_colors", "text_only")
-    if moving and not cards and type(screen.classicGen2BattleWidescreen) == "function" then
+    local nativeMoves = moving and not cards
+    if nativeMoves and not (mod.suite and mod.suite.uiGeometry) then
       return screen.classicGen2BattleWidescreen(screen, winW, winH)
     end
     local G = love.graphics
     local scale = math.max(1, math.floor(math.min(winH / 144, winW / 160)))
     local width = math.max(160, math.min(640, math.floor(winW / scale)))
+    if mod.suite and mod.suite.uiGeometry then
+      local height
+      width, height, scale = mod.suite.uiGeometry(screen, winW, winH, width, 144, scale)
+    end
     screen.modernBattleLastWideWidth = width
     local ox = math.floor((winW - width * scale) / 2)
     local oy = math.floor((winH - 144 * scale) / 2)
-    G.setColor(1, 1, 1, 1)
-    G.rectangle("fill", 0, 0, winW, winH)
+    screen.modernBattleViewport = {w=winW,h=winH,width=width,scale=scale,x=ox,y=oy}
+    if screen:bgMode() ~= "world" then
+      G.setColor(1, 1, 1, 1)
+      G.rectangle("fill", 0, 0, winW, winH)
+    end
 
     if not screen.modernBattleCanvas then
       screen.modernBattleCanvas = G.newCanvas(160, 144)
@@ -288,13 +310,14 @@ return function(mod)
     G.push()
     G.origin()
     local bottomUIVisible = screen.bottomUIVisible
-    screen.bottomUIVisible = function() return false end
+    if not nativeMoves then screen.bottomUIVisible = function() return false end end
     screen:drawSceneBody()
     screen.bottomUIVisible = bottomUIVisible
     G.pop()
     G.setCanvas(previous)
 
-    G.push()
+    G.push("all")
+    G.setScissor(ox, oy, width * scale, 144 * scale)
     G.translate(ox, oy)
     G.scale(scale, scale)
     G.setColor(1, 1, 1, 1)
@@ -306,7 +329,7 @@ return function(mod)
     -- boundaries on every released Silver build.
     local sceneX = math.floor((width - 160) / 2)
     G.draw(screen.modernBattleCanvas, sceneX, 0)
-    drawWideBottom(screen, width)
+    if not nativeMoves then drawWideBottom(screen, width) end
     screen.modernBattleWideWidth = width
     screen.modernBattleWide = width > 160
     screen.modernBattleKeptIntact = true
@@ -382,6 +405,18 @@ return function(mod)
     screen.modernBattleWideInstalled = true
     screen.classicGen2BattleWidescreen = screen.drawWidescreen
     screen.drawWidescreen = drawWideBattle
+    local panelSize, panelScale = screen.panelSize, screen.battlePanelScale
+    screen.panelSize = function(self)
+      local viewport = self.modernBattleViewport
+      if viewport then return viewport.width, 144 end
+      return panelSize(self)
+    end
+    screen.battlePanelScale = function(self, w, h)
+      local viewport = self.modernBattleViewport
+      if viewport and viewport.w == w and viewport.h == h then return viewport.scale end
+      return panelScale(self, w, h)
+    end
+    if mod.suite and mod.suite.guardWideDraw then mod.suite.guardWideDraw(screen) end
   end, 1000)
 
   mod.exports.generation = 2

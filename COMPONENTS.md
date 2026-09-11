@@ -6,12 +6,12 @@ loaded from the legacy directories.
 
 | Component | Embedded version |
 | --- | ---: |
-| Modern Start Menu UI | 0.1.21 |
-| Modern Party UI | 0.4.13 |
-| Modern Bag UI | 0.6.3 |
+| Modern Start Menu UI | 0.1.23 |
+| Modern Party UI | 0.4.15 |
+| Modern Bag UI | 0.6.6 |
 | Modern PC UI | 0.6.4 |
-| Modern Pokedex UI | 0.2.15 |
-| Battle Info HUD | 0.10.2 |
+| Modern Pokedex UI | 0.2.18 |
+| Battle Info HUD | 0.10.4 |
 | Typed Move Colors | 0.5.2 |
 | Unlimited PP (independent QoL, default Off) | 0.1.0 |
 
@@ -24,10 +24,15 @@ CC0 artwork described in `THIRD_PARTY_NOTICES.md`.
   order, required-file list, and settings namespace map.
 - `core/scope.lua` gives imported code its original id and path while all
   loader registrations remain owned atomically by `modern_ui_suite`.
+- `core/touch.lua` maps drawn hit regions to native controller actions.
+- `core/summary_extensions.lua` reads optional summary providers without changing their data.
 - `core/settings.lua` owns namespaced preferences, live master switches, and
   one-way migration from the legacy option buckets. Bulk UI actions exclude
   the independent default-off QoL component.
 - `core/hub.lua` owns the only ordinary Options-menu entry.
+- `core/shiny_dex.lua` maintains save-local collection history.
+- `core/comfort.lua` adapts shop, map-entry and low-HP comfort features through
+  public hooks and individual native menu instances.
 - `core/ui_surfaces.lua` shares fixed aspect ratios, native-child backings
   and Gen 2 overlay composition across the four full-page menu components.
 - `core/battle_portraits.lua` resolves optional large portraits;
@@ -65,3 +70,14 @@ standalone Modern Party UI 0.4.10. Unlimited PP has its own standalone.
 
 The 0.1.22 embedded versions record suite-specific sorting, artwork, icon and
 battle presentation changes. They do not indicate new standalone releases.
+
+The 0.1.24 embedded versions record the suite-specific touch, Party navigation
+and summary updates. Standalone releases are maintained independently.
+
+The 0.1.25 Pokédex snapshot adds the Gen 2 portrait-only entry panel and
+Gen 1-style evolution cards with discovery-aware family pagination.
+
+The 0.1.26 Pokédex snapshot shares Gen 1's presentation with Gen 2 through
+`gen2_presentation.lua`; `gen2.lua` keeps native data and tool controllers.
+The common renderer handles six-stat compact layouts without changing the
+five-stat Gen 1 layout.

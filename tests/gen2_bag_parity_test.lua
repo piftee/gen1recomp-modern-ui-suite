@@ -349,70 +349,9 @@ eq(table.concat(save.bagOrder, ","),
   "TM_Z,POTION,POKE_BALL,NUGGET,ESCAPE_ROPE,BICYCLE,ANTIDOTE,TM_A",
   "Names Z-A sorts the canonical Gen 2 bag order descending")
 
-menu.message = { "FIRST LINE", "SECOND LINE" }
-drawnGlyphBottom = 0
-local compactOk = pcall(menu.drawPanel, menu)
-eq(drawnGlyphBottom <= 144, true,
-  "compact two-line footer stays inside the 144px panel")
-menu.message = nil
-local mobileOk = pcall(menu.drawWidescreen, menu, 320, 480)
-local wideOk = pcall(menu.drawWidescreen, menu, 1200, 720)
-eq(compactOk, true, "six-tab Bag draws at cartridge width")
-eq(mobileOk, true, "six-tab Bag draws in compact mobile geometry")
-eq(wideOk, true, "six-tab Bag draws in widescreen geometry")
-local wideLayout = menu:modernBagLayoutInfo()
-eq(wideLayout.layout, "full-width-bottom",
-  "modern Bag uses the full-width list and bottom-detail layout")
-eq(wideLayout.listWidth, wideLayout.detailWidth,
-  "the bottom detail spans the same width as the item list")
-eq(wideLayout.detailWidth, menu.modernBagLastWideWidth,
-  "the bottom detail spans the whole responsive panel")
-eq(wideLayout.detailPosition, "bottom",
-  "item details no longer occupy a narrow side rail")
-eq(table.concat(wideLayout.tabLabels, ","),
-  "ALL,ITEMS,MED,BALLS,TM/HM,KEY",
-  "normal widescreen tabs use readable names before abbreviating")
-
-itemDefs.ESCAPE_ROPE.description = table.concat({
-  "Returns the player to the most recent healing location after a long",
-  "journey while preserving every word in this intentionally oversized",
-  "description for the responsive scrolling test.",
-}, " ")
-menu.modernBagPocketIndex = 2
-menu.modernBagRestoreState = { id = "ESCAPE_ROPE" }
-menu:rebuild()
-menu:drawPanel()
-local qol = menu:modernBagQolInfo()
-eq(qol.headerCash, "¥999999", "modern header shows the exact maximum money")
-eq(qol.header.cashX + qol.header.cashW <= qol.header.hintLeft, true,
-  "maximum money does not collide with the Start hint")
-eq(qol.header.hintRight <= qol.header.countX, true,
-  "the responsive Start hint does not collide with the item count")
-eq(qol.descriptionOverflow, true,
-  "an oversized modern description activates overflow scrolling")
-eq(qol.descriptionStaticLines, 1,
-  "the first fitting description line remains static")
-menu:update(2)
-menu:drawPanel()
-qol = menu:modernBagQolInfo()
-eq(qol.descriptionOffset > 0, true,
-  "overflow advances using elapsed time after the initial hold")
-for index, row in ipairs(menu.rows) do
-  if row.id == "NUGGET" then menu.index = index break end
-end
-menu:drawPanel()
-qol = menu:modernBagQolInfo()
-eq(qol.descriptionOverflow, false,
-  "a fitting description remains static")
-eq(qol.descriptionOffset, 0,
-  "changing selection resets the description position")
-menu.message = { "STATIC PROMPT" }
-menu:update(2)
-menu:drawPanel()
-qol = menu:modernBagQolInfo()
-eq(qol.descriptionOffset, 0,
-  "native messages never inherit description motion")
-menu.message = nil
+-- Render geometry, descriptions and dialogs are exercised against both real
+-- engines by bag_layout_parity_driver.lua. This fixture tests native storage
+-- and actions, without retaining an obsolete duplicate renderer for its stubs.
 
 menu.modernBagPocketIndex = 3
 menu.modernBagRestoreState = { id = "POTION" }

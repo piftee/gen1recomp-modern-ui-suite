@@ -1,5 +1,81 @@
 # Changelog
 
+## [0.1.28] - 2026-09-11
+
+- Fix Gen 2 item-PC pages being drawn twice at different sizes. Keep deposit
+  quantity prompts and messages visible, and fit compact footer text.
+- Align Gen 2 battle framing, controls and background masks. Add Fill, 16:9
+  and 4:3 in Battle settings; retain framing for native/text-only moves and
+  prevent duplicate scenes under transparent prompts.
+- Render Pocket skin labels with crisp bitmap text, including MEDS.
+- Keep small-icon selection in Party → Icon Source. Add Sprite Info to
+  explain portrait providers, matching choices and artwork fallbacks.
+- Track collected shiny species per save in Gen 1 and Gen 2. Show shiny
+  markers and an L/R shiny-only Pokédex filter. Backfill from owned Pokémon
+  and recorded shiny Hall of Fame entries; preserve history after release.
+- Adapt selected Highlander contributions: optional shop owned counts,
+  two-second area names and reduced/off low-HP alerts. Shop counts and area
+  names default off; low-HP alerts retain the native default. Crystal's
+  existing map signs keep priority. Credit Waifu4Life's source contribution.
+
+## [0.1.27] - 2026-09-08
+
+- Restore the visible four-move selector when learning a move in Gen 2 battles.
+  The modern HUD had hidden the native list while its cursor still accepted A.
+  Selection, cancellation and HM protection stay with the native controller.
+- Remove the extra underline below the Gen 2 rename field. Highlight the
+  active character on the same line as the name.
+- Use the actual Gen 1 modern Bag renderer in Gen 2: pocket icons and colour
+  palettes, framed six-row lists, selection arrows, side detail cards,
+  portrait stacking, empty states, descriptions and readable button hints.
+- Use Gen 1 menu frames for Gen 2 Bag actions, sorting and toss confirmation;
+  anchor quantity selection to the selected item. Keep native four-pocket
+  storage, six virtual views, TM/HM rules, battle callbacks and touch controls.
+
+## [0.1.26] - 2026-09-08
+
+- Share the Gen 1 Pokédex renderer with Gen 2: identical index rows, actions,
+  top tabs, INFO cards, field notes, STATS, FAMILY and MOVES layouts.
+- Match Gen 1's softer interface palette, frames, spacing and compact layout.
+  Retain Gen 2 artwork, all six base stats, native evolution conditions,
+  learnsets, TM/HM and tutor data, and discovery restrictions.
+- Match Gen 1 controls: A opens index actions; Left/Right changes entry tabs;
+  Up/Down scrolls notes, selects relatives or moves; A plays a cry or opens
+  the selection; B returns. SELECT opens search and START opens Gen 2 tools.
+- Combine both native description pages into the scrollable INFO notes card.
+  New-catch entries retain their native two-page completion sequence.
+- Show complete evolution families in the shared grid, replacing 0.1.25's
+  separately paged cards. Preserve native AREA, ordering and Unown tools.
+
+## [0.1.25] - 2026-09-07
+
+- Remove repeated name, Dex number and type labels from the Gen 2 DATA
+  portrait panel, and enlarge and center its sprite. Keep identifying details
+  on the right, moving the number into the header on compact layouts.
+- Give Gen 2's Pokédex EVO page Gen 1-style sprite cards with type-coloured
+  selection, shadows and the selected evolution condition. Left/Right or
+  Up/Down selects; A opens a known relative; B returns to the original entry.
+  Larger families page automatically and undiscovered forms stay hidden.
+- Keep compact descriptions within the panel and scroll long text; reset
+  scrolling when changing species, description page or layout width.
+
+## [0.1.24] - 2026-09-07
+
+- Fix Party's Left/Right navigation on native-width and 4:3 Gen 2 grids.
+- Preserve Kanto Reforged's extra summary page, including gender, held item,
+  ability and complete scrolling description. Unknown extra pages use their
+  inherited renderer.
+- Enlarge stats portraits on wide summaries and move the Pokédex number and
+  type labels above the stats column.
+- Fit Gen 4 Battle Art menu portraits to shared animation bounds, preserving
+  every frame's positioning and white markings.
+- Add optional direct touch to START, Party and Modern Bag lists/pockets.
+  One tap selects; a second tap within two seconds confirms through the native
+  controller. Swipes navigate lists and pockets. Native dialogs retain normal
+  controls. Each component's DIRECT TOUCH option defaults to On.
+- Add the [full screen gallery and setup examples](GALLERY.md).
+
+
 ## [0.1.23] - 2026-09-07
 
 - Add independent Fill, 16:9 and 4:3 aspect-ratio controls to Party, Bag,

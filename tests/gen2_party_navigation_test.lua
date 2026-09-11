@@ -85,13 +85,32 @@ press("up")
 eq(menu.index, 4, "wide UP stays in the right card column")
 eq(menu.clock, 6, "the native controller receives every input update")
 
+for _, width in ipairs({160, 192, 195, 196, 256, 320}) do
+  menu.modernPartyLastWideWidth = width
+  menu.index = 1
+  press("right")
+  eq(menu.index, 2, "RIGHT reaches the drawn second column at width " .. width)
+  press("down")
+  eq(menu.index, 4, "DOWN follows the drawn right column at width " .. width)
+  press("left")
+  eq(menu.index, 3, "LEFT returns to the drawn left column at width " .. width)
+end
+
+menu.itemResult = {text="That Pokémon has fainted!"}
+menu.index = 1
+press("right")
+eq(menu.index, 1, "a refusal message retains native input ownership")
+menu.itemResult = nil
+press("right")
+eq(menu.index, 2, "grid navigation returns after refusal dismissal")
+
 for _, count in ipairs({2, 3, 6}) do
   local members = {}
   for i = 1, count do members[i] = {} end
   menu = screens.Gen2PartyMenu.new({ input = input }, {
     party = members, battle = true, prompt = "which",
   })
-  menu.modernPartyLastWideWidth = 246
+  menu.modernPartyLastWideWidth = 192
   eq(menu:count(), count, "forced choice excludes Cancel with " .. count .. " Pokémon")
   for index = 1, count do
     for _, direction in ipairs({"up", "down"}) do

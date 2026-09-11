@@ -5,6 +5,17 @@ return function(mod, settings, state, components)
   end
   local OptionsMenu = require("src.ui.OptionsMenu")
 
+  local function spriteHelp(game)
+    local crystal = mod.find("crystal_animated_sprites_with_shiny_visuals")
+    local art = mod.find("BATTLE_ART_VOXEL_GEN2") or mod.find("BATTLE_ART_VOXEL_FORK")
+    local text = "DEFAULT keeps your normal menu art, including installed replacements."
+      .. "\n\nCRYSTAL selects Crystal Animated Sprites. It can match DEFAULT when that mod already replaces menu art."
+      .. "\n\nCrystal provider: " .. (crystal and "enabled." or "not enabled.")
+      .. "\n\nBATTLE ART uses its front sprites. Provider: " .. (art and "enabled." or "not enabled.")
+      .. "\n\nMissing artwork falls back to DEFAULT. Small Party and PC icons use PARTY > ICON SOURCE."
+    game.stack:push(require("src.render.TextBox").new(game, text))
+  end
+
   local function labelFor(row, component)
     return settings:detailLabel(component, row)
   end
@@ -168,8 +179,7 @@ return function(mod, settings, state, components)
       items[#items + 1] = { id = "menu_sprite_source", label = "SPRITE",
         right = settings:menuSpriteLabel(),
         action = "sprites" }
-      items[#items + 1] = { id = "party.sprite_source", label = "ICONS",
-        right = settings:menuIconLabel(), action = "icons" }
+      items[#items + 1] = { id = "sprite_help", label = "SPRITE INFO", action = "sprite_help" }
       items[#items + 1] = { id = "back", label = "BACK", cancel = true }
       return items
     end
@@ -197,8 +207,8 @@ return function(mod, settings, state, components)
           settings:setAll(game, false); settings:persist(game); refresh(item.id)
         elseif item.action == "sprites" then
           settings:toggleMenuSpriteSource(game); refresh(item.id)
-        elseif item.action == "icons" then
-          settings:toggleMenuIconSource(game); refresh(item.id)
+        elseif item.action == "sprite_help" then
+          spriteHelp(game)
         elseif item.component then
           openComponent(game, item.component)
         end
@@ -212,11 +222,6 @@ return function(mod, settings, state, components)
       if item and item.action == "sprites" and input
           and (input:wasPressed("left") or input:wasPressed("right")) then
         settings:toggleMenuSpriteSource(self.game, input:wasPressed("left") and -1 or 1)
-        refresh(item.id); return
-      end
-      if item and item.action == "icons" and input
-          and (input:wasPressed("left") or input:wasPressed("right")) then
-        settings:toggleMenuIconSource(self.game, input:wasPressed("left") and -1 or 1)
         refresh(item.id); return
       end
       if item and item.component and input

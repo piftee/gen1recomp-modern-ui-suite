@@ -136,6 +136,7 @@ return function(mod)
   local wildsOfKanto = mod.find("overworld_wild_spawns")
   local movesManager = mod.find("moves_manager")
   local compatibility = {
+    summaryProvider = mod.find("Kanto-Reforged") and mod.content.screens:get("SummaryMenu") or nil,
     dvTracker = mod.find("dv_tracker") ~= nil,
     kantoRibbons = kantoRibbons ~= nil,
     kantoRibbonsExports = kantoRibbons and kantoRibbons.exports or nil,

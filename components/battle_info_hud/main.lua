@@ -1,15 +1,24 @@
 -- Battle Info HUD is presentation-only. It adds one saved switch to the
 -- standard Options menu and enhances the battle renderer's existing HUD.
 return function(mod)
+  local GameVersion = require("src.core.GameVersion")
+  local generation = type(GameVersion.generation) == "function"
+    and GameVersion.generation() or 1
   local optionSchema = {
     { key = "enabled", label = "BATTLE INFO", type = "toggle",
       default = true },
   }
+  optionSchema[#optionSchema + 1] = {
+    key = "low_hp_beep", label = "LOW HP BEEP", type = "choice", default = "on",
+    choices = { {"ON", "on"}, {"REDUCE", "reduce"}, {"OFF", "off"} },
+  }
+  if generation == 2 then
+    optionSchema[#optionSchema + 1] = {
+      key = "aspect_ratio", label = "ASPECT RATIO", type = "choice", default = "fill",
+      choices = { { "FILL", "fill" }, { "16:9", "16:9" }, { "4:3", "4:3" } },
+    }
+  end
   mod.options:define(optionSchema)
-
-  local GameVersion = require("src.core.GameVersion")
-  local generation = type(GameVersion.generation) == "function"
-    and GameVersion.generation() or 1
 
   local function setOption(game, value)
     return mod.options:set(game, "enabled", value)

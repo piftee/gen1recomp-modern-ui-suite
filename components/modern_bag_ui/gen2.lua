@@ -2,6 +2,7 @@
 -- both native controllers, adds the Modern Bag's virtual browse/sort layer,
 -- and replaces their presentation without changing physical storage.
 return function(mod, shared)
+  local touch = mod.suite and mod.suite.touch
   local Bag = require("src.inventory.Bag")
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
@@ -252,22 +253,30 @@ return function(mod, shared)
       local G = love.graphics
       local scale = math.max(1, math.floor(math.min(winH / 144, winW / 160)))
       local width = math.max(160, math.min(400, math.floor(winW / scale)))
+      local height = 144
+      if self.modernBagGeneration == 2 and option(self.game, "skin", "modern") ~= "classic_pocket"
+          and winH > winW then
+        local portraitScale = math.max(1, math.floor(winW / 160))
+        local portraitHeight = math.min(400, math.floor(winH / portraitScale))
+        if portraitHeight >= 224 then width, height, scale = 160, portraitHeight, portraitScale end
+      end
       if mod.suite and mod.suite.uiGeometry then
-        local height
-        width, height, scale = mod.suite.uiGeometry(self, winW, winH, width, 144, scale)
+        width, height, scale = mod.suite.uiGeometry(self, winW, winH, width, height, scale)
       end
       local ox = math.floor((winW - width * scale) / 2)
-      local oy = math.floor((winH - 144 * scale) / 2)
+      local oy = math.floor((winH - height * scale) / 2)
       setColor(surround)
       G.rectangle("fill", 0, 0, winW, winH)
       G.push("all")
-      G.setScissor(ox, oy, width * scale, 144 * scale)
+      G.setScissor(ox, oy, width * scale, height * scale)
       G.translate(ox, oy)
       G.scale(scale, scale)
+      self.modernBagLastWideHeight = height
+      self.modernBagWideHeight = height
       self.modernBagLastWideWidth = width
       self.modernBagWideWidth = width
       drawPanel(self)
-      self.modernBagWideWidth = nil
+      self.modernBagWideWidth, self.modernBagWideHeight = nil, nil
       G.pop()
       G.setColor(1, 1, 1, 1)
     end
@@ -327,11 +336,6 @@ return function(mod, shared)
     { label = "NAMES Z-A", kind = "name", descending = true },
   }
 
-  local POCKET_LABEL = {
-    ALL = "ALL", ITEMS = "ITEM", MEDICINE = "MED",
-    ITEM = "ITEM", BALL = "BALL", KEY_ITEM = "KEY", TM_HM = "TM",
-  }
-
   local SUBMENU_LABEL = {
     use = "USE", give = "GIVE", toss = "TOSS", sel = "SEL", quit = "QUIT",
   }
@@ -344,26 +348,6 @@ return function(mod, shared)
   local function activeModernPocket(menu)
     local pockets = modernPockets(menu)
     return pockets[menu.modernBagPocketIndex or 1] or pockets[1]
-  end
-
-  local function pocketLabelFor(pocket, tabWidth)
-    local full = pocket.full or pocket.label
-      or POCKET_LABEL[pocket.id] or pocket.id
-    local regular = pocket.label or POCKET_LABEL[pocket.id] or pocket.id
-    local label = Font.width(full) <= tabWidth and full
-      or (Font.width(regular) <= tabWidth and regular)
-      or pocket.compact or regular
-    return fitText(label, tabWidth)
-  end
-
-  local function modernTabLabels(menu, width)
-    local labels, pockets = {}, modernPockets(menu)
-    for i, pocket in ipairs(pockets) do
-      local x = math.floor((i - 1) * width / #pockets)
-      local nextX = math.floor(i * width / #pockets)
-      labels[i] = pocketLabelFor(pocket, nextX - x)
-    end
-    return labels
   end
 
   local function selectedId(menu)
@@ -701,133 +685,16 @@ return function(mod, shared)
     end
   end
 
-  local function packHeaderInfo(menu, width)
-    local cash = moneyText(menu)
-    local cashW = Font.width(cash)
-    local fullCount = ("%02d ITEMS"):format(#(menu.rows or {}))
-    local shortCount = ("%02d"):format(#(menu.rows or {}))
-    local countText = fullCount
-    local availableWithFull = width - 5 - cashW - 4
-      - Font.width(fullCount) - 5
-    if availableWithFull < Font.width("START") then countText = shortCount end
-    local countW = Font.width(countText)
-    local hintLeft = 5 + cashW + 4
-    local hintRight = width - 5 - countW - 4
-    local hintWidth = math.max(0, hintRight - hintLeft)
-    local hint = hintWidth >= Font.width("START SORT") and "START SORT"
-      or (hintWidth >= Font.width("START") and "START" or nil)
-    return {
-      cash = cash, cashX = 5, cashW = cashW,
-      count = countText, countW = countW,
-      countX = width - 5 - countW,
-      hint = hint, hintLeft = hintLeft, hintRight = hintRight,
-    }
+  local presentation
+  if type(mod.read) == "function" then
+    presentation = assert(load(assert(mod:read("gen2_presentation.lua")),
+      "@" .. mod.path .. "/gen2_presentation.lua"))()(mod, {
+      category = categoryFor, order = orderedBagIds, labels = SUBMENU_LABEL,
+    })
   end
 
   local function modernPackPanel(self)
-    local G = love.graphics
-    local width = self.modernBagWideWidth or 160
-    local listW = width
-    setColor({ 0.90, 0.93, 0.96 })
-    G.rectangle("fill", 0, 0, width, 144)
-
-    setColor(BLUE)
-    G.rectangle("fill", 0, 0, width, 16)
-    setColor(BLUE_LIGHT)
-    G.rectangle("fill", 0, 14, width, 2)
-    local header = packHeaderInfo(self, width)
-    drawInk(header.cash, header.cashX, 4, header.cashW, INK_WHITE)
-    drawInkRight(header.count, width - 5, 4, header.countW, INK_WHITE)
-    if header.hint then
-      drawInk(header.hint, header.hintLeft + math.floor(
-        (header.hintRight - header.hintLeft - Font.width(header.hint)) / 2),
-        4, header.hintRight - header.hintLeft, INK_LIGHT)
-    end
-    self.modernBagHeaderCash = header.cash
-    self.modernBagHeaderBounds = header
-
-    local pockets = parityEnabled(self) and modernPockets(self)
-      or (PackMenu.POCKETS or {})
-    local selectedPocket = parityEnabled(self) and self.modernBagPocketIndex
-      or self.pocketIndex
-    local pocketCount = math.max(1, #pockets)
-    for i, pocket in ipairs(pockets) do
-      local x = math.floor((i - 1) * listW / pocketCount)
-      local nextX = math.floor(i * listW / pocketCount)
-      local tabW = nextX - x
-      local selected = i == selectedPocket
-      setColor(selected and BLUE_DARK or PAPER)
-      G.rectangle("fill", x + 1, 17, tabW - 2, 14)
-      setColor(selected and BLUE_LIGHT or PAPER_ALT)
-      G.rectangle("line", x + 1.5, 17.5, tabW - 3, 13)
-      local fitted = pocketLabelFor(pocket, tabW)
-      drawInk(fitted, x + math.floor((tabW - Font.width(fitted)) / 2), 20,
-        tabW, selected and INK_WHITE or INK_BLACK)
-    end
-
-    for visible = 1, 5 do
-      local i = visible + (self.scroll or 0)
-      local y = 32 + (visible - 1) * 16
-      local selected = i == self.index
-      setColor(selected and BLUE_DARK or (visible % 2 == 0 and PAPER_ALT or PAPER))
-      G.rectangle("fill", 2, y + 1, listW - 4, 14)
-      if selected then
-        setColor(INK_WHITE)
-        G.rectangle("fill", 4, y + 4, 2, 8)
-      end
-      local color = selected and INK_WHITE or INK_BLACK
-      local entry = self.rows and self.rows[i]
-      if entry then
-        local label = (entry.tmhmLabel and
-          (entry.tmhmLabel .. " " .. tostring(entry.teaches or entry.name)))
-          or entry.name
-        drawInk(label, 10, y + 4, listW - 50, color)
-        if entry.showCount then
-          drawInkRight(TIMES .. tostring(entry.count or 0), listW - 7, y + 4, 32,
-            color)
-        end
-      elseif i == self:total() then
-        drawInk("CANCEL", 10, y + 4, 96, color)
-      end
-      if i == self.switching and not selected then
-        setColor(BLUE_DARK)
-        G.rectangle("line", 3.5, y + 2.5, listW - 7, 11)
-      end
-    end
-
-    setColor({ 0.04, 0.05, 0.07 })
-    local footerX, footerY, footerW, footerH = 0, 112, width, 32
-    G.rectangle("fill", footerX, footerY, footerW, footerH)
-    setColor(BLUE_LIGHT)
-    G.rectangle("line", footerX + 1.5, footerY + 1.5,
-      footerW - 3, footerH - 3)
-    local current = self.rows and self.rows[self.index]
-    local lines = self.message or (self.confirm and self.confirm.prompt)
-    local hasTitle = current and not lines
-    if current and not lines then
-      drawInk(current.name or current.id, footerX + 6, footerY + 3,
-        footerW - 12, INK_LIGHT)
-      local description = self:description()
-      local canScroll = not (self.modernBagSortMenu or self.submenu
-        or self.qtyState or self.confirm or self.switching)
-      if canScroll then
-        drawReadableDescription(self, current.id, description,
-          footerX + 6, footerY + 13, footerW - 12, 2, INK_WHITE)
-      else
-        clearDescriptionScroll(self)
-        lines = splitDescriptionFor(description, footerW - 12)
-      end
-    else
-      clearDescriptionScroll(self)
-    end
-    local maxLines = hasTitle and 2 or 3
-    local firstLineY = hasTitle and (footerY + 13) or (footerY + 4)
-    for i = 1, math.min(maxLines, #(lines or {})) do
-      drawInk(tostring(lines[i]):gsub("{PLAYER}", self:playerName()),
-        footerX + 6, firstLineY + (i - 1) * 8, footerW - 12, INK_WHITE)
-    end
-    drawPackOverlay(self)
-    G.setColor(1, 1, 1, 1)
+    return assert(presentation, "Gen 2 Bag presentation was not loaded").render(self)
   end
 
   local function drawClassicPackEnhancements(self)
@@ -877,6 +744,14 @@ return function(mod, shared)
     end
     menu.modernBagNativePockets = shared and shared.pockets
       and shared.pockets.ordered(nativeSource) or nativeSource
+    local nativeEnsureVisible = menu.ensureVisible
+    menu.ensureVisible = function(self)
+      if not presentation or not parityEnabled(self) then return nativeEnsureVisible(self) end
+      local count = self.modernBagVisibleRows or presentation.layout(self).rows
+      if self.index <= self.scroll then self.scroll = self.index - 1 end
+      if self.index > self.scroll + count then self.scroll = self.index - count end
+      self.scroll = math.max(0, math.min(self.scroll, math.max(0, self:total() - count)))
+    end
     menu.modernBagUI = true
     menu.modernBagGeneration = 2
     menu.classicGen2PackPanel = nativePanel
@@ -1044,6 +919,7 @@ return function(mod, shared)
 
     menu.drawPanel = function(self)
       if option(self.game or game, "skin", "modern") == "classic_pocket" then
+        if touch then touch.begin(self,"window",function() return true end) end
         local width = tonumber(self.modernBagWideWidth) or 160
         if width <= 160 then
           local result = nativePanel(self)
@@ -1079,19 +955,29 @@ return function(mod, shared)
     end
     menu.modernBagLayoutInfo = function(self)
       local modern = parityEnabled(self, game)
+      if modern and presentation then
+        local info = presentation.layout(self)
+        info.generation, info.pockets, info.pocket = 2, #modernPockets(self), activeModernPocket(self).id
+        info.layout = info.stacked and "stacked" or info.wide and "side-detail" or "compact"
+        info.detailPosition = info.stacked and "bottom" or info.wide and "right" or "hidden"
+        info.listWidth, info.detailWidth = info.listW, info.detailW
+        info.tabStyle = "icons"
+        return info
+      end
       local width = tonumber(self.modernBagWideWidth
         or self.modernBagLastWideWidth) or 160
       return { generation = 2, pockets = modern and #modernPockets(self) or 4,
         pocket = modern and activeModernPocket(self).id
           or ((PackMenu.POCKETS or {})[self.pocketIndex or 1] or {}).id,
         skin = option(self.game or game, "skin", "modern"),
-        layout = modern and "full-width-bottom" or "native",
+        layout = "native",
         listWidth = modern and width or math.min(width, 160),
-        detailPosition = modern and "bottom" or "native",
+        detailPosition = "native",
         detailWidth = modern and width or math.min(width, 160),
-        tabLabels = modern and modernTabLabels(self, width) or nil }
+        tabStyle = modern and "icons" or nil }
     end
     menu.modernBagQolInfo = function(self)
+      if presentation and parityEnabled(self) then return presentation.qol(self) end
       local scroll = self.modernBagDescriptionScroll or {}
       local header = self.modernBagHeaderBounds or {}
       return {
@@ -1120,27 +1006,60 @@ return function(mod, shared)
   local function drawPcFooter(self, title, lines)
     local G = love.graphics
     local width = self.modernBagWideWidth or 160
+    local height = self.modernBagWideHeight or 144
     local wide = width >= 196
     local x = wide and math.max(154, math.floor(width * 0.58)) + 2 or 0
     local y = wide and 18 or 112
     local w = width - x
-    local h = wide and 126 or 32
+    local h = height - y
     setColor({ 0.04, 0.05, 0.07 })
     G.rectangle("fill", x, y, w, h)
     setColor({ 0.52, 0.88, 0.64 })
     G.rectangle("line", x + 1.5, y + 1.5, w - 3, h - 3)
     if title then drawInk(title, x + 6, y + 5, w - 12,
       { 0.55, 0.95, 0.68 }) end
-    local maxLines = wide and math.max(2, math.floor((h - 22) / 10)) or 2
+    local lineHeight = h <= 32 and 8 or 10
+    local maxLines = math.max(1, math.floor((h - 14) / lineHeight))
     for i = 1, math.min(maxLines, #(lines or {})) do
       drawInk(tostring(lines[i]):gsub("{PLAYER}", self:playerName()), x + 6,
-        y + 6 + i * 10, w - 12, INK_WHITE)
+        y + 14 + (i - 1) * lineHeight, w - 12, INK_WHITE)
+    end
+  end
+
+  local function drawPcOverlays(self)
+    local G = love.graphics
+    if self.qtyState then
+      local q = self.qtyState
+      drawPcFooter(self, q.prompt and q.prompt[1],
+        { q.prompt and q.prompt[2] or "", TIMES .. ("%02d"):format(q.qty or 1) })
+    elseif self.confirm then
+      drawPcFooter(self, self.confirm.prompt and self.confirm.prompt[1],
+        { self.confirm.prompt and self.confirm.prompt[2] or "" })
+      local x, y = 104, 62
+      setColor({ 0.60, 0.84, 0.68 })
+      chamfer("fill", x, y, 52, 44, 3)
+      for i, label in ipairs({ "YES", "NO" }) do
+        local rowY = y + 5 + (i - 1) * 16
+        if i == self.confirm.choice then
+          setColor(GREEN_DARK)
+          G.rectangle("fill", x + 4, rowY, 44, 14)
+        end
+        drawInk(label, x + 14, rowY + 3, 30,
+          i == self.confirm.choice and INK_WHITE or INK_BLACK)
+      end
+    elseif self.message then
+      local page = self.message.pages and self.message.pages[self.message.page]
+      drawPcFooter(self, "ITEM PC", page)
     end
   end
 
   local function modernItemPcPanel(self)
     if self.phase == "deposit" and self.pack then
+      self.pack.modernBagWideWidth = self.modernBagWideWidth
+      self.pack.modernBagWideHeight = self.modernBagWideHeight
       self.pack:drawPanel()
+      self.pack.modernBagWideWidth, self.pack.modernBagWideHeight = nil, nil
+      drawPcOverlays(self)
       return
     end
     local G = love.graphics
@@ -1148,7 +1067,7 @@ return function(mod, shared)
     local wide = width >= 196
     local listW = wide and math.max(154, math.floor(width * 0.58)) or width
     setColor({ 0.90, 0.94, 0.91 })
-    G.rectangle("fill", 0, 0, width, 144)
+    G.rectangle("fill", 0, 0, width, self.modernBagWideHeight or 144)
     setColor(GREEN)
     G.rectangle("fill", 0, 0, width, 16)
     setColor({ 0.52, 0.88, 0.64 })
@@ -1198,29 +1117,7 @@ return function(mod, shared)
       drawPcFooter(self, "PLAYER'S PC", { "Choose an action." })
     end
 
-    if self.qtyState then
-      local q = self.qtyState
-      drawPcFooter(self, q.prompt and q.prompt[1],
-        { q.prompt and q.prompt[2] or "", TIMES .. ("%02d"):format(q.qty or 1) })
-    elseif self.confirm then
-      drawPcFooter(self, self.confirm.prompt and self.confirm.prompt[1],
-        { self.confirm.prompt and self.confirm.prompt[2] or "" })
-      local x, y = 104, 62
-      setColor({ 0.60, 0.84, 0.68 })
-      chamfer("fill", x, y, 52, 44, 3)
-      for i, label in ipairs({ "YES", "NO" }) do
-        local rowY = y + 5 + (i - 1) * 16
-        if i == self.confirm.choice then
-          setColor(GREEN_DARK)
-          G.rectangle("fill", x + 4, rowY, 44, 14)
-        end
-        drawInk(label, x + 14, rowY + 3, 30,
-          i == self.confirm.choice and INK_WHITE or INK_BLACK)
-      end
-    elseif self.message then
-      local page = self.message.pages and self.message.pages[self.message.page]
-      drawPcFooter(self, "ITEM PC", page)
-    end
+    drawPcOverlays(self)
     G.setColor(1, 1, 1, 1)
   end
 
@@ -1232,6 +1129,9 @@ return function(mod, shared)
     menu.classicGen2ItemPcPanel = nativePanel
     menu.drawPanel = modernItemPcPanel
     installWideDraw(menu, menu.drawPanel, { 0.90, 0.94, 0.91 })
+    -- ItemPcMenu lacks PACK's widescreen opt-in. Without it Game2's opaque
+    -- fallback paints our wide panel, then paints the compact panel again.
+    menu.drawsWidescreen = function() return true end
     return menu
   end
 

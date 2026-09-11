@@ -48,6 +48,9 @@ return function(mod)
       { "MEDICINE", "medicine" }, { "BALLS", "balls" },
       { "TMs", "machines" }, { "KEY", "key" } },
   }
+  optionSchema[#optionSchema + 1] = {
+    key = "shop_counts", label = "SHOP COUNTS", type = "toggle", default = false,
+  }
   mod.options:define(optionSchema)
 
   local usefulBag = mod.find("useful_bag")

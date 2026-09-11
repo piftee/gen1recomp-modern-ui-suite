@@ -21,6 +21,10 @@ return function(mod, genderExports, compatibility)
   local dvTracker = compatibility and compatibility.dvTracker == true
   local kantoRibbons = compatibility and compatibility.kantoRibbons == true
   local summaryPageCount = dvTracker and 3 or 2
+  local extensions = mod.suite and mod.suite.summaryExtensions
+  local summaryProvider = compatibility and compatibility.summaryProvider
+  local kantoApi = summaryProvider and extensions and extensions.kanto()
+  if kantoApi then summaryPageCount = summaryPageCount + 1 end
 
   -- DramaticShape 1.8.x exposes its shiny predicate and palette transform
   -- through mod.exports.lib. Its native SummaryMenu wrapper cannot see this
@@ -181,16 +185,22 @@ return function(mod, genderExports, compatibility)
     height = math.max(SCREEN_H, math.floor(height))
     local footerY = height - 8
     local railW = math.min(88, math.max(64, math.floor(width * 0.31)))
+    if summary and summary.page == 1 and width >= 192 then
+      railW = math.min(98, math.max(76, math.floor(width * 0.38)))
+    end
     local mainX = railW + 4
     local mainW = width - mainX - 2
+    local expandedPortrait = summary and summary.page == 1 and width >= 192
+    local metadataH = expandedPortrait and 28 or 0
     return {
       width = width,
       height = height,
       footerY = footerY,
       railX = 2, railY = HEADER_H + 2, railW = railW,
       railH = footerY - HEADER_H - 4,
-      mainX = mainX, mainY = HEADER_H + 2, mainW = mainW,
-      mainH = footerY - HEADER_H - 4,
+      mainX = mainX, mainY = HEADER_H + 2 + metadataH, mainW = mainW,
+      mainH = footerY - HEADER_H - 4 - metadataH,
+      expandedPortrait = expandedPortrait,
       moveColumns = mainW >= 144 and 2 or 1,
     }
   end
@@ -452,7 +462,7 @@ return function(mod, genderExports, compatibility)
     local shown = fitText(name, maxName)
     drawText(shown, nameLeft + (maxName - Font.width(shown)) / 2,
       3, maxName, WHITE)
-    local pageTitle = summary.page == 1 and "STATS"
+    local pageTitle = summary.modernKantoPage == summary.page and "INFO" or summary.page == 1 and "STATS"
       or summary.page == 2 and "MOVES" or "DVS"
     drawTextRight(pageTitle,
       layout.width - 4, 4, 48, WHITE)
@@ -495,10 +505,13 @@ return function(mod, genderExports, compatibility)
       or summary.modernBattleSprite or summary.sprite
     if not source then return nil end
     local sw, sh = source:getDimensions()
-    local scale = math.min(1, 56 / sw, 56 / sh, (layout.railW - 4) / sw)
+    local areaH = layout.expandedPortrait and (layout.railH - 34) or 56
+    local scale = layout.expandedPortrait
+      and math.min(2, (layout.railW - 12) / sw, areaH / sh)
+      or math.min(1, 56 / sw, 56 / sh, (layout.railW - 4) / sw)
     sw, sh = sw * scale, sh * scale
     local x = layout.railX + math.floor((layout.railW - sw) / 2)
-    local y = layout.railY + 5 + math.max(0, math.floor((56 - sh) / 2))
+    local y = layout.railY + 5 + math.max(0, math.floor((areaH - sh) / 2))
     return x, y, sw, sh, scale
   end
 
@@ -668,12 +681,21 @@ return function(mod, genderExports, compatibility)
     local textX = layout.railX + margin
     local textW = layout.railW - margin * 2
     local infoY = layout.railY + 62
-    drawText(("No.%03d"):format(def.dex or 0), textX, infoY,
-      textW, BLACK)
     local types = def.types or {}
-    drawText(displayType(types[1]), textX, infoY + 10, textW, BLACK)
-    if types[2] and types[2] ~= types[1] then
-      drawText(displayType(types[2]), textX, infoY + 20, textW, BLACK)
+    if layout.expandedPortrait then
+      drawCard(layout.mainX, layout.railY, layout.mainW, 26, true)
+      drawText(("No.%03d"):format(def.dex or 0), layout.mainX + 5, layout.railY + 3, layout.mainW - 10, BLACK)
+      local t1, t2 = displayType(types[1]), types[2] ~= types[1] and types[2] and displayType(types[2])
+      local label = t1 .. (t2 and " / " .. t2 or "")
+      if Font.width(label) > layout.mainW - 10 then label = t1:sub(1, 3) .. (t2 and "/" .. t2:sub(1, 3) or "") end
+      drawText(label, layout.mainX + 5, layout.railY + 12, layout.mainW - 10, BLACK)
+      infoY = layout.railY + layout.railH - 58
+    else
+      drawText(("No.%03d"):format(def.dex or 0), textX, infoY, textW, BLACK)
+      drawText(displayType(types[1]), textX, infoY + 10, textW, BLACK)
+      if types[2] and types[2] ~= types[1] then
+        drawText(displayType(types[2]), textX, infoY + 20, textW, BLACK)
+      end
     end
     local player = summary.game.save and summary.game.save.player or {}
     local ot = mon.ot or player.name or "RED"
@@ -1141,6 +1163,8 @@ return function(mod, genderExports, compatibility)
       hint = "A/B MOVES"
     elseif summary.page == 2 and summary.modernMoveDetail then
       hint = "A/B BACK"
+    elseif summary.page == 2 and summary.modernKantoPage and not dvTracker then
+      hint = "ARROWS  A INFO  B MORE"
     elseif summary.page == 2 and kantoRibbons then
       hint = "ARROWS  A INFO  B RIBBONS"
     elseif summary.page == 2 and dvTracker then
@@ -1174,9 +1198,36 @@ return function(mod, genderExports, compatibility)
     clearInheritedUiTrueColor()
     local layout = layoutFor(summary)
     drawBackdrop(layout)
+    local extra = extensions and extensions.page(summary, 1)
+    local known = summary.page == 1 or summary.page == 2 or (dvTracker and summary.page == 3)
+    if not known and not extra and summary.modernNativeDraw then
+      love.graphics.push()
+      love.graphics.translate(math.floor((layout.width - 160) / 2), 0)
+      summary.modernNativeDraw(summary)
+      love.graphics.pop()
+      return
+    end
     drawHeader(summary, layout)
     drawProfile(summary, layout)
-    if summary.page == 1 then
+    if extra then
+      local x, y, w, h = layout.mainX, layout.mainY, layout.mainW, layout.mainH
+      drawCard(x, y, w, 40, true)
+      drawText("GENDER " .. tostring(extra.gender or "-----"), x + 5, y + 5, w - 10, BLACK)
+      drawText("ITEM", x + 5, y + 16, w - 10, BLACK)
+      drawText(extra.heldItem or "-----", x + 5, y + 27, w - 10, BLACK)
+      drawCard(x, y + 42, w, h - 42, false)
+      drawText("ABILITY", x + 5, y + 47, w - 10, WHITE)
+      drawText(extra.ability or "-----", x + 5, y + 58, w - 10, WHITE)
+      local lines = extensions.lines(extra.description, w - 10)
+      local count = math.max(1, math.floor((h - 74) / 11))
+      local key = tostring(summary.mon) .. tostring(extra.ability) .. extra.description
+      if summary.modernAbilityText ~= key then
+        summary.modernAbilityText, summary.modernAbilitySince = key, love.timer.getTime()
+      end
+      local offset = math.max(0, math.floor((love.timer.getTime() - summary.modernAbilitySince - 2) / 2))
+        % math.max(1, #lines - count + 1)
+      for i = 1, count do drawText(lines[offset + i] or "", x + 5, y + 69 + (i - 1) * 11, w - 10, WHITE) end
+    elseif summary.page == 1 then
       drawVitals(summary, layout)
       drawStats(summary, layout)
     elseif summary.page == 2 then
@@ -1201,6 +1252,10 @@ return function(mod, genderExports, compatibility)
       colors = primary, x = layout.railX, y = layout.railY,
       w = layout.railW, h = layout.railH,
     } }
+
+    if layout.expandedPortrait then
+      zones[#zones + 1] = {colors = primary, x = layout.mainX, y = layout.railY, w = layout.mainW, h = 26}
+    end
 
     if summary.page == 1 then
       zones[#zones + 1] = {
@@ -1242,7 +1297,7 @@ return function(mod, genderExports, compatibility)
     else
       zones[#zones + 1] = {
         colors = primary, x = layout.mainX, y = layout.mainY,
-        w = layout.mainW, h = 32,
+        w = layout.mainW, h = summary.modernKantoPage == summary.page and 40 or 32,
       }
     end
     return zones
@@ -1250,7 +1305,11 @@ return function(mod, genderExports, compatibility)
 
   return {
     new = function(game, mon)
-      local summary = SummaryMenu.new(game, mon)
+      local factory = kantoApi and (type(summaryProvider) == "function" and summaryProvider or summaryProvider.new)
+      local summary = (factory or SummaryMenu.new)(game, mon)
+      if kantoApi and summary._expMaxPage then
+        summary.modernKantoPage, summary._expMaxPage = summaryPageCount, summaryPageCount
+      end
       local downstreamUpdate = summary.update
       -- Resolve through the same live sprite hook used by SummaryMenu so the
       -- matte mask follows asset replacements rather than a private copy.
@@ -1264,6 +1323,10 @@ return function(mod, genderExports, compatibility)
         local input = self.game and self.game.input
         if self.page ~= 2 then
           self.modernMoveDetail = false
+          if self.modernKantoPage == self.page and kantoRibbons
+              and input and (input:wasPressed("a") or input:wasPressed("b")) then
+            return SummaryMenu.update(self, dt)
+          end
           return downstreamUpdate(self, dt)
         end
         if not (input and type(input.wasPressed) == "function") then
@@ -1304,6 +1367,7 @@ return function(mod, genderExports, compatibility)
         end
         self.modernMoveIndex = math.max(1, math.min(4, index))
       end
+      summary.modernNativeDraw = summary.draw
       summary.draw = draw
       summary.sgbPalettes = sgbPalettes
       summary.uiSize = uiSize

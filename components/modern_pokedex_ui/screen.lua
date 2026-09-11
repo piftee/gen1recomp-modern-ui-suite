@@ -3,6 +3,10 @@
 -- icon fitting, palette zones, and the entry renderer.
 return function(mod, compatibility)
   compatibility = compatibility or {}
+  local shinyDex = mod.suite and mod.suite.shinyDex
+  local function shinyCaught(game, species)
+    return shinyDex and shinyDex.has(game, species) or false
+  end
   local Assets = require("src.render.Assets")
   local BuiltinDexEntry = require("src.ui.DexEntryMenu")
   local BuiltinPokedex = require("src.ui.PokedexMenu")
@@ -131,6 +135,7 @@ return function(mod, compatibility)
 
   local function drawRawText(text, x, y, maxWidth, shade)
     text = tostring(text or "")
+    if compatibility.formatText then text = compatibility.formatText(text) end
     text = fitText(text, maxWidth or Font.width(text))
     love.graphics.push("all")
     local shader = shaderForInk()
@@ -305,9 +310,14 @@ return function(mod, compatibility)
     return TYPE_COLORS[tostring(id):upper()] or TYPE_COLORS.NORMAL
   end
 
+  local function uiPalette(game, name)
+    return compatibility.palette and compatibility.palette(game, name)
+      or PaletteFX.pal(game.data, name)
+  end
+
   local function basePalette(game)
-    return PaletteFX.pal(game.data, "BLUEMON")
-      or PaletteFX.pal(game.data, "MEWMON") or PaletteFX.GRAYS
+    return uiPalette(game, "BLUEMON")
+      or uiPalette(game, "MEWMON") or PaletteFX.GRAYS
   end
 
   local WARM_SGB_PORTRAITS = {
@@ -692,6 +702,9 @@ return function(mod, compatibility)
 
   local function drawIcon(game, def, x, y, target, selected, counter,
       regions)
+    if compatibility.drawIcon then
+      return compatibility.drawIcon(game, def, x, y, target, selected, counter)
+    end
     if not (def and game.data.icons) then return end
     local mon = syntheticMon(def)
     if compatibility.wildsOfKanto and drawWildsIcon(game, mon, x, y,
@@ -890,7 +903,7 @@ return function(mod, compatibility)
     -- allowed to vary by context; the Pokedex must show the exact front art
     -- the player will meet in battle, not a separate dex-only fallback.
     local artPalette = portraitArtPalette(game.data, def.id)
-      or PaletteFX.pal(game.data, "MEWMON") or PaletteFX.GRAYS
+      or uiPalette(game, "MEWMON") or PaletteFX.GRAYS
     local colors = PaletteFX.effectiveColors(artPalette)
     local values = {}
     for index = 1, 4 do
@@ -934,6 +947,9 @@ return function(mod, compatibility)
       drawCentered("?", rect.x, rect.y + math.floor((rect.h - 8) / 2),
         rect.w, DARK)
       return
+    end
+    if compatibility.drawSprite then
+      return compatibility.drawSprite(game, def, rect)
     end
     local image, protected, artPalette = spriteFor(game, def)
     if not image then return end
@@ -1093,6 +1109,22 @@ return function(mod, compatibility)
     return seen, owned, #rows
   end
 
+  local function shinyCount(screen)
+    local count = 0
+    for _, row in ipairs(screen.modernDexAllEntries or screen.modernDexEntries or {}) do
+      if row.def and shinyCaught(screen.game, row.def.id) then count = count + 1 end
+    end
+    return count
+  end
+
+  local function drawCollectionMark(game, species, x, y)
+    if not shinyCaught(game, species) then return drawBall(x, y, true) end
+    -- A four-point star occupies the same space as the ordinary caught ball.
+    gray(darkTheme() and WHITE or BLACK)
+    love.graphics.rectangle("fill", x - 1, y - 3, 2, 6)
+    love.graphics.rectangle("fill", x - 3, y - 1, 6, 2)
+  end
+
   local function startingGlyph(name)
     local text = tostring(name or ""):match("^%s*(.-)%s*$") or ""
     local spans = Font.split(text)
@@ -1157,6 +1189,9 @@ return function(mod, compatibility)
         for _, candidate in ipairs(row.def.types or {}) do
           if tostring(candidate) == typeId then matches = true break end
         end
+      end
+      if matches and screen.modernDexShinyOnly then
+        matches = shinyCaught(screen.game, row.def.id)
       end
       if matches then
         filtered[#filtered + 1] = row
@@ -1245,8 +1280,9 @@ return function(mod, compatibility)
     love.graphics.rectangle("fill", 0, 0, layout.width, HEADER_H)
     gray(LIGHT)
     love.graphics.rectangle("fill", 0, HEADER_H - 2, layout.width, 2)
-    drawText("POKéDEX", 5, 4, 64, WHITE)
+    drawText(screen.modernDexShinyOnly and "SHINY DEX" or "POKéDEX", 5, 4, 80, WHITE)
     local _, owned, total = counts(screen)
+    if screen.modernDexShinyOnly then owned = shinyCount(screen) end
     if layout.wide then
       drawRight(("CAUGHT %03d/%03d"):format(owned, total),
         layout.width - 5, 4, 112, WHITE)
@@ -1290,7 +1326,9 @@ return function(mod, compatibility)
       drawText(row.seen and def.name or "-----", nameX, rect.y + 6,
         rect.w - (nameX - rect.x) - 16,
         selected and WHITE or BLACK)
-      if row.owned then drawBall(rect.x + rect.w - 10, rect.y + 9, true) end
+      if row.owned or shinyCaught(screen.game, def.id) then
+        drawCollectionMark(screen.game, def.id, rect.x + rect.w - 10, rect.y + 9)
+      end
     end
     local total = #screen.modernDexEntries
     if total > layout.rows then
@@ -1330,7 +1368,9 @@ return function(mod, compatibility)
     local digits = (screen.game.data.constants or {}).dexDigits or 3
     drawText(("No.%0" .. digits .. "d"):format(def.dex or 0),
       rect.x + pad, infoY, 56, DARK)
-    if row.owned then drawBall(rect.x + rect.w - 11, infoY + 4, true) end
+    if row.owned or shinyCaught(screen.game, def.id) then
+      drawCollectionMark(screen.game, def.id, rect.x + rect.w - 11, infoY + 4)
+    end
     drawCentered(known and def.name or "UNKNOWN", rect.x + pad,
       infoY + 10, rect.w - pad * 2, WHITE)
     local kind = known and def.dexEntry and def.dexEntry.kind or nil
@@ -1360,22 +1400,20 @@ return function(mod, compatibility)
       layout.width, FOOTER_H)
     local seen, owned, total = counts(screen)
     if layout.wide then
-      drawText("A ACTIONS", 5, layout.footerY + 2, 72, WHITE)
+      drawText(screen.modernDexShinyOnly and "LR ALL" or "LR SHINY", 5, layout.footerY + 2, 72, WHITE)
       local filtered = screen.modernDexLetter or screen.modernDexType
       local center = filtered
         and ("FOUND %03d"):format(#(screen.modernDexEntries or {}))
-        or "SEL FIND"
+        or ("SHINY %03d"):format(shinyCount(screen))
       drawCentered(center, 84,
         layout.footerY + 2, layout.width - 168, LIGHT)
       drawRight("B BACK", layout.width - 5, layout.footerY + 2, 56, WHITE)
     else
       local filtered = screen.modernDexLetter or screen.modernDexType
-      local seenLabel = filtered
-        and ("FOUND %03d"):format(#(screen.modernDexEntries or {}))
-        or ("SEEN %03d"):format(seen)
+      local seenLabel = screen.modernDexShinyOnly and "LR ALL" or "LR SHINY"
       local seenWidth = drawText(seenLabel,
         5, layout.footerY + 2, Font.width(seenLabel), WHITE)
-      local action = "SEL SEARCH"
+      local action = "SEL FIND"
       drawRight(action, layout.width - 5, layout.footerY + 2,
         math.max(0, layout.width - 16 - seenWidth), WHITE)
     end
@@ -1387,9 +1425,9 @@ return function(mod, compatibility)
     love.graphics.rectangle("fill", 5, layout.footerY, ownedW, 1)
   end
 
-  local function drawActions(menu)
+  local function drawActions(menu, forcedWidth)
     local owner = menu.modernDexOwner
-    local layout = activeLayout(owner)
+    local layout = forcedWidth and layoutFor(forcedWidth) or activeLayout(owner)
     local rect = actionGeometry(menu, owner, layout)
     gray(BLACK)
     chamfer("fill", rect.x + 2, rect.y + 2, rect.w, rect.h, 4)
@@ -1413,12 +1451,12 @@ return function(mod, compatibility)
     gray(WHITE)
   end
 
-  local function paletteZones(screen, game)
-    local layout = activeLayout(screen)
+  local function paletteZones(screen, game, forcedWidth)
+    local layout = forcedWidth and layoutFor(forcedWidth) or activeLayout(screen)
     local base = basePalette(game)
     local zones = { { colors = base, x = 0, y = 0,
       w = layout.width, h = layout.height } }
-    zones[#zones + 1] = { colors = PaletteFX.pal(game.data, "REDMON") or base,
+    zones[#zones + 1] = { colors = uiPalette(game, "REDMON") or base,
       x = 0, y = 0, w = layout.width, h = HEADER_H }
     for visible = 1, layout.rows do
       local index = screen.scroll + visible
@@ -1442,7 +1480,7 @@ return function(mod, compatibility)
       zones[#zones + 1] = { colors = PaletteFX.GRAYS,
         x = rect.x, y = rect.y, w = rect.w + 2, h = rect.h + 2 }
     end
-    zones[#zones + 1] = { colors = PaletteFX.pal(game.data, "CYANMON") or base,
+    zones[#zones + 1] = { colors = uiPalette(game, "CYANMON") or base,
       x = 0, y = layout.footerY, w = layout.width, h = FOOTER_H }
     return zones
   end
@@ -1558,6 +1596,10 @@ return function(mod, compatibility)
         openDexSearch(self)
         require("src.core.Sound").play(self.game.data, "Press_AB")
         return
+      elseif input:wasPressed("left") or input:wasPressed("right") then
+        self.modernDexShinyOnly = not self.modernDexShinyOnly
+        applyDexFilter(self, self.modernDexLetter, self.modernDexType)
+        return
       elseif #self.items == 0 and input:wasPressed("a") then
         openDexSearch(self)
         require("src.core.Sound").play(self.game.data, "Press_AB")
@@ -1665,6 +1707,7 @@ return function(mod, compatibility)
   end
 
   local function entryOwned(state)
+    if compatibility.entryOwned then return compatibility.entryOwned(state) end
     return state.forceOwned or state.game.save.pokedex
       and state.game.save.pokedex.owned
       and state.game.save.pokedex.owned[state.def.id]
@@ -1780,12 +1823,12 @@ return function(mod, compatibility)
       layout.info.x + 6, layout.info.y + 5,
       layout.wide and 72 or 56, DARK)
     if layout.wide then
-      drawRight(owned and "CAUGHT" or "SEEN",
+      drawRight(shinyCaught(state.game, state.def.id) and "SHINY" or owned and "CAUGHT" or "SEEN",
         layout.info.x + layout.info.w - 6,
         layout.info.y + 5, 64, DARK)
     elseif owned then
-      drawBall(layout.info.x + layout.info.w - 10,
-        layout.info.y + 9, true)
+      drawCollectionMark(state.game, state.def.id, layout.info.x + layout.info.w - 10,
+        layout.info.y + 9)
     else
       drawRight("SEEN", layout.info.x + layout.info.w - 6,
         layout.info.y + 5, 40, DARK)
@@ -1921,7 +1964,7 @@ return function(mod, compatibility)
     end
   end
 
-  local STAT_ROWS = {
+  local STAT_ROWS = compatibility.statRows or {
     { "HP", "hp", "GREENMON", "HP" },
     { "ATTACK", "attack", "REDMON", "ATK" },
     { "DEFENSE", "defense", "BROWNMON", "DEF" },
@@ -2028,8 +2071,8 @@ return function(mod, compatibility)
       main = layout.statsMain
       if #availableRows == 0 then return end
       panel(main.x, main.y, main.w, main.h, false)
-      rowsY = main.y + 2
-      step = math.max(9, math.floor((main.h - 5) / #availableRows))
+      rowsY = main.y + (#availableRows > 5 and 1 or 2)
+      step = math.max(8, math.floor((main.h - 5) / #availableRows))
     end
     local labelW = layout.wide and 62 or 28
     local valueW = 24
@@ -2139,6 +2182,7 @@ return function(mod, compatibility)
   end
 
   local function familyMemberKnown(state, member)
+    if compatibility.familyKnown then return compatibility.familyKnown(state, member) end
     if not member then return false end
     if state.forceOwned and member.def.id == state.def.id then return true end
     local dex = state.game.save.pokedex or { seen = {}, owned = {} }
@@ -2194,7 +2238,8 @@ return function(mod, compatibility)
       end
     end
     drawCentered(selectedKnown
-        and evolutionLabel(state.game, selectedParent) or "UNDISCOVERED",
+        and (compatibility.evolutionLabel or evolutionLabel)(state.game, selectedParent)
+        or "UNDISCOVERED",
       layout.content.x + 6, layout.content.y + layout.content.h - 14,
       layout.content.w - 12, DARK)
   end
@@ -2214,6 +2259,7 @@ return function(mod, compatibility)
   end
 
   local function moveRows(state)
+    if compatibility.moveRows then return compatibility.moveRows(state) end
     local levelRows, machineRows = {}, {}
     local added = {}
     for _, id in ipairs(state.def.level1Moves or {}) do
@@ -2868,19 +2914,19 @@ return function(mod, compatibility)
     gray(WHITE)
   end
 
-  local function entryZones(state, game)
+  local function entryZones(state, game, forcedWidth)
     local width = select(1, state:uiSize())
     local renderer = game and game.renderer
     if renderer and renderer.uiSize then width = select(1, renderer:uiSize()) end
-    local layout = entryLayout(width)
+    local layout = entryLayout(forcedWidth or width)
     local base = basePalette(game)
     local primary = paletteFor(state.def)
     local page = entryPage(state)
     local zones = { { colors = base, x = 0, y = 0,
       w = layout.width, h = SCREEN_H },
-      { colors = PaletteFX.pal(game.data, "REDMON") or base,
+      { colors = uiPalette(game, "REDMON") or base,
         x = 0, y = 0, w = layout.width, h = HEADER_H },
-      { colors = PaletteFX.pal(game.data, "CYANMON") or base,
+      { colors = uiPalette(game, "CYANMON") or base,
         x = 0, y = layout.footerY, w = layout.width,
         h = SCREEN_H - layout.footerY },
     }
@@ -2920,9 +2966,10 @@ return function(mod, compatibility)
       end
       local step = #availableRows > 0 and (layout.wide
           and math.min(16, math.floor(82 / #availableRows))
-          or math.max(9, math.floor((main.h - 5) / #availableRows))) or 16
+          or math.max(8, math.floor((main.h - 5) / #availableRows))) or 16
+      if not layout.wide and #availableRows > 5 then y = main.y + 1 end
       for _, row in ipairs(availableRows) do
-        zones[#zones + 1] = { colors = PaletteFX.pal(game.data, row[3])
+        zones[#zones + 1] = { colors = uiPalette(game, row[3])
             or primary, x = main.x, y = y,
           w = main.w, h = layout.wide and 12 or math.min(9, step) }
         y = y + step
@@ -3053,7 +3100,8 @@ return function(mod, compatibility)
     if selectSpecies() then return end
     -- A viewed evolution can sit outside the active letter/type filter. Clear
     -- it so returning to the index can still focus the species just opened.
-    if list.modernDexLetter or list.modernDexType then
+    if list.modernDexLetter or list.modernDexType or list.modernDexShinyOnly then
+      list.modernDexShinyOnly = false
       applyDexFilter(list, false, false)
       selectSpecies()
     end
@@ -3181,6 +3229,24 @@ return function(mod, compatibility)
   end
 
   return {
+    -- Both generations use these exact layouts. Native adapters supply data,
+    -- artwork and control transitions; they do not maintain a second skin.
+    presentation = {
+      entry = drawEntry, entryZones = entryZones, entryLayout = entryLayout,
+      listLayout = layoutFor, listZones = paletteZones,
+      actions = drawActions, actionGeometry = actionGeometry,
+      buildPages = buildEntryPages, familySelection = familySelection,
+      moveInfoScroll = moveInfoScroll, moveMoveSelection = moveMoveSelection,
+      moveFamilySelection = moveFamilySelection, selectedMoveRow = selectedMoveRow,
+      list = function(state, width)
+        local layout, regions = layoutFor(width), {}
+        backdrop(layout)
+        drawHeader(state, layout)
+        drawList(state, layout, regions)
+        drawPreview(state, layout, regions)
+        drawFooter(state, layout)
+      end,
+    },
     pokedex = { new = makePokedex },
     entry = {
       new = makeEntry,

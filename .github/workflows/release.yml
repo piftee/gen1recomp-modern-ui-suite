@@ -141,7 +141,8 @@ jobs:
 
           rm -rf "$staging/.github" "$staging/.gitattributes" \
                  "$staging/.gitignore" "$staging/.luarc.json" \
-                 "$staging/tests" "$staging/.modkitignore"
+                 "$staging/tests" "$staging/.modkitignore" \
+                 "$staging/screenshots" "$staging/GALLERY.md"
 
           python3 - "$staging/manifest.json" "$VERSION" <<'PY'
           import json, sys

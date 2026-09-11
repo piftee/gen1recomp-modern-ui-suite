@@ -28,15 +28,15 @@ return function(parent, components)
   }
   local MANAGER_DETAIL = {
     start_menu = {
-      theme = "COLOUR", position = "POSITION", clock = "CLOCK",
+      direct_touch = "TOUCH", theme = "COLOUR", position = "POSITION", clock = "CLOCK",
     },
     party = {
-      card_color = "CARD COLOR", animate_icons = "ANIMATION",
+      direct_touch = "TOUCH", card_color = "CARD COLOR", animate_icons = "ANIMATION",
       sprite_source = "ICONS", hp_text = "HP DISPLAY", exp_text = "EXP",
       exp_strip = "EXP STRIP", empty_slots = "EMPTY", pattern = "BACKDROP",
       responsive = "WIDE", rename_style = "RENAME",
     },
-    bag = { skin = "SKIN", hide_all = "HIDE ALL", open_on = "OPEN ON" },
+    bag = { direct_touch = "TOUCH", skin = "SKIN", hide_all = "HIDE ALL", open_on = "OPEN ON" },
     pc = { box_exclusive = "BOX ONLY" },
     pokedex = {
       responsive = "WIDE", pattern = "BACKDROP", theme = "COLOURS",
@@ -80,6 +80,10 @@ return function(parent, components)
         key = "aspect_ratio", label = "ASPECT RATIO", type = "choice", default = "fill",
         choices = { { "FILL", "fill" }, { "16:9", "16:9" }, { "4:3", "4:3" } },
       }
+    end
+    if component.key == "start_menu" or component.key == "party" or component.key == "bag" then
+      schema = copy(schema or {})
+      schema[#schema + 1] = {key="direct_touch", label="DIRECT TOUCH", type="toggle", default=true}
     end
     self.schemas[component.id] = schema or {}
     component.schema = schema or {}

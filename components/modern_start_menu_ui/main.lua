@@ -21,6 +21,9 @@ return function(mod)
         { "PLAY", "play" }, { "DEVICE", "device" },
       } },
   }
+  optionSchema[#optionSchema + 1] = {
+    key = "area_names", label = "AREA NAMES", type = "toggle", default = false,
+  }
   mod.options:define(optionSchema)
 
   local optionRows = {}
