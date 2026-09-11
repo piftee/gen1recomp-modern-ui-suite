@@ -2,6 +2,7 @@
 -- naming controllers. All selection, held-item, TM/HM and battle behavior
 -- remains in the generation-2 engine.
 return function(mod)
+  local touch = mod.suite and mod.suite.touch
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
   local GbcPalette = require("src.render.GbcPalette")
@@ -11,6 +12,7 @@ return function(mod)
   local PartyMenu = require("src.ui.gen2.PartyMenu")
   local SummaryMenu = require("src.ui.gen2.SummaryMenu")
   local NamingScreen = require("src.ui.gen2.NamingScreen")
+  local extensions = mod.suite and mod.suite.summaryExtensions
 
   local INK_BLACK = { 0, 0, 0 }
   local INK_WHITE = { 1, 1, 1 }
@@ -262,6 +264,7 @@ return function(mod)
     local G = love.graphics
     local wasBattle = Font.useBattleExtra(true)
     local width = self.modernPartyWideWidth or 160
+    if touch then touch.begin(self,"window",function() return self.submenu or self.itemResult end) end
     setColor(BACKDROP)
     G.rectangle("fill", 0, 0, width, 144)
     setColor({ 0.82, 0.82, 0.90 })
@@ -289,6 +292,10 @@ return function(mod)
       local x2 = math.floor((col + 1) * width / 2) - 2
       local x, y, w, h = x1, 18 + rowIndex * 31, x2 - x1, 29
       local mon = self.party[i]
+      if touch and mon then touch.add(self,x,y,w,h,"party:"..tostring(mon),function()
+        self.index=i;self.modernPartyGridColumn=(i-1)%2
+        if self.storeCursor then self:storeCursor() end
+      end,function() return self.index==i end,true) end
       local selected = i == self.index
       local held = i == self.switchFrom
       local face
@@ -595,10 +602,14 @@ return function(mod)
   local function summaryLayout(self)
     local width = self.modernPartyWideWidth or 160
     local railW = math.min(88, math.max(58, math.floor(width * 0.31)))
+    if width >= 192 and self.page == (SummaryMenu.PINK_PAGE or 1) then
+      railW = math.min(98, math.max(76, math.floor(width * 0.38)))
+    end
     local mainX = railW + 4
     return {
       width = width, railW = railW, mainX = mainX,
       mainW = width - mainX - 2,
+      expandedPortrait = width >= 192 and self.page == (SummaryMenu.PINK_PAGE or 1),
     }
   end
 
@@ -618,10 +629,14 @@ return function(mod)
     setColor({ 0.12, 0.13, 0.17 })
     G.setLineWidth(2)
     chamfer("line", 2.5, 18.5, railW - 3, 115, 4)
-    local spriteX = 3 + math.max(0, math.floor((railW - 58) / 2))
-    drawSummarySprite(self, spriteX, 20)
+    local size = layout.expandedPortrait and math.min(84, railW - 10) or 56
+    local spriteX = 3 + math.max(0, math.floor((railW - size - 2) / 2))
+    G.push("all"); G.translate(spriteX, layout.expandedPortrait and 23 + math.floor((84 - size) / 2) or 20)
+    G.scale(size / 56, size / 56)
+    drawSummarySprite(self, 0, 0)
+    G.pop()
     setColor({ 0.10, 0.11, 0.15 })
-    G.rectangle("fill", 6, 77, railW - 10, 1)
+    if not layout.expandedPortrait then G.rectangle("fill", 6, 77, railW - 10, 1) end
     if mon.isEgg then
       drawInkCentered("EGG", 7, 86, railW - 12, INK_BLACK)
       drawInkCentered("???", 7, 101, railW - 12, INK_BLACK)
@@ -629,12 +644,22 @@ return function(mod)
       return
     end
     local def = self.speciesDef and self:speciesDef()
-    drawInk(("No.%03d"):format(def and def.dex or 0), 7, 81,
-      railW - 12, INK_BLACK)
     local t1, t2 = self.typeNames and self:typeNames()
-    drawInk(tostring(t1 or "---"):upper(), 7, 91, railW - 12, INK_BLACK)
-    if t2 then drawInk(tostring(t2):upper(), 7, 101,
-      railW - 12, INK_BLACK) end
+    if layout.expandedPortrait then
+      setColor({r, g, b})
+      chamfer("fill", layout.mainX, 18, layout.mainW, 20, 3)
+      drawInk(("No.%03d"):format(def and def.dex or 0), layout.mainX + 5, 21, layout.mainW - 10, INK_BLACK)
+      local label = tostring(t1 or "---"):upper()
+      if t2 and t2 ~= t1 then label = label .. " / " .. tostring(t2):upper() end
+      if Font.width(label) > layout.mainW - 10 then
+        label = tostring(t1 or "---"):sub(1,3):upper() .. (t2 and t2 ~= t1 and "/" .. tostring(t2):sub(1,3):upper() or "")
+      end
+      drawInk(label, layout.mainX + 5, 29, layout.mainW - 10, INK_BLACK)
+    else
+      drawInk(("No.%03d"):format(def and def.dex or 0), 7, 81, railW - 12, INK_BLACK)
+      drawInk(tostring(t1 or "---"):upper(), 7, 91, railW - 12, INK_BLACK)
+      if t2 and t2 ~= t1 then drawInk(tostring(t2):upper(), 7, 101, railW - 12, INK_BLACK) end
+    end
     drawInk("OT " .. tostring(self.otName and self:otName() or "---"),
       7, 113, railW - 12, INK_BLACK)
     drawInk(("ID %05d"):format(self.otId and self:otId() or 0),
@@ -661,19 +686,21 @@ return function(mod)
     local row = PartyMenu.rowFor(mon)
     local r, g, b = cardColor(self, mon)
     setColor({ r, g, b })
-    chamfer("fill", x, 18, w, 31, 3)
-    drawInk("LV" .. tostring(mon.level or 1), x + 6, 23, 46, INK_BLACK)
-    drawInkRight(row.status or "OK", x + w - 7, 23, 38, INK_BLACK)
-    drawInk("HP", x + 6, 35, 20, INK_BLACK)
-    drawInkRight(("%d/%d"):format(mon.hp or 0, maxHp), x + w - 6, 34, 70,
+    local top = layout.expandedPortrait and 40 or 18
+    local step = layout.expandedPortrait and 12 or 16
+    chamfer("fill", x, top, w, 31, 3)
+    drawInk("LV" .. tostring(mon.level or 1), x + 6, top + 5, 46, INK_BLACK)
+    drawInkRight(row.status or "OK", x + w - 7, top + 5, 38, INK_BLACK)
+    drawInk("HP", x + 6, top + 17, 20, INK_BLACK)
+    drawInkRight(("%d/%d"):format(mon.hp or 0, maxHp), x + w - 6, top + 16, 70,
       INK_BLACK)
-    drawMeter(x + 24, 45, w - 31, hpFraction(mon), "hp")
+    drawMeter(x + 24, top + 27, w - 31, hpFraction(mon), "hp")
     for i, entry in ipairs(statRows(mon)) do
-      local y = 51 + (i - 1) * 16
+      local y = top + 33 + (i - 1) * step
       setColor(i % 2 == 1 and MODAL_DARK or HEADER)
-      chamfer("fill", x, y, w, 14, 2)
-      drawInk(entry[1], x + 6, y + 3, w - 44, INK_WHITE)
-      drawInkRight(tostring(entry[2]), x + w - 7, y + 3, 34, INK_WHITE)
+      chamfer("fill", x, y, w, step - 1, 2)
+      drawInk(entry[1], x + 6, y + 2, w - 44, INK_WHITE)
+      drawInkRight(tostring(entry[2]), x + w - 7, y + 2, 34, INK_WHITE)
     end
   end
 
@@ -819,6 +846,18 @@ return function(mod)
   end
 
   local function modernSummaryPanel(self)
+    local extra = extensions and extensions.page(self, 2)
+    if not self.moveDetail and not (self.mon and self.mon.isEgg)
+        and self.page ~= (SummaryMenu.PINK_PAGE or 1)
+        and self.page ~= SummaryMenu.GREEN_PAGE and self.page ~= SummaryMenu.BLUE_PAGE
+        and not extra then
+      drawModernBackdrop(self)
+      love.graphics.push("all")
+      love.graphics.translate(math.floor(((self.modernPartyWideWidth or 160) - 160) / 2), 0)
+      self.classicGen2SummaryPanel(self)
+      love.graphics.pop()
+      return
+    end
     local wasBattle = Font.useBattleExtra(true)
     if self.moveDetail then
       drawSummaryMoveDetail(self)
@@ -827,12 +866,32 @@ return function(mod)
       return
     end
     drawModernBackdrop(self)
-    local title = self.mon and self.mon.isEgg and "EGG"
+    local title = extra and "INFO" or self.mon and self.mon.isEgg and "EGG"
       or self.page == SummaryMenu.GREEN_PAGE and "MOVE"
       or self.page == SummaryMenu.BLUE_PAGE and "OT" or "STAT"
     drawSummaryHeader(self, title)
     drawSummaryProfile(self)
-    if self.mon and self.mon.isEgg then
+    if extra then
+      local layout = summaryLayout(self)
+      local x, w = layout.mainX, layout.mainW
+      setColor(MODAL)
+      chamfer("fill", x, 18, w, 41, 3)
+      drawInk("GENDER " .. tostring(extra.gender or "-----"), x + 5, 23, w - 10, INK_BLACK)
+      drawInk("ITEM", x + 5, 35, w - 10, INK_BLACK)
+      drawInk(extra.heldItem or "-----", x + 5, 47, w - 10, INK_BLACK)
+      setColor(MODAL_DARK)
+      chamfer("fill", x, 61, w, 72, 3)
+      drawInk("ABILITY", x + 5, 66, w - 10, INK_LIGHT)
+      drawInk(extra.ability or "-----", x + 5, 78, w - 10, INK_WHITE)
+      local lines = extensions.lines(extra.description, w - 10)
+      local key = tostring(self.mon) .. tostring(extra.ability) .. extra.description
+      if self.modernAbilityText ~= key then
+        self.modernAbilityText, self.modernAbilitySince = key, love.timer.getTime()
+      end
+      local offset = math.max(0, math.floor((love.timer.getTime() - self.modernAbilitySince - 2) / 2))
+        % math.max(1, #lines - 2)
+      for i = 1, 3 do drawInk(lines[offset + i] or "", x + 5, 90 + (i - 1) * 12, w - 10, INK_WHITE) end
+    elseif self.mon and self.mon.isEgg then
       drawSummaryEgg(self)
     elseif self.page == SummaryMenu.GREEN_PAGE then
       drawSummaryMoves(self)
@@ -868,8 +927,9 @@ return function(mod)
     local entryX = 10 + math.floor((width - 20 - Font.width(display)) / 2)
     drawInk(display, entryX, 27, width - 20, INK_BLACK)
     if #entered < (self.maxLength or 7) then
-      setColor(MODAL_DARK)
-      G.rectangle("fill", entryX + Font.width(entered) + 1, 36, 6, 1)
+      -- Highlight the current slot on the same baseline as the name. A
+      -- second underline underneath it looked like an extra input row.
+      drawInk("-", entryX + Font.width(entered), 27, 8, INK_WHITE)
     end
 
     local rows = self:rows()
@@ -949,13 +1009,12 @@ return function(mod)
           end
           return
         end
-        local renderedWidth = tonumber(self.modernPartyWideWidth)
-          or tonumber(self.modernPartyLastWideWidth) or 160
-
         -- Action submenus and item-result messages keep their native vertical
-        -- controls. The two-column roster itself accepts all four directions,
+        -- controls. modernPartyPanel draws two columns even on the native
+        -- 160px surface and the 192px (4:3) surface, so its roster must always
+        -- accept all four directions,
         -- including Switch and Softboiled's second-Pokémon pickers.
-        if renderedWidth >= 196 and input and input.wasPressed
+        if input and input.wasPressed
             and not self.submenu and not self.itemResult then
           local direction
           for _, key in ipairs({ "left", "right", "up", "down" }) do

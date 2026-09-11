@@ -27,12 +27,12 @@ local componentKeys = {
   "move_colors",
 }
 local expectedVersions = {
-  modern_start_menu_ui = "0.1.21",
-  modern_party_ui = "0.4.13",
-  modern_bag_ui = "0.6.3",
+  modern_start_menu_ui = "0.1.23",
+  modern_party_ui = "0.4.15",
+  modern_bag_ui = "0.6.6",
   modern_pc_ui = "0.6.4",
-  modern_pokedex_ui = "0.2.15",
-  battle_info_hud = "0.10.2",
+  modern_pokedex_ui = "0.2.18",
+  battle_info_hud = "0.10.4",
   typed_move_colors = "0.5.2",
 }
 
@@ -54,7 +54,7 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 43,
+T.eq(#schema, 49,
   "UI, QoL, shared sprite source and component preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
@@ -167,7 +167,7 @@ local hub = stack:top()
 T.eq(hub and hub.screenId, "modern_ui_suite:settings",
   "the consolidated row opens the unified settings hub")
 T.eq(hub and #hub.items, 13,
-  "the hub contains components, separate portrait/icon settings and Back")
+  "the hub contains components, portrait settings/help and Back")
 T.eq(hub.items[1].id, "enable_all", "Enable All is the first bulk action")
 T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 
@@ -178,12 +178,12 @@ T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 -- the reverse/wrap path for that same individual option.
 local visitedRows = {}
 local expectedPageRows = {
-  modern_start_menu_ui = 6, -- enabled + 3 choices + icon picker + order
-  modern_party_ui = 12,
-  modern_bag_ui = 6,
+  modern_start_menu_ui = 8, -- enabled + choices + touch + icon picker + order
+  modern_party_ui = 13,
+  modern_bag_ui = 8,
   modern_pc_ui = 3,
   modern_pokedex_ui = 5,
-  battle_info_hud = 1,
+  battle_info_hud = 2,
   typed_move_colors = 11,
   unlimited_pp = 1,
 }
@@ -212,24 +212,10 @@ T.eq(hub.items[11].right, "DEFAULT", "left cycles sources backwards")
 hub.onChoose(hub.items[11], hub)
 T.eq(hub.items[11].right, "BATTLE ART", "A cycles sources forward")
 visitedRows.menu_sprite_source = true
-local portraitSource = run.loader.modOptions.modern_ui_suite.menu_sprite_source
-hub.index = 12
-T.eq(hub.items[12].id, "party.sprite_source", "Icons shortcut uses the existing Party preference")
-T.eq(hub.items[12].right, "AUTO", "small icons default to installed mods")
-for _, choice in ipairs({ {"ORIGINAL", "original"}, {"MENU PACK", "menu_pack"},
-    {"FOLLOWERS", "follower_pack"}, {"AUTO", "auto"} }) do
-  local before = writes
-  pressPage(hub, "right")
-  T.eq(hub.items[12].right, choice[1], "Icons label updates")
-  T.eq(run.loader.modOptions.modern_ui_suite["party.sprite_source"], choice[2], "Icons updates Party source")
-  T.eq(game.save.options.modOptions.modern_ui_suite["party.sprite_source"], choice[2], "Icons persists source")
-  T.eq(run.loader.modOptions.modern_ui_suite.menu_sprite_source, portraitSource, "Icons never changes large portraits")
-  T.check(writes > before, "Icons requests persistence")
+T.eq(hub.items[12].id, "sprite_help", "sprite help replaces the duplicate icon shortcut")
+for _, item in ipairs(hub.items) do
+  T.check(item.id ~= "party.sprite_source", "icon choice has one home in Party options")
 end
-pressPage(hub, "left")
-T.eq(hub.items[12].right, "FOLLOWERS", "Icons supports backward wrap")
-hub.onChoose(hub.items[12], hub)
-T.eq(hub.items[12].right, "AUTO", "Icons supports A and forward wrap")
 
 for hubIndex = 3, 10 do
   local item = hub.items[hubIndex]
@@ -314,8 +300,8 @@ hub.onChoose(hub.items[4], hub)
 local partyPage = stack:top()
 T.eq(partyPage and partyPage.modernUiSuiteComponent, "modern_party_ui",
   "A opens the selected component's detailed page")
-T.eq(partyPage and #partyPage.rows, 12,
-  "the Party page has one master switch plus all eleven Party preferences")
+T.eq(partyPage and #partyPage.rows, 13,
+  "the Party page has one master switch plus all twelve Party preferences")
 T.eq(partyPage.rows[1].id, "party.enabled",
   "every detail page starts with its component master switch")
 partyPage.rows[1].step(game, 1)
@@ -593,6 +579,12 @@ do
   T.check(summaryDrawOK,
     "portrait Summary draws across the inherited Party canvas: "
       .. tostring(summaryDrawError))
+  local nativeExtraDraw, fallbackCalls = summary.modernNativeDraw, 0
+  summary.page = 99
+  summary.modernNativeDraw = function() fallbackCalls = fallbackCalls + 1 end
+  summary:draw()
+  T.eq(fallbackCalls, 1, "unknown summary page delegates to its inherited renderer")
+  summary.modernNativeDraw = nativeExtraDraw
   summary.page = 2
   input.pressed.b = true
   summary:update(0)
@@ -948,9 +940,9 @@ compatibilityRows[1].activate(compatibilityGame)
 local compatibilityHub = compatibilityStack:top()
 compatibilityHub.onChoose(compatibilityHub.items[5], compatibilityHub)
 local bagPage = compatibilityStack:top()
-T.eq(bagPage.rows[7] and bagPage.rows[7].id, "bag.companions",
+T.eq(bagPage.rows[9] and bagPage.rows[9].id, "bag.companions",
   "the Bag page offers companion settings without another root entry")
-bagPage.rows[7].activate(compatibilityGame)
+bagPage.rows[9].activate(compatibilityGame)
 local companionPage = compatibilityStack:top()
 T.eq(#(companionPage.rows or {}), 1,
   "the companion page removes the duplicate suite-owned skin setting")

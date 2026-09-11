@@ -1,9 +1,11 @@
 # Modern UI Suite
 
 
-**0.1.23:** choose Fill, 16:9 or 4:3 independently for Party, Bag, PC and
-Pokédex. Follow messages retain one correctly sized party view, and native
-evolution scenes cover the menu underneath while preserving their dialogue.
+**0.1.28:** Fix overlapping Gen 2 item-PC pages and battle framing. Add shiny
+collection history, clearer Pocket labels and sprite settings, plus optional
+shop counts, area names and shorter low-HP alerts.
+
+**[Browse all seven interfaces and setup examples](GALLERY.md)**
 
 **Classic Pokémon, made clearer at a glance.**
 
@@ -84,13 +86,44 @@ Existing standalone presentation settings are copied into the suite the first
 time it loads. Values already saved for the suite take precedence. The old
 settings are left untouched.
 
+## Direct touch
+
+In **Options → Modern UI Suite → Start Menu / Party / Bag**, **DIRECT TOUCH**
+defaults to On. It supports touch and primary mouse clicks on the rendered
+START tiles, occupied Party cards, and Modern Bag rows and pocket tabs.
+
+- Tap once to select; tap that selection again within two seconds to activate
+  its normal A action. Even an initially selected item requires two taps.
+- Tap a pocket once to switch. Swipe a list vertically to move its selection;
+  swipe horizontally to change pockets or navigate START.
+- Dragging cancels confirmation. Quantity, item-action, sorting and other
+  modal dialogs keep their normal controller/on-screen button controls.
+- B/back still uses the normal controls. PC, Pokédex and summary are outside
+  this initial touch feature. The Gen 2 Pocket skin retains native controls;
+  Gen 1's Pocket skin also supports selecting its list rows.
+
+## Summary extensions and artwork
+
+With **Kanto Reforged** enabled, Crystal/Gold/Silver retain its fourth summary
+page; Red/Blue/Yellow append its INFO page after the normal pages (and DV page
+when present). The provider supplies the actual gender, item and ability.
+Missing values show dashes; long descriptions scroll while the ability name
+stays visible. Unsupported extra pages retain their inherited renderer.
+
+Wide stats pages move the number and types above the stats column, freeing
+space for a larger portrait. Compact layouts retain their familiar arrangement.
+For Gen 4 artwork, select **Menu Sprites → Battle Art** in the suite and choose
+**Gen 4** front animations in the separate Battle Art provider. The suite
+trims transparent animation margins without bundling additional sprites.
+
 ## Settings
 
 Open **Options → Modern UI Suite**. The hub provides **Enable All UI**, **Disable
 All UI**, and a page for each component. Left or Right on a component in the
 hub toggles it directly; A opens its detailed settings.
 
-**ASPECT RATIO** appears on the **Party**, **Bag**, **PC** and **Pokédex** pages:
+**ASPECT RATIO** appears on the **Party**, **Bag**, **PC** and **Pokédex** pages,
+and the **Battle** page in Gen 2:
 
 - **FILL** (default) keeps the existing responsive layout for your display.
 - **16:9** centers a widescreen layout with a filled surround.
@@ -121,11 +154,12 @@ unseen Pokédex entries keep their placeholders.
 Changes apply on the next draw. Large portraits animate. The setting chooses
 a front portrait collection;
 it does not put Battle Art's 3D models or player-facing back sprites into menus.
-Some Gen 4 animations have extra transparent space in their source frames and
-can look smaller when fitted into menu portraits.
+Gen 4 portraits trim transparent padding using the bounds of the complete
+animation. The shared rectangle keeps framing stable as the Pokémon moves.
 
-**ICONS** independently controls the small icons in Party and PC menus. It
-shares **Party → Icon Source**, so either control updates the same saved choice:
+**Party → Icon Source** controls the small icons in Party and PC menus.
+The hub’s **Sprite Info** explains portrait choices and provider fallbacks.
+Small-icon choices are:
 
 - **AUTO** (default): use the installed mods' icon handling.
 - **ORIGINAL**: use the game's original small icons.
@@ -204,6 +238,27 @@ follow a consistent sequence; TMs/HMs use their numbers. Descending reverses
 the order. Sorting keeps the current pocket, selected item and quantities.
 Unknown items use their names and IDs as a stable fallback.
 
+## Collection and comfort options
+
+The Pokédex records shiny species separately from ordinary caught flags. On
+its index, **L/R** switches between **ALL** and **SHINY**; **SELECT** still opens
+search. A sparkle mark and **SHINY** entry status identify collected species.
+The record belongs to the save and survives release, trade and evolution.
+Existing owned shiny Pokémon and Hall of Fame records supply backfill. Shinies
+released before tracking began cannot be recovered without historical proof.
+This collection filter does not change your portrait-provider preference.
+
+Optional comfort settings, adapted from Waifu4Life's Highlander contribution:
+
+- **Bag → Shop Counts**: show how many of the selected item are in your bag.
+- **Start → Area Names**: show the area for two seconds on entering a map.
+  Menus pause the banner; Crystal's native map signs take priority.
+- **Battle → Low HP Beep**: **ON** keeps the native alert, **REDUCE** plays a
+  short burst on entering red HP or switching Pokémon, and **OFF** silences it.
+
+Shop Counts and Area Names start off. Low HP Beep starts on. These settings
+follow their component's enabled switch and do not require Highlander.
+
 ## Gen 1 battle presentation
 
 HP and EXP use small white numbers inside their bars, matching the party
@@ -263,7 +318,7 @@ luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.23.zip
+  -o build/modern_ui_suite-0.1.28.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

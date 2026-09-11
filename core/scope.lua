@@ -36,10 +36,22 @@ return function(parent, settings, state, component)
     end,
   }
   api.suite = {
+    touch = {
+      begin = function(menu, space, blocked, swipe)
+        return state.touch.begin(menu, space, function()
+          return not gated() or settings:get(component, "direct_touch") == false
+            or (blocked and blocked())
+        end, swipe)
+      end,
+      add = state.touch.add,
+    },
     battlePortrait = state.battlePortrait,
+    summaryExtensions = state.summaryExtensions,
+    shinyDex = state.shinyDex,
     drawMenuIcon = state.drawMenuIcon,
     fixedUISize = function() return state.uiSurfaces.fixedSize(component) end,
     isNativeEvolution = state.uiSurfaces.isNativeEvolution,
+    guardWideDraw = state.uiSurfaces.guardWideDraw,
     uiGeometry = function(screen, ...) return state.uiSurfaces.geometry(component, screen, ...) end,
     option = function(id, key) return settings:get(id, key) end,
     enabled = function(id) return settings:isEnabled(id) end,

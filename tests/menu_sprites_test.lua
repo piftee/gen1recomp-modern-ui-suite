@@ -2,9 +2,15 @@ package.path = "./?.lua;./?/init.lua;" .. package.path
 local T = require("tests.modkit")
 local generation, clock, opened = 2, 0, 0
 package.loaded["src.core.GameVersion"] = { generation = function() return generation end }
+local alphaReads=0
 local sources = { ["ba/sheet"] = { 32, 16 } }
 local function pixels(w, h)
   local data = { w = w, h = h }
+  function data:getPixel(x,y)
+    alphaReads=alphaReads+1
+    -- Three separated opaque pixels, including white and a partial-alpha edge.
+    return 1,1,1,((x==3 and y==4) or (x==27 and y==12)) and 1 or ((x==18 and y==2) and .5 or 0)
+  end
   function data:getDimensions() return self.w, self.h end
   function data:clone() return pixels(self.w, self.h) end
   function data:paste(_, _, _, x, y, cw, ch) self.crop = {x,y,cw,ch} end
@@ -58,6 +64,16 @@ T.eq(opened, 1, "atlas source is decoded once")
 T.eq(resolver(game,mon,false), first, "thumbnail ignores animation clock")
 clock=.31
 T.eq(resolver(game,mon),first,"animation wraps using provider durations")
+art.frontAnimationSetting.value="gen4"
+clock=0
+local cropped=resolver(game,mon)
+T.same(cropped.data.crop,{2,2,10,11},"Gen4 crops union including later frame and partial alpha")
+local reads=alphaReads
+clock=.11
+T.same(resolver(game,mon).data.crop,{18,2,10,11},"every Gen4 frame shares crop and origin")
+T.eq(alphaReads,reads,"union bounds scanned once")
+art.frontAnimationSetting.value="gen5";clock=.31
+T.same(resolver(game,mon).data.crop,{0,0,16,16},"other generations retain original framing")
 art.displayMode=function() return "gray" end
 T.eq(resolver(game,mon).mode,"gray","display setting refreshes frame")
 generation=1

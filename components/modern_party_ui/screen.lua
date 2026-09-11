@@ -4,6 +4,7 @@
 -- module adds a card-grid renderer and a thin navigation adapter; item use,
 -- TM/HM checks, field moves, switching, healing and callbacks remain native.
 return function(mod, genderExports, compatibility)
+  local touch = mod.suite and mod.suite.touch
   compatibility = compatibility or {}
   local PartyMenu = require("src.ui.PartyMenu")
   local Font = require("src.render.Font")
@@ -1716,6 +1717,15 @@ return function(mod, genderExports, compatibility)
     local trueColorIcons = {}
     drawBackdrop(layout)
     local party = partyOf(menu)
+    if touch then
+      touch.begin(menu,"canvas",function() return menu.submenu or menu.heal end)
+      for i,mon in ipairs(party) do
+        local x,y,w,h=slotGeometry(layout,i)
+        touch.add(menu,x,y,w,h,"party:"..tostring(mon),function()
+          menu.index=i;menu.game.partyMenuSavedIndex=i
+        end,function() return menu.index==i end,true)
+      end
+    end
     drawHeader(menu, party, layout)
 
     for i = 1, layout.capacity do

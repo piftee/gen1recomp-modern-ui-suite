@@ -6,6 +6,7 @@
 -- that controller instead of duplicating it. Only the visible list, drawing,
 -- left/right pocket navigation and filtered-list reordering live here.
 return function(mod, compatibility)
+  local touch = mod.suite and mod.suite.touch
   compatibility = compatibility or {}
   local BagMenu = require("src.ui.BagMenu")
   local Bag = require("src.inventory.Bag")
@@ -167,7 +168,6 @@ return function(mod, compatibility)
   }
 
   local inkShader -- false when shaders are unavailable
-  local classicLabelFont -- false when direct TTF labels are unavailable
   local classicBagSprites -- false when the source sprite cannot be loaded
 
   local function gray(value)
@@ -234,52 +234,11 @@ return function(mod, compatibility)
   end
 
   local function classicRailLabel(text, x, y, width, height)
-    text = tostring(text or "")
-    if classicLabelFont == nil then
-      if not love.graphics.newFont then
-        classicLabelFont = false
-      else
-        local ok, face = pcall(love.graphics.newFont,
-          Font.PLAINPIXEL, 10, "mono")
-        if ok and face then
-          if face.setFilter then
-            pcall(face.setFilter, face, "nearest", "nearest")
-          end
-          classicLabelFont = face
-        else
-          classicLabelFont = false
-        end
-      end
-    end
-
-    local face = classicLabelFont or nil
-    if not face or not love.graphics.print then
-      local fallback = fitText(text, width)
-      drawText(fallback, x + math.floor((width - Font.width(fallback)) / 2),
-        y + math.floor((height - 8) / 2), width, WHITE)
-      return fallback
-    end
-
-    local original = text
-    local spans = Font.split(original)
-    local count = #spans
-    while count > 1 and face:getWidth(text) > width do
-      count = count - 1
-      text = original:sub(1, spans[count].to) .. "."
-    end
-    love.graphics.push("all")
-    local shader = shaderForInk()
-    if shader then
-      love.graphics.setShader(shader)
-      gray(WHITE)
-    else
-      gray(BLACK)
-    end
-    love.graphics.setFont(face)
-    love.graphics.print(text,
-      math.floor(x + (width - face:getWidth(text)) / 2),
-      math.floor(y + (height - face:getHeight()) / 2))
-    love.graphics.pop()
+    -- Use the same pixel grid as the item list. Small rasterized TTF glyphs
+    -- lose strokes after the cartridge canvas is scaled (Meds read as Nede).
+    text = fitText(tostring(text or ""):upper(), width)
+    drawText(text, x + math.floor((width - Font.width(text)) / 2),
+      y + math.floor((height - 8) / 2), width, WHITE)
     return text
   end
 
@@ -543,6 +502,7 @@ return function(mod, compatibility)
   end
 
   local function uiSize(menu)
+    if compatibility.presentationSize then return compatibility.presentationSize(menu) end
     if nativeViewportRequested(menu) then return SCREEN_W, SCREEN_H end
     return responsiveSize()
   end
@@ -554,7 +514,7 @@ return function(mod, compatibility)
     -- Renderer:uiSize still describes the previous frame while an option or
     -- state is changing. Never let that stale responsive size override the
     -- explicit faithful-ratio request.
-    if not nativeViewport and renderer and renderer.uiSize then
+    if not compatibility.presentationSize and not nativeViewport and renderer and renderer.uiSize then
       local rendererW, rendererH = renderer:uiSize()
       width, height = rendererW or width, rendererH or height
     end
@@ -683,6 +643,7 @@ return function(mod, compatibility)
   end
 
   local function categoryFor(game, id)
+    if compatibility.categoryFor then return compatibility.categoryFor(game, id) end
     if not id then return "items" end
     local def = game.data.items[id] or {}
     local explicit = normalizedPocket(def.bagPocket or def.pocket)
@@ -1182,6 +1143,7 @@ return function(mod, compatibility)
       capacity = ("%d/%d"):format(Bag.slots(menu.game.save),
         Bag.capacity(menu.game.data))
     end
+    if compatibility.capacity then capacity = compatibility.capacity(menu) end
     local capacityW = math.min(math.floor(layout.width * 0.36),
       math.max(24, Font.width(capacity) + 2))
     local left = Strings(config and config.header or moneyText(menu))
@@ -1232,6 +1194,11 @@ return function(mod, compatibility)
 
     for index, pocket in ipairs(pockets) do
       local x = x0 + (index - 1) * (tabW + gap)
+      if touch and not compatibility.presentationSize then touch.add(menu,x,layout.tabsY,tabW,layout.tabsH,"pocket:"..pocket.key,
+        function()
+          if compatibility.switchPocket then return compatibility.switchPocket(menu,index-menu.modernBagPocket) end
+          switchPocket(menu,index-menu.modernBagPocket)
+        end) end
       local active = index == menu.modernBagPocket
       if active then
         gray(BLACK)
@@ -1338,6 +1305,7 @@ return function(mod, compatibility)
   end
 
   local function itemDescription(menu, id)
+    if compatibility.description then return compatibility.description(menu, id) end
     if not id then return Strings("Return to the previous screen.") end
     local def = menu.game.data.items[id] or {}
     if type(def.description) == "string" and def.description ~= "" then
@@ -1412,7 +1380,7 @@ return function(mod, compatibility)
       local maxLines = math.max(2, math.floor(
         (layout.detailY + layout.detailH - 4 - descriptionY) / 9))
       if item and not config and not menu.modernBagPrompt
-          and not swapId(menu) then
+          and not swapId(menu) and not menu.modernBagDescriptionBlocked then
         drawReadableDescription(menu, item.value, description,
           layout.detailX + 6, descriptionY, descriptionW, maxLines, DARK)
       else
@@ -1468,7 +1436,7 @@ return function(mod, compatibility)
           (layout.detailY + layout.detailH - 4 - descriptionY) / 9))
       end
       local description = itemDescription(menu, item.value)
-      if not config and not menu.modernBagPrompt and not swapId(menu) then
+      if not config and not menu.modernBagPrompt and not swapId(menu) and not menu.modernBagDescriptionBlocked then
         drawReadableDescription(menu, item.value, description,
           layout.detailX + 6, descriptionY,
           layout.detailW - 12, descriptionLines, LIGHT)
@@ -1532,7 +1500,7 @@ return function(mod, compatibility)
         line1 = Strings("CHOOSE NEW POSITION")
         line2 = Strings("A PLACE  B BACK")
       else
-        line1 = Strings("L/R POCKET START SORT")
+        line1 = Strings("L/R TAB START SORT")
         line2 = Strings("A USE  B BACK")
       end
       line1 = fitText(line1, layout.width - 8)
@@ -1548,7 +1516,7 @@ return function(mod, compatibility)
     if swapId(menu) then
       message = Strings("CHOOSE A NEW POSITION")
     elseif layout.wide then
-      message = Strings("L/R POCKET  START SORT  A SELECT  B BACK")
+      message = Strings("L/R TAB START SORT A USE B BACK")
     else
       message = Strings("START SORT  B BACK")
     end
@@ -1863,7 +1831,7 @@ return function(mod, compatibility)
       maxLines = math.max(1, maxLines - 1)
     end
     local item = menu.items[menu.index]
-    if item and not config and not status and not swapId(menu) then
+    if item and not config and not status and not swapId(menu) and not menu.modernBagDescriptionBlocked then
       drawReadableDescription(menu, item.value, text,
         textX, textY, textW, maxLines, BLACK)
     else
@@ -1894,6 +1862,19 @@ return function(mod, compatibility)
     local layout = layoutFor(menu)
     menu.rows = layout.rows
     clampList(menu)
+    if touch then
+      touch.begin(menu,"canvas",function() return menu.modernBagPrompt end,
+        function(key,press) press(menu,key) end)
+      for row=1,layout.rows do
+        local index=menu.scroll+row
+        local item=menu.items[index]
+        if item then touch.add(menu,layout.listX,layout.listY
+          +(layout.skin=="classic_pocket" and 6 or 4)+(row-1)*ROW_H,
+          layout.listW,ROW_H,"item:"..tostring(item.value),function()
+            menu.index=index;clampList(menu)
+          end,function() return menu.index==index end,true) end
+      end
+    end
     if layout.skin == "classic_pocket" then
       drawClassic(menu, layout)
       gray(WHITE)
@@ -1910,19 +1891,20 @@ return function(mod, compatibility)
   end
 
   local function sgbPalettes(menu, game)
+    local pal = compatibility.palette or PaletteFX.pal
     local data = game and game.data
     if not data then return nil end
     local layout = layoutFor(menu)
     if layout.skin == "classic_pocket" then
-      local base = PaletteFX.pal(data, "MEWMON")
-        or PaletteFX.pal(data, "BLUEMON")
+      local base = pal(data, "MEWMON")
+        or pal(data, "BLUEMON")
       if not base then return nil end
-      local blue = PaletteFX.pal(data, "BLUEMON") or base
-      local green = PaletteFX.pal(data, "GREENMON") or base
-      local red = PaletteFX.pal(data, "REDMON") or base
-      local purple = PaletteFX.pal(data, "PURPLEMON") or base
+      local blue = pal(data, "BLUEMON") or base
+      local green = pal(data, "GREENMON") or base
+      local red = pal(data, "REDMON") or base
+      local purple = pal(data, "PURPLEMON") or base
       local config = listConfig(menu)
-      local mode = config and PaletteFX.pal(data, config.modePalette) or nil
+      local mode = config and pal(data, config.modePalette) or nil
       local boxes = classicRailBoxes(layout)
       local zones = {
         { colors = base, x = 0, y = 0,
@@ -1955,10 +1937,10 @@ return function(mod, compatibility)
     end
     local pocket = pocketFor(menu)
     local config = listConfig(menu)
-    local base = PaletteFX.pal(data, "BLUEMON")
-      or PaletteFX.pal(data, "MEWMON")
-    local accent = PaletteFX.pal(data, pocket.palette) or base
-    local mode = config and PaletteFX.pal(data, config.modePalette) or nil
+    local base = pal(data, "BLUEMON")
+      or pal(data, "MEWMON")
+    local accent = pal(data, pocket.palette) or base
+    local mode = config and pal(data, config.modePalette) or nil
     if not base then return nil end
     local zones = {
       { colors = base, x = 0, y = 0,
@@ -2232,6 +2214,22 @@ return function(mod, compatibility)
   end
 
   return {
+    -- Shared presentation only; native Gen 2 still owns inventory and input.
+    presentation = {
+      pockets = POCKETS, layout = layoutFor, size = uiSize, zones = sgbPalettes,
+      qol = bagQolInfo,
+      draw = function(menu, counts)
+        local layout = layoutFor(menu)
+        drawBackdrop(layout)
+        drawHeader(menu, layout)
+        drawTabs(menu, layout, counts)
+        drawList(menu, layout)
+        drawDetails(menu, layout)
+        drawFooter(menu, layout)
+        gray(WHITE)
+        return layout
+      end,
+    },
     decorateList = decorateList,
     new = function(game, opts)
       installOverlayBridge(game)

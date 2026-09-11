@@ -20,6 +20,9 @@ return function(mod)
     battlePortrait = loadLocal("core/battle_portraits.lua")(mod),
     drawMenuIcon = loadLocal("core/menu_icons.lua")(mod),
     uiSurfaces = loadLocal("core/ui_surfaces.lua")(mod, settings),
+    touch = loadLocal("core/touch.lua")(mod),
+    summaryExtensions = loadLocal("core/summary_extensions.lua")(mod),
+    shinyDex = loadLocal("core/shiny_dex.lua")(mod),
   }
 
   -- Validate the complete archive before any component gets a chance to
@@ -123,6 +126,7 @@ return function(mod)
     return menuSpeed or inherited
   end, 1000)
 
+  state.comfort = loadLocal("core/comfort.lua")(mod, settings)
   mod.options:define(settings:aggregateSchema())
   local hub = makeHub(mod, settings, state, components)
 
@@ -140,6 +144,7 @@ return function(mod)
     return component and settings:isEnabled(component) or false
   end
   mod.exports.menuPortrait = state.battlePortrait
+  mod.exports.shinyDex = state.shinyDex
   mod.exports.settings = hub
   mod.exports.apiVersion = 1
   mod.log:info(tostring(#components) .. "-component Modern UI Suite initialized")

@@ -1,4 +1,5 @@
 return function(mod, icons)
+  local touch = mod.suite and mod.suite.touch
   local Font = require("src.render.Font")
   local Sound = require("src.core.Sound")
   local Strings = require("src.core.Strings")
@@ -701,6 +702,9 @@ return function(mod, icons)
       local col, row = (slot - 1) % COLUMNS, math.floor((slot - 1) / COLUMNS)
       local x, y = layout.gridX + col * COL_STEP,
         layout.gridY + row * ROW_STEP
+      if touch then touch.add(menu,x,y,CELL_W,CELL_H,"tile:"..tostring(item),
+        function() setIndex(menu,itemIndex) end,
+        function() return currentIndex(menu)==itemIndex end,true) end
       local selected = itemIndex == index
       if selected then
         fill(x - 1, y - 1, CELL_W + 2, CELL_H + 2, INK)
@@ -888,6 +892,10 @@ return function(mod, icons)
     local layout = layoutFor(menu)
     menu.modernStartLastWideWidth = layout.width
     love.graphics.push("all")
+    if touch then touch.begin(menu,
+      (menu.modernStartHudPass or menu.modernStartGen2) and "window" or "canvas",
+      function() return menu.phase=="confirm" or menu.phase=="confirmContest" end,
+      function(key,press) press(menu,key) end) end
     drawShell(menu, layout)
     drawTiles(menu, layout)
     drawFooter(menu, layout)

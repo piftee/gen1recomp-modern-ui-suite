@@ -2,7 +2,7 @@
 -- active provider's settings and its own artwork; nothing is bundled/copied.
 -- Decode atlas cells before drawing and keep thumbnail frames still.
 return function(mod)
-  local frames, sheets, definitions, sequences, serial = {}, {}, {}, {}, 0
+  local frames, sheets, definitions, sequences, bounds, serial = {}, {}, {}, {}, {}, 0
   local function remember(cache, key, value, limit)
     serial = serial + 1
     cache[key] = { value = value or false, used = serial }
@@ -55,21 +55,11 @@ return function(mod)
     end
     return count
   end
-  local function decode(path, def, index, tag, prepare)
-    local key = table.concat({ path, tostring(def), tostring(tag), index }, "|")
-    local image, hit = cached(frames, key)
-    if hit then return image end
-    local sheet, found = cached(sheets, path)
-    if not found then
-      local ok, data = pcall(love.image.newImageData, path)
-      sheet = remember(sheets, path, ok and data or nil, 8)
-    end
-    if not sheet then return remember(frames, key, nil, 96) end
-    local sw, sh = sheet:getDimensions()
-    if not def then return remember(frames, key, prepare(sheet:clone()), 96) end
+  local function cellRect(def, index, sw, sh)
     local x, y, w, h
     if def.cells then
       local cell = def.cells[index]
+      if type(cell) ~= "table" then return nil end
       x, y, w, h = cell.x or 0, cell.y or 0, cell.width, cell.height
     elseif def.autoColumns then
       local columns = tonumber(def.autoColumns)
@@ -83,7 +73,61 @@ return function(mod)
       x, y = ((index - 1) % columns) * w, math.floor((index - 1) / columns) * h
     end
     if not w or not h or w < 1 or h < 1 or x < 0 or y < 0
-        or x + w > sw or y + h > sh then return remember(frames, key, nil, 96) end
+        or x + w > sw or y + h > sh then return nil end
+    if x % 1 ~= 0 or y % 1 ~= 0 or w % 1 ~= 0 or h % 1 ~= 0 then return nil end
+    return x, y, w, h
+  end
+
+  -- Union alpha bounds over the whole animation, never per-frame bounds.
+  -- Keeping one rectangle preserves the provider's motion and pixel colours.
+  local function animationBounds(sheet, def, path)
+    local key = path .. "|" .. tostring(def)
+    local result, hit = cached(bounds, key)
+    if hit then return result end
+    local sw, sh = sheet:getDimensions()
+    local count = def.cells and #def.cells or tonumber(def.autoColumns or def.frames)
+    if not sheet.getPixel or not count or count < 1 or count > 256 or count % 1 ~= 0 then
+      return remember(bounds, key, nil, 32)
+    end
+    local left, top, right, bottom, width, height = math.huge, math.huge, -1, -1
+    for i = 1, count do
+      local x, y, w, h = cellRect(def, i, sw, sh)
+      if not x or w * h * count > 16000000 or (width and (w ~= width or h ~= height)) then
+        return remember(bounds, key, nil, 32)
+      end
+      width, height = w, h
+      for cy = 0, h - 1 do
+        for cx = 0, w - 1 do
+          local _, _, _, alpha = sheet:getPixel(x + cx, y + cy)
+          if alpha > 0 then
+            left, top = math.min(left, cx), math.min(top, cy)
+            right, bottom = math.max(right, cx), math.max(bottom, cy)
+          end
+        end
+      end
+    end
+    if right >= left then result = {left, top, right - left + 1, bottom - top + 1} end
+    return remember(bounds, key, result, 32)
+  end
+
+  local function decode(path, def, index, tag, prepare, fitAnimation)
+    local key = table.concat({ path, tostring(def), tostring(tag), index, tostring(fitAnimation) }, "|")
+    local image, hit = cached(frames, key)
+    if hit then return image end
+    local sheet, found = cached(sheets, path)
+    if not found then
+      local ok, data = pcall(love.image.newImageData, path)
+      sheet = remember(sheets, path, ok and data or nil, 8)
+    end
+    if not sheet then return remember(frames, key, nil, 96) end
+    local sw, sh = sheet:getDimensions()
+    if not def then return remember(frames, key, prepare(sheet:clone()), 96) end
+    local x, y, w, h = cellRect(def, index, sw, sh)
+    if not x then return remember(frames, key, nil, 96) end
+    if fitAnimation then
+      local ok, rect = pcall(animationBounds, sheet, def, path)
+      if ok and rect then x, y, w, h = x + rect[1], y + rect[2], rect[3], rect[4] end
+    end
     local cell = love.image.newImageData(w, h)
     cell:paste(sheet, 0, 0, x, y, w, h)
     return remember(frames, key, prepare(cell), 96)
@@ -141,7 +185,7 @@ return function(mod)
     if not index then return nil end
     local display = art.displayMode()
     return decode(lib.mod.assets:path(def.image), def, index, id .. tostring(display),
-      function(cell) return art.prepareData(cell, display) end)
+      function(cell) return art.prepareData(cell, display) end, generation == "gen4")
   end
 
   local GRAY = { {255,255,255}, {170,170,170}, {85,85,85}, {0,0,0} }
