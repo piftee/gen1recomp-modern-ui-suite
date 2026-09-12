@@ -9,7 +9,8 @@ end
 local function indexOf(list, mon)
   for i, value in ipairs(list) do if value == mon then return i end end
 end
-function Batch.plan(save, marks, target, at, capacity)
+function Batch.plan(save, marks, target, at, capacity, boxCapacity)
+  boxCapacity = boxCapacity or 20
   if type(marks) ~= "table" or #marks == 0 then return nil, "Mark a POKéMON first." end
   local plan = { lists = {}, outgoing = {}, incoming = {}, count = #marks }
   local function staged(list)
@@ -63,7 +64,7 @@ function Batch.plan(save, marks, target, at, capacity)
   if #plan.party < 1 then return nil, "Keep one POKéMON in your party!" end
   if #plan.party > 6 then return nil, "The party is full!" end
   for list, proposed in pairs(plan.lists) do
-    if #proposed > (list == save.party and 6 or 20) then
+    if #proposed > (list == save.party and 6 or boxCapacity) then
       return nil, "This BOX is full!"
     end
   end

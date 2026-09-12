@@ -1,31 +1,29 @@
 -- Shared workspace navigation/layout; native Gen 2 storage and Mail records.
 return function(mod)
   mod:load("gen2_catch_storage.lua")(mod)
-  local cutoutSource = assert(mod:read("gen2_portrait_cutouts.lua"))
-  local PortraitCutouts = assert(load(cutoutSource, "@" .. mod.path
-    .. "/gen2_portrait_cutouts.lua"))()
   local Boxes = require("src.core.gen2.Boxes")
   local Mail = require("src.core.gen2.Mail")
   local PcMenu = require("src.ui.gen2.PcMenu")
-  local BoxMenu = require("src.ui.gen2.BoxMenu")
   local PartyMenu = require("src.ui.gen2.PartyMenu")
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
-  local GbcPalette = require("src.render.GbcPalette")
-  local Palettes = require("src.world.gen2.Palettes")
   local Screens = require("src.ui.Screens")
   local Sound = require("src.core.Sound")
   local Strings = require("src.core.Strings")
   local storage = {}
 
-  storage.Boxes = {
-    COUNT = Boxes.NUM_BOXES, CAPACITY = Boxes.MONS_PER_BOX, active = Boxes.box,
+  storage.Boxes = setmetatable({
+    active = Boxes.box,
     ensure = function(save)
       save.currentBox = math.max(1, math.min(Boxes.NUM_BOXES,
         tonumber(save.currentBox) or 1))
       for i = 1, Boxes.NUM_BOXES do Boxes.box(save, i) end
     end,
-  }
+  }, { __index = function(_, key)
+    -- Companion mods own these limits, including after a loader reinitializes.
+    if key == "COUNT" then return Boxes.NUM_BOXES end
+    if key == "CAPACITY" then return Boxes.MONS_PER_BOX end
+  end })
   local function name(mon)
     return mon and (mon.isEgg and "EGG"
       or mon.nickname or mon.name or mon.species) or "EMPTY"
@@ -350,59 +348,15 @@ return function(mod)
         and mod.suite.drawMenuIcon(screen.game, renderer, mon, math.floor(x), math.floor(y)) then return end
     renderer:drawIcon(mon, math.floor(x), math.floor(y))
   end
-  local function portrait(screen, mon, rect)
-    local renderer = screen.modernPCPicRenderer
-    local selected = mod.suite and mod.suite.battlePortrait
-      and mod.suite.battlePortrait(screen.game, mon)
-    local image = selected or (mon.isEgg and renderer:image(
-      ((screen.game.data.gen2MenuGfx or {}).eggHatch or {}).egg) or renderer:picFor(mon))
-    if not image then return icon(screen, mon, rect.x, rect.y) end
-    local iw, ih = image:getDimensions()
-    local scale = math.min(1, rect.w / iw, rect.h / ih)
-    local colors = Palettes.monColors(screen.game.data.gen2Palettes,
-      mon.isEgg and "EGG" or mon.species, mon.shiny)
-    local function draw()
-      color(WHITE)
-      love.graphics.draw(image, rect.x + (rect.w - iw * scale) / 2,
-        rect.y + (rect.h - ih * scale) / 2, 0, scale, scale)
-    end
-    -- The modern detail rail bypasses Crystal's native drawPicBlock wrapper.
-    -- Use its image identity predicate, including for animated shiny frames,
-    -- so native/egg art still receives the cartridge palette.
-    local provider = mod.find and mod.find("crystal_animated_sprites_with_shiny_visuals")
-    local api = provider and provider.exports
-    if selected or (api and type(api.isCrystalImage) == "function" and api.isCrystalImage(image)) then
-      local shader = love.graphics.getShader()
-      love.graphics.setShader()
-      draw()
-      love.graphics.setShader(shader)
-    elseif colors and GbcPalette.available() then
-      GbcPalette.with(colors, draw)
-    else
-      draw()
-    end
-  end
   local function details(screen, layout)
     local d = layout.detail
+    if not d then return end
     card(d.x, d.y, d.w, d.h, INK)
     local mon = screen.held and screen.held.mon or screen:modernPCSelected()
     if not mon then return text("EMPTY SLOT", d.x + 5, d.y + 10, d.w - 10, LIGHT) end
     local item = mon.item and screen.game.data.items[mon.item]
     local itemName = (item and item.name) or mon.item or "NO ITEM"
-    if layout.compact then
-      icon(screen, mon, d.x + 4, d.y + 6)
-      text(name(mon), d.x + 25, d.y + 4, d.w - 30, WHITE)
-      text(itemName, d.x + 25, d.y + 16, d.w - 30, LIGHT)
-      return
-    end
-    local x, y, width
-    if layout.portrait then
-      portrait(screen, mon, { x = d.x + 4, y = d.y + 4, w = 56, h = d.h - 8 })
-      x, y, width = d.x + 64, d.y + 8, d.w - 68
-    else
-      portrait(screen, mon, { x = d.x + 3, y = d.y + 3, w = d.w - 6, h = 48 })
-      x, y, width = d.x + 4, d.y + 55, d.w - 8
-    end
+    local x, y, width = d.x + 4, d.y + 8, d.w - 8
     text(name(mon), x, y, width, WHITE)
     local gender = mon.gender == "male" and "M" or mon.gender == "female" and "F" or ""
     text(mon.isEgg and "EGG" or ("LV%d %s"):format(mon.level or 1, gender),
@@ -424,14 +378,22 @@ return function(mod)
     end
     color(RED); G.rectangle("fill", 0, 0, layout.width, 16)
     local box = Boxes.box(screen.game.save)
-    text(layout.compact and "PARTY" or "STORAGE", 4, 4,
-      layout.compact and 44 or layout.detail.w, WHITE)
-    local boxLabel = ("%s %d/%d"):format(Boxes.name(screen.game.save,
-      screen.game.save.currentBox), #box, Boxes.MONS_PER_BOX)
-    card(layout.box.x, 1, layout.box.w, 13,
+    local bx, bw = layout.box.x, layout.box.w
+    local boxLabel = Boxes.name(screen.game.save, screen.game.save.currentBox)
+    if layout.fullWidth then
+      bw = math.min(80, Font.width(boxLabel) + 18)
+      bx = layout.width - bw - 2
+      local mon = screen.held and screen.held.mon or screen:modernPCSelected()
+      text(mon and name(mon) or "STORAGE", 4, 4, bx - 8, WHITE)
+    else
+      if layout.detail and not layout.portrait then
+        text("STORAGE", 4, 4, layout.detail.w, WHITE)
+      end
+      boxLabel = ("%s %d/%d"):format(boxLabel, #box, Boxes.MONS_PER_BOX)
+    end
+    card(bx, 1, bw, 13,
       screen.boxSwitching and BLUE or RED, screen.boxSwitching and WHITE or RED)
     color(WHITE)
-    local bx, bw = layout.box.x, layout.box.w
     G.polygon("fill", bx + 2, 7, bx + 6, 4, bx + 6, 10)
     G.polygon("fill", bx + bw - 2, 7, bx + bw - 6, 4, bx + bw - 6, 10)
     text(boxLabel, bx + 9, 4, bw - 18, WHITE)
@@ -439,7 +401,7 @@ return function(mod)
       local panel = layout[region]
       local list = region == "party" and screen.game.save.party or box
       card(panel.x, panel.y, panel.w, panel.h, PAPER)
-      for i = 1, region == "party" and Boxes.PARTY_SIZE or Boxes.MONS_PER_BOX do
+      for i = panel.first, panel.last do
         local r = slotRect(layout, region, i)
         local mon = list[i]
         local chosen = screen.region == region and not screen.boxSwitching
@@ -458,17 +420,24 @@ return function(mod)
           color(WHITE); G.line(r.x + 2, r.y + 4, r.x + 4, r.y + 6, r.x + 7, r.y + 2)
         end
       end
+      color(INK); screen:modernPCDrawScrollBar(panel)
     end
     details(screen, layout)
     color(RED); G.rectangle("fill", 0, layout.footerY, layout.width, 8)
-    local hint = screen.boxSwitching and "L/R BOX  A LIST  B BACK"
+    local hint = screen.boxPicker and "ARROWS A OPEN B BACK"
+      or screen.boxSwitching and "L/R BOX  A LIST  B BACK"
       or screen.multiMode and ("%d MARKED A MARK/PLACE B END"):format(#(screen.multi or {}))
       or screen.held and "A PLACE  B CANCEL  SELECT BOX"
       or "A MOVE  START MENU  SELECT BOX"
     if Font.width(hint) > layout.width - 6 then
-      hint = screen.boxSwitching and "L/R BOX A LIST B END"
+      hint = screen.boxPicker and "ARROWS A OPEN B BACK"
+        or screen.boxSwitching and "L/R BOX A LIST B END"
         or screen.multiMode and ("%d MARKED A/B SEL"):format(#(screen.multi or {}))
         or screen.held and "A PLACE  B CANCEL" or "A MOVE  START MENU"
+    end
+    if layout.box.scrollable and screen.region == "box" and not screen.boxSwitching
+        and not screen.held and not screen.multiMode then
+      hint = ("%d-%d/%d  UP/DOWN"):format(layout.box.first, layout.box.last, Boxes.MONS_PER_BOX)
     end
     text(hint, 3, layout.footerY, layout.width - 6, WHITE)
     if screen.status then
@@ -483,14 +452,15 @@ return function(mod)
     if screen.boxPicker then
       local p = layout.box
       card(p.x, p.y, p.w, p.h, INK, BLUE)
-      text("ALL BOXES", p.x + 5, p.y + 4, p.w - 10, WHITE)
-      local cw, ch = (p.w - 8) / 4, (p.h - 19) / 4
-      for i = 1, Boxes.NUM_BOXES do
-        local x = p.x + 4 + (i - 1) % 4 * cw
-        local y = p.y + 16 + math.floor((i - 1) / 4) * ch
-        card(x, y, cw - 2, ch - 1, i == screen.boxPickerIndex and BLUE or PAPER)
-        text(("%02d"):format(i), x + 3, y + 2, cw - 5)
+      local picker = layout.picker
+      text(picker.scrollable and ("BOXES %d-%d"):format(picker.first, picker.last)
+        or "ALL BOXES", p.x + 5, p.y + 4, p.w - 10, WHITE)
+      for i = picker.first, picker.last do
+        local r = slotRect(layout, "picker", i)
+        card(r.x, r.y, r.w - 2, r.h - 1, i == screen.boxPickerIndex and BLUE or PAPER)
+        text(("%02d"):format(i), r.x + 3, r.y + 2, r.w - 5)
       end
+      color(WHITE); screen:modernPCDrawScrollBar(picker)
     end
     local entries, confirm = screen.actions, screen.modernPCConfirm
     if entries or confirm then
@@ -527,8 +497,6 @@ return function(mod)
     screen.modernPCOnClose = opts.onClose
     screen.modernPCWriter = opts.writer or (game.writeSave and function() return game:writeSave() end)
     screen.modernPCIconRenderer = PartyMenu.new(game, { save = game.save })
-    screen.modernPCPicRenderer = BoxMenu.new(game, { save = game.save, mode = "move" })
-    PortraitCutouts.attachBox(screen.modernPCPicRenderer)
     screen.modernPCExtras = {}
     for i, entry in ipairs(native.entries) do
       if entry.id == "decoration" or (not entry.builtin and type(entry.onSelect) == "function") then

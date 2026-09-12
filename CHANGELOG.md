@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.30] - 2026-09-12
+
+- Support Gen 2 Expanded Boxes 0.2.0: scroll through 50 slots per box and all
+  50 boxes without drawing over the party. Show a scrollbar and visible slot
+  range, and use the companion's live capacity for group transfers and swaps.
+- Keep the PC box above a single six-slot party row at every aspect ratio.
+  Use a full-width grid on narrow screens and text details on wider screens,
+  with grid-edge and SELECT box switching.
+
 ## [0.1.28] - 2026-09-11
 
 - Fix Gen 2 item-PC pages being drawn twice at different sizes. Keep deposit

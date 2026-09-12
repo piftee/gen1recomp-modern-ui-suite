@@ -87,7 +87,6 @@ return function(mod, genderExports, compatibility)
 
   local inkShader -- false if the host has no shader support
   local fittedHgssIcons = {}
-  local battleProfileSprites = {}
 
   local function iconAnimationEnabled(screen)
     if mod.suite and type(mod.suite.option) == "function" then
@@ -267,7 +266,7 @@ return function(mod, genderExports, compatibility)
     return top and math.max(SCREEN_H, math.floor(top)) or nil
   end
 
-  local function layoutFor(screen)
+  local function baseLayoutFor(screen)
     local width, height
     if storage then width, height = storage.size(screen)
     else width, height = responsiveSize() end
@@ -315,10 +314,9 @@ return function(mod, genderExports, compatibility)
     if width < 192 then
       return {
         width = width, height = SCREEN_H, canvasHeight = SCREEN_H,
-        footerY = FOOTER_Y, compact = true,
-        party = { x = 2, y = 19, w = 43, h = 84, cols = 2, rows = 3 },
-        box = { x = 48, y = 19, w = width - 50, h = 84, cols = 5, rows = 4 },
-        detail = { x = 2, y = 106, w = width - 4, h = 28 },
+        footerY = FOOTER_Y, fullWidth = true,
+        box = { x = 2, y = 19, w = width - 4, h = 84, cols = 5, rows = 4 },
+        party = { x = 2, y = 106, w = width - 4, h = 27, cols = 6, rows = 1 },
       }
     end
 
@@ -340,17 +338,63 @@ return function(mod, genderExports, compatibility)
     }
   end
 
+  -- Keep the native-size cells; expanded storage scrolls through a window of
+  -- rows instead of shrinking every icon or drawing over the party/footer.
+  local function windowPanel(panel, capacity, index, offset)
+    panel.totalRows = math.ceil(capacity / panel.cols)
+    local row = math.floor((math.max(1, math.min(capacity, index)) - 1) / panel.cols)
+    offset = math.max(0, math.min(offset or 0, panel.totalRows - panel.rows))
+    if row < offset then offset = row
+    elseif row >= offset + panel.rows then offset = row - panel.rows + 1 end
+    panel.scrollRow = offset
+    panel.first = offset * panel.cols + 1
+    panel.last = math.min(capacity, (offset + panel.rows) * panel.cols)
+    panel.scrollable = panel.totalRows > panel.rows
+    return offset
+  end
+
+  local function layoutFor(screen)
+    local layout = baseLayoutFor(screen)
+    screen.boxScrollRow = windowPanel(layout.box, Boxes.CAPACITY,
+      screen.boxIndex, screen.boxScrollRow)
+    windowPanel(layout.party, Party.MAX, screen.partyIndex, 0)
+    local p = layout.box
+    local inset = storage and 14 or 0
+    layout.picker = { x = p.x, y = p.y + inset, w = p.w, h = p.h - inset,
+      cols = BOX_PICKER_COLS, rows = math.min(4, math.ceil(Boxes.COUNT / BOX_PICKER_COLS)) }
+    screen.boxPickerScrollRow = windowPanel(layout.picker, Boxes.COUNT,
+      screen.boxPickerIndex or screen.game.save.currentBox, screen.boxPickerScrollRow)
+    return layout
+  end
+
   local function slotRect(layout, region, index)
     local panel = layout[region]
     local zero = index - 1
     local column = zero % panel.cols
-    local row = math.floor(zero / panel.cols)
-    local innerW, innerH = panel.w - 4, panel.h - 4
+    local row = math.floor(zero / panel.cols) - (panel.scrollRow or 0)
+    local innerW, innerH = panel.w - 4 - (panel.scrollable and 6 or 0), panel.h - 4
     local x1 = panel.x + 2 + math.floor(column * innerW / panel.cols)
     local x2 = panel.x + 2 + math.floor((column + 1) * innerW / panel.cols)
     local y1 = panel.y + 2 + math.floor(row * innerH / panel.rows)
     local y2 = panel.y + 2 + math.floor((row + 1) * innerH / panel.rows)
     return { x = x1, y = y1, w = x2 - x1, h = y2 - y1 }
+  end
+
+  local function drawScrollBar(panel)
+    if not panel.scrollable then return end
+    local G = love.graphics
+    local x, y, h = panel.x + panel.w - 5, panel.y + 7, panel.h - 14
+    G.rectangle("line", x, y, 2, h)
+    local thumbH = math.max(4, math.floor(h * panel.rows / panel.totalRows))
+    local thumbY = y + math.floor((h - thumbH) * panel.scrollRow
+      / (panel.totalRows - panel.rows))
+    G.rectangle("fill", x, thumbY, 2, thumbH)
+    if panel.scrollRow > 0 then
+      G.polygon("fill", x - 1, y - 2, x + 1, y - 5, x + 3, y - 2)
+    end
+    if panel.scrollRow + panel.rows < panel.totalRows then
+      G.polygon("fill", x - 1, y + h + 2, x + 1, y + h + 5, x + 3, y + h + 2)
+    end
   end
 
   local function panelFrame(panel, darkFace)
@@ -375,131 +419,6 @@ return function(mod, genderExports, compatibility)
     return TYPE_PALETTES[tostring(primary or "NORMAL"):upper()]
       or PaletteFX.monPal(screen.game.data, mon and mon.species)
       or PaletteFX.pal(screen.game.data, "BLUEMON")
-  end
-
-  local WARM_SGB_PORTRAITS = {
-    REDMON = true, YELLOWMON = true, BROWNMON = true,
-  }
-
-  -- Large PC portraits need more separation than SGB's pale warm ramps give
-  -- them. Keep the surrounding SGB UI exactly as-is and borrow only the
-  -- stronger Advanced REDMON/YELLOWMON/BROWNMON ramps for grayscale battle
-  -- art. Other SGB colours, authored true-colour sprites and non-SGB modes
-  -- continue through their existing paths unchanged.
-  local function portraitArtPalette(data, species)
-    local palette = PaletteFX.monPal(data, species)
-    local mode = PaletteFX.mode
-    if mode ~= "gbc" and mode ~= "gbc_inv" then return palette end
-    local name = PaletteFX.monPalName(data, species)
-    if not WARM_SGB_PORTRAITS[name] then return palette end
-    local pack = PaletteFX.gbcPack and PaletteFX.gbcPack() or nil
-    return pack and pack.palettes and pack.palettes[name] or palette
-  end
-
-  local function paletteKey(colors)
-    local out = {}
-    for i = 1, 4 do
-      local color = colors and colors[i] or {}
-      out[#out + 1] = tostring(color[1] or 0)
-      out[#out + 1] = tostring(color[2] or 0)
-      out[#out + 1] = tostring(color[3] or 0)
-    end
-    return table.concat(out, ":")
-  end
-
-  -- Build the selected-Pokémon portrait from the exact front-sprite context
-  -- used by BattleState. The icon grid still respects HGSS/Unique Icons, but
-  -- the PC detail rail now previews what the Pokémon actually looks like in
-  -- battle rather than enlarging a separate menu-icon design.
-  local function battleProfileSprite(screen, mon)
-    local selected = mod.suite and mod.suite.battlePortrait
-      and mod.suite.battlePortrait(screen.game, mon)
-    if selected then return selected end
-    local path, trueColor = Sprites.path(screen.game.data, mon.species,
-      "front", { mon = mon, kind = "battle" })
-    if not path then return nil end
-    local colors = PaletteFX.effectiveColors(
-      portraitArtPalette(screen.game.data, mon.species)
-        or monPalette(screen, mon))
-    local key = path .. (trueColor and "#true" or ("#" .. paletteKey(colors)))
-    local cached = battleProfileSprites[key]
-    if cached ~= nil then return cached or nil end
-
-    if trueColor then
-      local ok, image = pcall(Assets.image, path)
-      cached = ok and image or false
-      battleProfileSprites[key] = cached
-      return cached or nil
-    end
-    if not (colors and love.image and love.image.newImageData) then
-      battleProfileSprites[key] = false
-      return nil
-    end
-    local ok, data = pcall(Assets.imageData, path)
-    if not ok or not data then
-      battleProfileSprites[key] = false
-      return nil
-    end
-    local width, height = data:getDimensions()
-    local outside, queueX, queueY, head = {}, {}, {}, 1
-    local function pixelIndex(x, y) return y * width + x + 1 end
-    local function matte(x, y)
-      local r, g, b, a = data:getPixel(x, y)
-      return a <= 0 or (r > 0.83 and g > 0.83 and b > 0.83)
-    end
-    local function visit(x, y)
-      if x < 0 or y < 0 or x >= width or y >= height then return end
-      local index = pixelIndex(x, y)
-      if outside[index] or not matte(x, y) then return end
-      outside[index] = true
-      queueX[#queueX + 1], queueY[#queueY + 1] = x, y
-    end
-    for x = 0, width - 1 do visit(x, 0); visit(x, height - 1) end
-    for y = 1, height - 2 do visit(0, y); visit(width - 1, y) end
-    while head <= #queueX do
-      local x, y = queueX[head], queueY[head]
-      head = head + 1
-      visit(x - 1, y); visit(x + 1, y)
-      visit(x, y - 1); visit(x, y + 1)
-    end
-    data:mapPixel(function(x, y, r, g, b, a)
-      if a <= 0 or outside[pixelIndex(x, y)] then return r, g, b, 0 end
-      local color = r > 0.83 and colors[1] or r > 0.5 and colors[2]
-        or r > 0.17 and colors[3] or colors[4]
-      return color[1] / 255, color[2] / 255, color[3] / 255, a
-    end)
-    local made, image = pcall(love.graphics.newImage, data)
-    cached = made and image or false
-    if cached and cached.setFilter then cached:setFilter("nearest", "nearest") end
-    battleProfileSprites[key] = cached
-    return cached or nil
-  end
-
-  local function drawBattleProfile(screen, mon, rect, trueColorRegions,
-      background)
-    local image = battleProfileSprite(screen, mon)
-    if not image then return false end
-    local iw, ih = image:getDimensions()
-    local scale = math.min(1, rect.w / math.max(1, iw),
-      rect.h / math.max(1, ih))
-    local x = math.floor(rect.x + (rect.w - iw * scale) / 2 + 0.5)
-    local y = math.floor(rect.y + (rect.h - ih * scale) / 2 + 0.5)
-    if background then
-      love.graphics.push("all")
-      love.graphics.setColor((background[1] or 0) / 255,
-        (background[2] or 0) / 255, (background[3] or 0) / 255, 1)
-      love.graphics.rectangle("fill", x - 1, y - 1,
-        iw * scale + 2, ih * scale + 2)
-      love.graphics.pop()
-    end
-    love.graphics.push("all")
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(image, x, y, 0, scale, scale)
-    love.graphics.pop()
-    trueColorRegions[#trueColorRegions + 1] = {
-      x = x - 1, y = y - 1, w = iw * scale + 2, h = ih * scale + 2,
-    }
-    return true
   end
 
   local function ensurePartyMon(screen, mon)
@@ -578,21 +497,6 @@ return function(mod, genderExports, compatibility)
     return best
   end
 
-  local function nearestIndexByY(layout, region, sourceY, desiredColumn)
-    local panel = layout[region]
-    local capacity = region == "party" and Party.MAX or Boxes.CAPACITY
-    local best, distance = 1, math.huge
-    for index = 1, capacity do
-      local column = (index - 1) % panel.cols
-      if column == desiredColumn then
-        local rect = slotRect(layout, region, index)
-        local d = math.abs(rect.y + rect.h / 2 - sourceY)
-        if d < distance then best, distance = index, d end
-      end
-    end
-    return best
-  end
-
   local switchBox
 
   local function moveCursor(screen, direction)
@@ -604,7 +508,7 @@ return function(mod, genderExports, compatibility)
 
     local exclusive = mod.options:get("box_exclusive") == true
     local horizontal = direction == "left" or direction == "right"
-    if screen.region == "party" and horizontal and (not layout.compact or exclusive) then
+    if screen.region == "party" and horizontal then
       local count = (screen.held or screen.multiMode) and Party.MAX
         or math.max(1, #screen.game.save.party)
       setCurrentIndex(screen, ((math.min(index, count) - 1
@@ -613,58 +517,23 @@ return function(mod, genderExports, compatibility)
     end
     if exclusive then
       if horizontal then
-        local nextCol = (column + (direction == "left" and -1 or 1)) % panel.cols
+        local capacity = screen.region == "party" and Party.MAX or Boxes.CAPACITY
+        local columns = math.min(panel.cols, capacity - row * panel.cols)
+        local nextCol = (column + (direction == "left" and -1 or 1)) % columns
         setCurrentIndex(screen, row * panel.cols + nextCol + 1)
       elseif direction == "up" and row > 0 then
         setCurrentIndex(screen, index - panel.cols)
-      elseif direction == "down" and row < panel.rows - 1 then
+      elseif direction == "down" and row < panel.totalRows - 1 then
         setCurrentIndex(screen, index + panel.cols)
       else
         local other = screen.region == "box" and "party" or "box"
         local otherPanel = layout[other]
-        local targetRow = direction == "up" and otherPanel.rows - 1 or 0
+        local targetRow = direction == "up" and otherPanel.totalRows - 1 or 0
         local nextIndex
-        if layout.compact then
-          local nextCol = math.floor(column * (otherPanel.cols - 1)
-            / math.max(1, panel.cols - 1) + 0.5)
-          nextIndex = targetRow * otherPanel.cols + nextCol + 1
-        else
-          local rect = slotRect(layout, screen.region, index)
-          nextIndex = nearestIndexByX(layout, other, rect.x + rect.w / 2, targetRow)
-        end
+        local rect = slotRect(layout, screen.region, index)
+        nextIndex = nearestIndexByX(layout, other, rect.x + rect.w / 2, targetRow)
         screen.region = other
         setCurrentIndex(screen, nextIndex)
-      end
-      return
-    end
-
-    if layout.compact then
-      if direction == "left" then
-        if column > 0 then
-          setCurrentIndex(screen, index - 1)
-        elseif screen.region == "box" then
-          local rect = slotRect(layout, "box", index)
-          screen.region = "party"
-          screen.partyIndex = nearestIndexByY(layout, "party",
-            rect.y + rect.h / 2, layout.party.cols - 1)
-        end
-      elseif direction == "right" then
-        if column < panel.cols - 1 then
-          setCurrentIndex(screen, index + 1)
-        elseif screen.region == "party" then
-          local rect = slotRect(layout, "party", index)
-          screen.region = "box"
-          screen.boxIndex = nearestIndexByY(layout, "box",
-            rect.y + rect.h / 2, 0)
-        end
-      elseif direction == "up" then
-        if row > 0 then
-          setCurrentIndex(screen, index - panel.cols)
-        elseif screen.region == "box" then
-          beginBoxSwitcher(screen)
-        end
-      elseif direction == "down" and row < panel.rows - 1 then
-        setCurrentIndex(screen, index + panel.cols)
       end
       return
     end
@@ -677,7 +546,7 @@ return function(mod, genderExports, compatibility)
           switchBox(screen, -1)
         end
       elseif direction == "right" then
-        if column < panel.cols - 1 then
+        if column < panel.cols - 1 and index < Boxes.CAPACITY then
           setCurrentIndex(screen, index + 1)
         else
           switchBox(screen, 1)
@@ -689,7 +558,7 @@ return function(mod, genderExports, compatibility)
           beginBoxSwitcher(screen)
         end
       elseif direction == "down" then
-        if row < panel.rows - 1 then
+        if row < panel.totalRows - 1 then
           setCurrentIndex(screen, index + panel.cols)
         else
           local rect = slotRect(layout, "box", index)
@@ -707,7 +576,7 @@ return function(mod, genderExports, compatibility)
         local rect = slotRect(layout, "party", index)
         screen.region = "box"
         screen.boxIndex = nearestIndexByX(layout, "box",
-          rect.x + rect.w / 2, layout.box.rows - 1)
+          rect.x + rect.w / 2, layout.box.totalRows - 1)
       end
     end
   end
@@ -816,7 +685,8 @@ return function(mod, genderExports, compatibility)
   end
 
   local function finishMultiMove(screen, target, at, capacity)
-    local plan, why = Batch.plan(screen.game.save, screen.multi, target, at, capacity)
+    local plan, why = Batch.plan(screen.game.save, screen.multi, target, at, capacity,
+      Boxes.CAPACITY)
     if not plan then screen.status = Strings(why); return false end
     local ok
     if storage then ok, why = storage.finishBatch(screen, plan, Batch)
@@ -1071,8 +941,9 @@ return function(mod, genderExports, compatibility)
         screen.boxPickerIndex = index + 1
       elseif input:wasPressed("up") and index > columns then
         screen.boxPickerIndex = index - columns
-      elseif input:wasPressed("down") and index + columns <= Boxes.COUNT then
-        screen.boxPickerIndex = index + columns
+      elseif input:wasPressed("down")
+          and math.floor((index - 1) / columns) < math.ceil(Boxes.COUNT / columns) - 1 then
+        screen.boxPickerIndex = math.min(Boxes.COUNT, index + columns)
       elseif input:wasPressed("a") then
         openBox(screen, index)
         endBoxSwitcher(screen)
@@ -1196,11 +1067,11 @@ return function(mod, genderExports, compatibility)
 
     local box = Boxes.active(screen.game.save)
     local label = screen.boxPicker and Strings("ALL BOXES")
-      or (layout.compact and Strings("BOX%02d", screen.game.save.currentBox)
+      or (layout.fullWidth and Strings("BOX%02d", screen.game.save.currentBox)
         or Strings("BOX%02d %02d/%02d",
           screen.game.save.currentBox, #box, Boxes.CAPACITY))
     local selectorW = math.min(layout.box.w - 2, Font.width(label) + 16)
-    local selectorX = layout.compact and layout.box.x + 1
+    local selectorX = layout.fullWidth and layout.width - selectorW - 2
       or math.floor(layout.box.x + (layout.box.w - selectorW) / 2)
     local selectorY = 1
     if screen.boxSwitching then
@@ -1227,10 +1098,10 @@ return function(mod, genderExports, compatibility)
     drawCentered(label, selectorX + selectorW / 2, 4,
       selectorW - 16, WHITE)
 
-    if layout.compact then
-      drawText(Strings("PARTY"), 4, 4, 40, WHITE)
-      drawRight(("%02d/%02d"):format(#box, Boxes.CAPACITY),
-        layout.width - 4, 4, 48, WHITE)
+    if layout.fullWidth then
+      local mon = screen.held and screen.held.mon or selected(screen)
+      drawText(mon and monName(screen, mon) or Strings("STORAGE"), 4, 4,
+        selectorX - 8, WHITE)
     elseif not layout.portrait then
       drawCentered(Strings("DETAILS"),
         layout.detail.x + layout.detail.w / 2, 4,
@@ -1622,6 +1493,7 @@ return function(mod, genderExports, compatibility)
   end
 
   local function drawDetails(screen, layout, trueColorRegions)
+    if not layout.detail then return end
     panelFrame(layout.detail, true)
     local mon = screen.held and screen.held.mon or selected(screen)
     if not mon then
@@ -1639,74 +1511,8 @@ return function(mod, genderExports, compatibility)
         or Strings("BOX %02d", screen.game.save.currentBox))
     local detailFace = colorFromPalette(monPalette(screen, mon), 4)
 
-    if layout.portrait then
-      local portraitW = math.min(68,
-        math.max(52, math.floor(layout.detail.w * 0.44)))
-      local drewPortrait = drawBattleProfile(screen, mon, {
-        x = layout.detail.x + 5, y = layout.detail.y + 5,
-        w = portraitW - 10, h = layout.detail.h - 10,
-      }, trueColorRegions, detailFace)
-      if not drewPortrait then
-        drawMonIcon(screen, mon,
-          layout.detail.x + math.floor((portraitW - 32) / 2),
-          layout.detail.y + math.floor((layout.detail.h - 32) / 2),
-          false, 2, trueColorRegions, detailFace)
-      end
-      local infoX = layout.detail.x + portraitW + 2
-      local infoW = layout.detail.w - portraitW - 7
-      local infoY = layout.detail.y + 9
-      drawText(name, infoX, infoY, infoW, WHITE)
-      local genderWidth = drawGenderGlyph(mon, infoX, infoY + 13,
-        detailFace, trueColorRegions)
-      drawText(Strings("LV%d", mon.level or 1), infoX + genderWidth,
-        infoY + 13, infoW - genderWidth, LIGHT)
-      local types = def.types or {}
-      local typeText = tostring(types[1] or "---")
-      if types[2] then typeText = typeText .. "/" .. tostring(types[2]) end
-      drawText(typeText, infoX, infoY + 26, infoW, LIGHT)
-      if mon.stats and mon.hp then
-        drawText(Strings("HP %d/%d", mon.hp, mon.stats.hp),
-          infoX, infoY + 39, infoW, WHITE)
-      end
-      drawText(location, infoX,
-        layout.detail.y + layout.detail.h - 14, infoW, LIGHT)
-      return
-    end
-
-    if layout.compact then
-      drawMonIcon(screen, mon, layout.detail.x + 6, layout.detail.y + 6,
-        false, 1, trueColorRegions, detailFace)
-      drawText(name, layout.detail.x + 27, layout.detail.y + 4,
-        math.max(32, layout.detail.w - 92), WHITE)
-      local genderWidth = drawGenderGlyph(mon, layout.detail.x + 27,
-        layout.detail.y + 15, detailFace, trueColorRegions)
-      drawText(Strings("LV%d  %s", mon.level or 1, location),
-        layout.detail.x + 27 + genderWidth, layout.detail.y + 15,
-        layout.detail.w - 34 - genderWidth, LIGHT)
-      if mon.stats and mon.hp then
-        drawRight(Strings("HP %d/%d", mon.hp, mon.stats.hp),
-          layout.detail.x + layout.detail.w - 5, layout.detail.y + 4,
-          72, WHITE)
-      end
-      return
-    end
-
-    local portraitH = math.min(50, math.max(36,
-      layout.detail.h - 64))
-    local drewPortrait = drawBattleProfile(screen, mon, {
-      x = layout.detail.x + 5, y = layout.detail.y + 5,
-      w = layout.detail.w - 10, h = portraitH,
-    }, trueColorRegions, detailFace)
-    if not drewPortrait then
-      local iconScale = layout.detail.w >= 76 and 2 or 1
-      local iconSize = 16 * iconScale
-      drawMonIcon(screen, mon,
-        layout.detail.x + math.floor((layout.detail.w - iconSize) / 2),
-        layout.detail.y + 8, false, iconScale,
-        trueColorRegions, detailFace)
-      portraitH = 9 + iconSize
-    end
-    local infoY = layout.detail.y + 8 + portraitH
+    -- Keep the selected Pokémon's text details without a large sprite.
+    local infoY = layout.detail.y + 8
     drawCentered(name, layout.detail.x + layout.detail.w / 2,
       infoY, layout.detail.w - 10, WHITE)
     local levelText = Strings("LV%d", mon.level or 1)
@@ -1744,22 +1550,22 @@ return function(mod, genderExports, compatibility)
       if screen.multiMode then
         message = Strings("%d MARKED A MARK/PLACE B END", #(screen.multi or {}))
       elseif screen.held then
-        message = (layout.compact or layout.portrait)
+        message = (layout.fullWidth or layout.portrait)
           and Strings("A PLACE B CANCEL")
           or Strings("A PLACE B CANCEL  DOWN PARTY")
       else
-        message = (layout.compact or layout.portrait)
+        message = (layout.fullWidth or layout.portrait)
           and Strings("A MOVE SEL BOX")
           or Strings("A MOVE  DOWN PARTY  EDGE BOX")
       end
     end
     if screen.boxSwitching then
       if screen.boxPicker then
-        message = (layout.compact or layout.portrait)
+        message = (layout.fullWidth or layout.portrait)
           and Strings("ARROWS A OPEN B BACK")
           or Strings("ARROWS  A OPEN  B BACK")
       else
-        message = (layout.compact or layout.portrait)
+        message = (layout.fullWidth or layout.portrait)
           and Strings("LR BOX A ALL B BACK")
           or Strings("LR BOX  A ALL  DOWN BACK")
       end
@@ -1802,19 +1608,8 @@ return function(mod, genderExports, compatibility)
   local function drawBoxPicker(screen, layout)
     if not screen.boxPicker then return end
     panelFrame(layout.box, false)
-    local rows = math.ceil(Boxes.COUNT / BOX_PICKER_COLS)
-    local innerW, innerH = layout.box.w - 4, layout.box.h - 4
-    for index = 1, Boxes.COUNT do
-      local zero = index - 1
-      local column = zero % BOX_PICKER_COLS
-      local row = math.floor(zero / BOX_PICKER_COLS)
-      local x1 = layout.box.x + 2
-        + math.floor(column * innerW / BOX_PICKER_COLS)
-      local x2 = layout.box.x + 2
-        + math.floor((column + 1) * innerW / BOX_PICKER_COLS)
-      local y1 = layout.box.y + 2 + math.floor(row * innerH / rows)
-      local y2 = layout.box.y + 2 + math.floor((row + 1) * innerH / rows)
-      local rect = { x = x1, y = y1, w = x2 - x1, h = y2 - y1 }
+    for index = layout.picker.first, layout.picker.last do
+      local rect = slotRect(layout, "picker", index)
       local chosen = index == screen.boxPickerIndex
       if chosen then
         gray(BLACK)
@@ -1833,6 +1628,8 @@ return function(mod, genderExports, compatibility)
           rect.y + rect.h - 4, math.max(2, rect.w - 6), 2)
       end
     end
+    gray(BLACK)
+    drawScrollBar(layout.picker)
   end
 
   -- PaletteFX restores full-colour regions from the finished UI canvas. Split
@@ -1881,9 +1678,11 @@ return function(mod, genderExports, compatibility)
     for index = 1, Party.MAX do
       drawSlot(self, layout, "party", party, index, trueColorRegions)
     end
-    for index = 1, Boxes.CAPACITY do
+    for index = layout.box.first, layout.box.last do
       drawSlot(self, layout, "box", box, index, trueColorRegions)
     end
+    gray(BLACK)
+    drawScrollBar(layout.box)
     drawDetails(self, layout, trueColorRegions)
     drawFooter(self, layout)
     drawBoxPicker(self, layout)
@@ -1940,7 +1739,8 @@ return function(mod, genderExports, compatibility)
         w = rect.w, h = rect.h,
       }
     end
-    for index, mon in ipairs(box) do
+    for index = layout.box.first, math.min(#box, layout.box.last) do
+      local mon = box[index]
       local rect = slotRect(layout, "box", index)
       zones[#zones + 1] = {
         colors = monPalette(self, mon), x = rect.x, y = rect.y,
@@ -1948,7 +1748,7 @@ return function(mod, genderExports, compatibility)
       }
     end
     local detailMon = self.held and self.held.mon or selected(self)
-    if detailMon then
+    if detailMon and layout.detail then
       zones[#zones + 1] = {
         colors = monPalette(self, detailMon),
         x = layout.detail.x, y = layout.detail.y,
@@ -2013,6 +1813,10 @@ return function(mod, genderExports, compatibility)
 
   function PC:modernPCLayoutInfo()
     return layoutFor(self)
+  end
+
+  function PC:modernPCDrawScrollBar(panel)
+    drawScrollBar(panel)
   end
 
   return {
