@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.28",
+  "version": "0.1.30",
   "api": 2,
   "games": [
     "gen1",
@@ -15,6 +15,7 @@
   "priority": 1200,
   "dependencies": [],
   "optional_dependencies": [
+    "gen2_expanded_boxes",
     "gender_mod",
     "dv_tracker",
     "kanto_ribbons",

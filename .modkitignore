@@ -116,3 +116,7 @@ screenshots/reports-0.1.28/item-pc.png
 screenshots/reports-0.1.28/pocket-meds.png
 screenshots/reports-0.1.28/shiny-dex.png
 screenshots/reports-0.1.28/shop-count.png
+
+tests/expanded_boxes_test.lua
+tests/expanded_boxes_driver.lua
+tests/pc_aspect_navigation_driver.lua

@@ -1,9 +1,9 @@
 # Modern UI Suite
 
 
-**0.1.28:** Fix overlapping Gen 2 item-PC pages and battle framing. Add shiny
-collection history, clearer Pocket labels and sprite settings, plus optional
-shop counts, area names and shorter low-HP alerts.
+**0.1.30 — Expanded PC storage:** Use Gen 2 Expanded Boxes 0.2.0 with 50 boxes
+of 50 Pokémon. Scroll through box contents and the box picker, with the party
+kept below the grid and expanded limits respected by transfers and group swaps.
 
 **[Browse all seven interfaces and setup examples](GALLERY.md)**
 
@@ -48,7 +48,10 @@ A separate, optional Unlimited PP gameplay setting is OFF by default.
 - **Direct Pokémon storage management** — see the party and current Box
   together, inspect a Pokémon before moving it, and pick up, place, reorder,
   or swap Pokémon in one workspace. Gen 2 now opens this grid directly too,
-  with all fourteen boxes and native held-item and Mail actions under START.
+  with all available boxes and native held-item and Mail actions under START.
+  The box stays above a six-slot party row at every aspect ratio. Narrow screens
+  use the full width; wider screens retain text details without a large portrait.
+  Left/Right at the box grid's edges changes boxes; SELECT opens the box selector.
   Party rows wrap; optional Box Exclusive movement keeps navigation within the
   current box. START Multiple Selections moves ordered groups across boxes or
   swaps a whole party, with capacity, usable-party, Egg and Mail safeguards.
@@ -194,10 +197,21 @@ ordinary out-of-battle summaries retain the actual stored values.
 
 Gen 2 **Modern PC UI** also routes ordinary wild catches to the next box with
 space when both the party and current box are full. It skips full boxes and
-wraps from Box 14 to Box 1. The destination becomes the active box before the
+wraps from the last available box to Box 1. The destination becomes the active box before the
 throw and stays selected, including if the throw fails. A free party slot still
 takes priority; completely full storage consumes neither a ball nor a turn.
 This behavior follows the PC component's switch.
+
+**Gen 2 Expanded Boxes 0.2.0** is supported in Gold, Silver and Crystal.
+Enable [the expansion](https://github.com/Debatesmith/ExpandedGen2Boxes/releases/tag/v0.2)
+alongside the suite and restart to use its 50 boxes of 50 Pokémon. Move **Down**
+past the fourth row to scroll through slots 21–50; the party stays below the
+grid. The scrollbar and slot range show your position. Down from the final row
+enters the party, and Up returns to that final box row. **SELECT → A** opens a
+scrolling box picker with all 50 boxes. Carrying, group selections, quick
+transfers, whole-party swaps and automatic catch overflow use the expanded
+limits. Keep the expansion enabled to access expanded storage; the suite does
+not raise storage limits by itself.
 
 PC **BOX ONLY** defaults to Off. START → MULTIPLE SELECTIONS marks the focused
 Pokémon; A marks others on that same side (including other boxes), and A on an
