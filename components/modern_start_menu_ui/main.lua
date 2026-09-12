@@ -8,7 +8,9 @@ return function(mod)
     { key = "theme", label = "START MENU COLOUR", type = "choice",
       default = "map", choices = {
         { "AUTO", "map" }, { "RED", "red" },
-        { "BLUE", "blue" }, { "GREEN", "dmg" },
+        { "BLUE", "blue" }, { "GREEN", "green" },
+        { "YELLOW", "yellow" }, { "GOLD", "gold" }, { "SILVER", "silver" },
+        { "CRYSTAL", "crystal" }, { "DMG", "dmg" },
       } },
     { key = "position", label = "START MENU POSITION", type = "choice",
       default = "right", choices = {
@@ -24,7 +26,23 @@ return function(mod)
   optionSchema[#optionSchema + 1] = {
     key = "area_names", label = "AREA NAMES", type = "toggle", default = false,
   }
+  optionSchema[#optionSchema + 1] = {key="pokebox",label="POKEBOX",type="toggle",default=false}
+  optionSchema[#optionSchema + 1] = {key="theme_scope",label="REMEMBER COLOUR",type="choice",
+    default="game",choices={{"PER GAME","game"},{"PER SAVE","save"}}}
   mod.options:define(optionSchema)
+  mod.hooks:wrap("ui.start_menu.items",function(next,game,items)
+    items=next(game,items) or items or {}
+    if mod.options:get("pokebox") ~= true then return items end
+    for _,item in ipairs(items) do if item.id=="pokebox" then return items end end
+    if not game.save or #game.save.party==0 then return items end
+    items[#items+1]={id="pokebox",label="POKEBOX",icon="pokebox",keepOpen=true,
+      onSelect=function()
+        local GV=require("src.core.GameVersion")
+        require("src.ui.Screens").push(game,
+          GV.generation and GV.generation()==2 and "Gen2BoxMenu" or "BoxMenu")
+      end}
+    return items
+  end)
 
   local optionRows = {}
   for _, row in ipairs(optionSchema) do optionRows[row.key] = row end

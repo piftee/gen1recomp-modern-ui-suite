@@ -24,11 +24,18 @@ return function(parent, components)
     pc = "PC",
     pokedex = "DEX",
     battle_hud = "HUD",
-    move_colors = "MOVE",
+    move_colors = "MOVE", qol="QOL", pokemoves="HM/TM", fullctl="CTRL", rumble="RUMBLE",
   }
   local MANAGER_DETAIL = {
+    battle_hud={enemy_hp_counter="ENEMY HP"},
+    qol={running_shoes="RUN SHOES",always_boosted_exp="BOOST EXP",modern_exp_share="EXP SHARE",
+      decapitalize="WORD CASE",sparkling_hidden="SPARKLES",infinite_safari="SAFARI",
+      rematch_anyone="REMATCH",pikachu_sound="PIKA CRY",force_crystal_settings="CRYSTAL"},
+    pokemoves={forgettable_hms="FORGET HM",tms_forever="REUSE TM",instant_tmhm="SHORTCUTS",
+      no_learn_hms="NO LEARN",move_relearning="RELEARN"},
+    fullctl={analog_left="LEFT STICK",analog_right="RIGHT STICK"},
     start_menu = {
-      direct_touch = "TOUCH", theme = "COLOUR", position = "POSITION", clock = "CLOCK",
+      theme_scope="REMEMBER", direct_touch = "TOUCH", theme = "COLOUR", position = "POSITION", clock = "CLOCK",
     },
     party = {
       direct_touch = "TOUCH", card_color = "CARD COLOR", animate_icons = "ANIMATION",
@@ -42,7 +49,7 @@ return function(parent, components)
       responsive = "WIDE", pattern = "BACKDROP", theme = "COLOURS",
     },
     move_colors = {
-      battle_colors = "BATTLE", layout = "LAYOUT", effect_hints = "EFFECT",
+      colored_pokeballs="BALLS",colored_pokemoves="ANIMATIONS", battle_colors = "BATTLE", layout = "LAYOUT", effect_hints = "EFFECT",
       menu_colors = "MENUS", strength = "TINT", opacity = "OPACITY",
       text_only = "TEXT ONLY",
       text_position = "TEXT ALIGN", box_color = "BOX COLOR", info_position = "INFO SIDE",
@@ -120,6 +127,18 @@ return function(parent, components)
   function Settings:get(component, key)
     component = componentFor(self, component)
     local fullKey = self:keyFor(component, key)
+    if component.key=="start_menu" and key=="theme" then
+      local game=self.activeGame
+      if self.parent.options:get("start_menu.theme_scope")=="save" then
+        local data=game and game.save and game.save.modData
+        local theme=data and data[self.parent.id] and data[self.parent.id].startTheme
+        if theme~=nil then return theme end
+      else
+        local themes=self.parent.options:get("start_menu.themes_by_game")
+        local version=game and game.save and game.save.version
+        if type(themes)=="table" and version then return themes[version] or "map" end
+      end
+    end
     local value = self.parent.options:get(fullKey)
     if value ~= nil then return value end
     if key == "__enabled" or key == component.enabledOption then
@@ -158,7 +177,19 @@ return function(parent, components)
     game = game or self.activeGame
     assert(game, "Modern UI Suite settings need the live game")
     local fullKey = self:keyFor(component, key)
+    if component.key=="start_menu" and key=="theme" and self:get(component,"theme_scope")=="save" then
+      game.save.modData=game.save.modData or {}
+      local data=game.save.modData[self.parent.id] or {};game.save.modData[self.parent.id]=data
+      data.startTheme=value
+      return true
+    end
     local saved, live = optionTables(game, self.parent.id, true)
+    if component.key=="start_menu" and key=="theme" and game.save.version then
+      local themes=copy(self.parent.options:get("start_menu.themes_by_game") or {})
+      themes[game.save.version]=value
+      if saved then saved["start_menu.themes_by_game"]=copy(themes) end
+      if live then live["start_menu.themes_by_game"]=copy(themes) end
+    end
     -- Structured preferences (currently Start Menu icon overrides) must not
     -- make the persisted save table and the live loader table aliases.
     if saved then saved[fullKey] = copy(value) end

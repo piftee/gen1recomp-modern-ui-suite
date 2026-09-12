@@ -108,10 +108,30 @@ return function(mod, settings, state, components)
           label = labelFor(source, component),
           value = function() return optionValue(component, source) end,
           step = function(activeGame, direction)
-            return stepOption(activeGame, component, source, direction)
+            local changed=stepOption(activeGame, component, source, direction)
+            settings:persist(activeGame)
+            return changed
           end,
         }
       end
+    end
+    if component.id == "unlimited_pp" then
+      for _,alias in ipairs({
+        {"modern_bag_ui","shop_counts","MODERN STORES"},
+        {"modern_start_menu_ui","area_names","AREA NAMES"},
+        {"controller_rumble","enabled","RUMBLE"},
+      }) do
+        rows[#rows+1]={id="qol.alias."..alias[2],label=alias[3],
+          value=function()return settings:get(alias[1],alias[2])==true and "ON" or "OFF" end,
+          step=function(g)
+            settings:set(g,alias[1],alias[2],not settings:get(alias[1],alias[2]))
+            settings:persist(g);return true
+          end}
+      end
+    end
+    if component.id == "full_control" then
+      rows[#rows+1]={id="fullctl.bindings",label="EDIT BINDINGS",value=function()return "OPEN" end,
+        activate=function(g)return component.exports.openBindings(g)end}
     end
     if component.id == "modern_start_menu_ui" then
       rows[#rows + 1] = {
@@ -172,7 +192,8 @@ return function(mod, settings, state, components)
         items[#items + 1] = {
           id = component.id,
           label = component.short,
-          right = settings:isEnabled(component) and "ON" or "OFF",
+          right = component.id=="unlimited_pp" and "OPEN"
+            or (settings:isEnabled(component) and "ON" or "OFF"),
           component = component,
         }
       end
@@ -226,6 +247,9 @@ return function(mod, settings, state, components)
       end
       if item and item.component and input
           and (input:wasPressed("left") or input:wasPressed("right")) then
+        if item.component.id=="unlimited_pp" then
+          openComponent(self.game,item.component);return
+        end
         settings:setEnabled(self.game, item.component,
           not settings:isEnabled(item.component))
         settings:persist(self.game)
@@ -242,6 +266,15 @@ return function(mod, settings, state, components)
   mod.hooks:wrap("ui.options.rows", function(next, game, rows)
     local out = next(game, rows)
     if type(out) ~= "table" then return out end
+    if settings:isEnabled("full_control") then
+      for _,item in ipairs(out) do
+        if item.id=="controls" then
+          item.label="FULL CONTROL"
+          item.activate=function(g)return openComponent(g,settings.byId.full_control)end
+          item.step=item.activate
+        end
+      end
+    end
     local row = {
       id = "modern_ui_suite_settings",
       label = "MODERN UI SUITE",

@@ -260,10 +260,42 @@ return function(mod)
     end
   end
 
+  local function partyColumns(width)
+    return width >= 240 and 2 or 1
+  end
+
+  -- The cartridge font has no percent tile. Use the same whole-pixel
+  -- symbol as Gen 1 instead of allowing Font to substitute a blank glyph.
+  local PERCENT_PIXELS = {
+    {0,1}, {1,1}, {5,1}, {0,2}, {1,2}, {4,2}, {3,3},
+    {2,4}, {1,5}, {0,6}, {4,5}, {5,5}, {4,6}, {5,6},
+  }
+  local function partyDetail(mon, data)
+    if data.status then return data.status, Font.width(data.status), false end
+    if option("hp_text", "bar") == "percent" and not mon.isEgg then
+      local digits = tostring(math.floor(hpFraction(mon) * 100))
+      return digits, Font.width(digits) + 6, true
+    end
+    return nil, 0, false
+  end
+  local function drawPartyDetail(text, width, percent, right, y)
+    if not text then return end
+    local x = right - width
+    drawInk(text, x, y, Font.width(text), INK_BLACK)
+    if percent then
+      setColor(INK_BLACK)
+      for _, pixel in ipairs(PERCENT_PIXELS) do
+        love.graphics.rectangle("fill", x + width - 6 + pixel[1], y + pixel[2], 1, 1)
+      end
+    end
+  end
+
   local function modernPartyPanel(self)
     local G = love.graphics
     local wasBattle = Font.useBattleExtra(true)
     local width = self.modernPartyWideWidth or 160
+    local columns = partyColumns(width)
+    local compact = columns == 1
     if touch then touch.begin(self,"window",function() return self.submenu or self.itemResult end) end
     setColor(BACKDROP)
     G.rectangle("fill", 0, 0, width, 144)
@@ -287,13 +319,13 @@ return function(mod)
 
     local slots = option("empty_slots", true) and 6 or math.max(1, #self.party)
     for i = 1, slots do
-      local col, rowIndex = (i - 1) % 2, math.floor((i - 1) / 2)
-      local x1 = math.floor(col * width / 2) + 2
-      local x2 = math.floor((col + 1) * width / 2) - 2
-      local x, y, w, h = x1, 18 + rowIndex * 31, x2 - x1, 29
+      local col, rowIndex = (i - 1) % columns, math.floor((i - 1) / columns)
+      local x1 = math.floor(col * width / columns) + 2
+      local x2 = math.floor((col + 1) * width / columns) - 2
+      local x, y, w, h = x1, 18 + rowIndex * (compact and 18 or 31), x2 - x1, compact and 18 or 29
       local mon = self.party[i]
       if touch and mon then touch.add(self,x,y,w,h,"party:"..tostring(mon),function()
-        self.index=i;self.modernPartyGridColumn=(i-1)%2
+        self.index=i;self.modernPartyGridColumn=col
         if self.storeCursor then self:storeCursor() end
       end,function() return self.index==i end,true) end
       local selected = i == self.index
@@ -305,77 +337,104 @@ return function(mod)
       else
         face = { 0.80, 0.82, 0.86 }
       end
-      setColor({ 0.10, 0.11, 0.15 })
-      chamfer("fill", x + 2, y + 2, w - 1, h - 1, 3)
-      setColor(face, mon and 0.96 or 0.80)
-      chamfer("fill", x, y, w - 2, h - 2, 3)
-      -- A dark outer edge and blue inset remain visible on pale type cards.
-      setColor(selected and { 0.04, 0.08, 0.16 } or (held and HEADER or { 0.26, 0.28, 0.34 }))
-      G.setLineWidth(selected and 2 or 1)
-      chamfer("line", x + 0.5, y + 0.5, w - 3, h - 3, 3)
-      if selected then
-        setColor({ 0.10, 0.32, 0.78 })
-        G.setLineWidth(1)
-        chamfer("line", x + 1.5, y + 1.5, w - 5, h - 5, 2)
-        setColor({ 0.04, 0.08, 0.16 })
-        G.rectangle("fill", x + 2, y + 4, 4, h - 10)
-        setColor({ 0.20, 0.55, 1 })
-        G.rectangle("fill", x + 3, y + 5, 2, h - 12)
-      elseif held then
-        setColor(HEADER)
-        G.rectangle("line", x + 2.5, y + 2.5, w - 7, h - 7)
+      if compact then
+        setColor(face)
+        G.rectangle("fill", x, y, w, h - 1)
+        setColor(selected and {0.04, 0.08, 0.16} or HEADER)
+        G.rectangle("fill", x, y, selected and 3 or 1, h - 1)
+        if selected or held then
+          setColor(selected and {0.10, 0.32, 0.78} or HEADER)
+          G.setLineWidth(1)
+          G.rectangle("line", x + .5, y + .5, w - 1, h - 2)
+        end
+      else
+        setColor({ 0.10, 0.11, 0.15 })
+        chamfer("fill", x + 2, y + 2, w - 1, h - 1, 3)
+        setColor(face, mon and 0.96 or 0.80)
+        chamfer("fill", x, y, w - 2, h - 2, 3)
+        -- A dark outer edge and blue inset remain visible on pale type cards.
+        setColor(selected and { 0.04, 0.08, 0.16 } or (held and HEADER or { 0.26, 0.28, 0.34 }))
+        G.setLineWidth(selected and 2 or 1)
+        chamfer("line", x + 0.5, y + 0.5, w - 3, h - 3, 3)
+        if selected then
+          setColor({ 0.10, 0.32, 0.78 })
+          G.setLineWidth(1)
+          chamfer("line", x + 1.5, y + 1.5, w - 5, h - 5, 2)
+          setColor({ 0.04, 0.08, 0.16 })
+          G.rectangle("fill", x + 2, y + 4, 4, h - 10)
+          setColor({ 0.20, 0.55, 1 })
+          G.rectangle("fill", x + 3, y + 5, 2, h - 12)
+        elseif held then
+          setColor(HEADER)
+          G.rectangle("line", x + 2.5, y + 2.5, w - 7, h - 7)
+        end
       end
 
       if mon then
-        local ix, iy = x + 3, y + 6 + self:iconBob(i)
+        local ix, iy = x + (compact and 5 or 3), y + (compact and 0 or 6 + self:iconBob(i))
         if not (mod.suite and mod.suite.drawMenuIcon
             and mod.suite.drawMenuIcon(self.game, self, mon, ix, iy)) then
           self:drawIcon(mon, ix, iy)
         end
         local data = PartyMenu.rowFor(mon)
-        drawInk(data.name, x + 21, y + 3, w - 25, INK_BLACK)
+        local level = data.level or ""
+        local levelW = Font.width(level)
+        local detail, detailW, percent = partyDetail(mon, data)
+        local textX = x + (compact and 24 or 21)
+        local right = x + w - 5
+        local nameW = right - textX - (compact and not self.tmhm and levelW + 4 or 0)
+        drawInk(data.name, textX, y + (compact and 1 or 3), nameW, INK_BLACK)
         if self.tmhm then
-          drawInk(self:tmhmAble(mon) or "", x + 21, y + 13, w - 25,
+          drawInk(self:tmhmAble(mon) or "", textX, y + (compact and 9 or 13), right - textX,
             INK_BLACK)
-        else
-          drawInk(data.level or "", x + 21, y + 13, 25, INK_BLACK)
-          if data.status then
-            drawInkRight(data.status, x + w - 5, y + 13, 28, INK_BLACK)
-          elseif option("hp_text", "bar") == "percent" then
-            drawInkRight(("%d%%"):format(math.floor(hpFraction(mon) * 100)),
-              x + w - 5, y + 13, 30, INK_BLACK)
+        elseif compact then
+          drawInkRight(level, right, y + 1, levelW, INK_BLACK)
+          drawPartyDetail(detail, detailW, percent, right, y + 9)
+          if not mon.isEgg then
+            local meterW = right - textX - (detail and detailW + 6 or 0)
+            drawMeter(textX, y + 10, meterW, hpFraction(mon), "hp")
+            if option("exp_strip", true) then
+              setColor({0.34, 0.70, 0.94})
+              G.rectangle("fill", textX, y + 15,
+                math.floor(meterW * expFraction(self, mon)), 1)
+            end
           end
-          drawMeter(x + 21, y + 22, w - 27, hpFraction(mon), "hp")
+        else
+          -- Measure the complete native label, including all three digits.
+          drawInk(level, textX, y + 13, levelW, INK_BLACK)
+          drawPartyDetail(detail, detailW, percent, right, y + 13)
+          drawMeter(textX, y + 22, w - 27, hpFraction(mon), "hp")
         end
-        if option("exp_strip", true) and not mon.isEgg then
+        if not compact and option("exp_strip", true) and not mon.isEgg then
           drawMeter(x + 5, y + h - 4, w - 11, expFraction(self, mon), "exp")
         end
       else
-        drawInkCentered("EMPTY", x + 10, y + 10, w - 22, INK_BLACK)
+        drawInkCentered("EMPTY", x + 10, y + (compact and 4 or 10), w - 22, INK_BLACK)
       end
     end
 
     setColor(HEADER)
-    G.rectangle("fill", 0, 112, width, 32)
+    local footerY = compact and 126 or 112
+    G.rectangle("fill", 0, footerY, width, 144 - footerY)
     setColor(HEADER_LIGHT)
-    G.rectangle("fill", 0, 112, width, 2)
+    G.rectangle("fill", 0, footerY, width, 2)
     local prompt = self.switchFrom and PartyMenu.PROMPTS.moveTo or self.prompt
     if self:isCancel() then
       setColor(MODAL_DARK)
-      chamfer("fill", 4, 116, 72, 16, 3)
-      drawInk("CANCEL", 16, 120, 54, INK_WHITE)
+      chamfer("fill", 4, footerY + (compact and 2 or 4), 72, compact and 8 or 16, 3)
+      drawInk("CANCEL", 16, footerY + (compact and 2 or 8), 54, INK_WHITE)
       setColor(INK_WHITE)
-      G.rectangle("fill", 9, 122, 3, 5)
+      G.rectangle("fill", 9, footerY + (compact and 3 or 10), 3, 5)
     else
       local hint = self.modernPartyForcedChoice and "A SEND OUT"
         or self.switchFrom and "SEL DROP B CANCEL"
         or (self.wantsSubmenu and not self.battle and not self.tmhm
-          and not self.softboiledFrom and "SEL PICK A OK B BACK")
+          and not self.softboiledFrom and (compact and "SEL SWAP  A/B" or "SEL PICK A OK B BACK"))
         or "B CANCEL"
-      drawInk(hint, 5, 119, width - 10, INK_LIGHT)
+      drawInk(hint, 5, footerY + (compact and 2 or 7), width - 10, INK_LIGHT)
     end
     drawInkRight(#self.party == 0 and PartyMenu.PROMPTS.none or prompt,
-      width - 5, 132, width - 10, INK_WHITE)
+      width - 5, compact and 136 or 132, width - 10, INK_WHITE)
     drawPartySubmenu(self)
     Font.useBattleExtra(wasBattle)
     -- Native refusals (fainted Pokémon, Eggs, already-out or trapped) and
@@ -1009,11 +1068,8 @@ return function(mod)
           end
           return
         end
-        -- Action submenus and item-result messages keep their native vertical
-        -- controls. modernPartyPanel draws two columns even on the native
-        -- 160px surface and the 192px (4:3) surface, so its roster must always
-        -- accept all four directions,
-        -- including Switch and Softboiled's second-Pokémon pickers.
+        -- Match navigation to the rendered roster, including Switch and
+        -- Softboiled. Child actions and messages retain native input ownership.
         if input and input.wasPressed
             and not self.submenu and not self.itemResult then
           local direction
@@ -1023,8 +1079,17 @@ return function(mod)
           if direction then
             local count = #(self.party or {})
             local noCancel = self.switchFrom or self.softboiledFrom or self.modernPartyForcedChoice
-            local nextIndex, nextColumn = partyGridIndex(self.index, count,
-              direction, not noCancel, self.modernPartyGridColumn)
+            local width = self.modernPartyWideWidth or self.modernPartyLastWideWidth or 160
+            local nextIndex, nextColumn
+            if partyColumns(width) == 1 then
+              local rows = math.max(1, count + (noCancel and 0 or 1))
+              nextIndex, nextColumn = self.index, 0
+              if direction == "up" then nextIndex = (self.index - 2) % rows + 1
+              elseif direction == "down" then nextIndex = self.index % rows + 1 end
+            else
+              nextIndex, nextColumn = partyGridIndex(self.index, count,
+                direction, not noCancel, self.modernPartyGridColumn)
+            end
             self.index = nextIndex or self.index
             self.modernPartyGridColumn = nextColumn
             if self.index <= count then

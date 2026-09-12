@@ -2,6 +2,7 @@
 return function(game)
   local U=dofile(assert(os.getenv("PC_REPO")).."/tests/drivers/util.lua")
   local S=require("src.ui.Screens")
+  local R=require("src.mods.Runtime")
   local gen2=require("src.core.GameVersion").generation()==2
   local Mon=require(gen2 and "src.battle.gen2.Mon" or "src.pokemon.Pokemon")
   local Boxes=require(gen2 and "src.core.gen2.Boxes" or "src.pokemon.Boxes")
@@ -77,12 +78,14 @@ return function(game)
     check(not love.window.hasFocus() and love.audio.getVolume()==0,"muted and unfocused")
     print("[PC ASPECT] "..case[1].." "..l.width.."x"..l.height.." passed")
   end
+  opts["fullctl.enabled"]=true
+  R.emit("mod.options_changed",{mod="modern_ui_suite",key="fullctl.enabled"})
   pc.region,pc.boxIndex,pc.boxSwitching,pc.boxPicker="box",1,true,false
   local box=game.save.currentBox
   game:keypressed("right");U.wait(1);game:keyreleased("right");U.wait(1)
-  check(game.save.currentBox==box%count+1,"physical arrow route changes box")
+  check(game.save.currentBox==box%count+1,"physical arrow route changes box with Full Control")
   box=game.save.currentBox
   game:gamepadpressed(nil,"dpleft");U.wait(1);game:gamepadreleased(nil,"dpleft");U.wait(1)
-  check(game.save.currentBox==(box-2)%count+1,"controller D-pad route changes box")
+  check(game.save.currentBox==(box-2)%count+1,"controller D-pad route changes box with Full Control")
   print("[DISCORD QA] PASS "..checks.." PC aspect/navigation checks");love.event.quit(0)
 end

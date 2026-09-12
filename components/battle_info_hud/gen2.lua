@@ -347,6 +347,7 @@ return function(mod)
     return mod.options:get("enabled") ~= false
   end
 
+  local MeterText=mod:load("meters.lua")()
   mod.hooks:wrap("battle.overlay", function(next, screen)
     local result = next(screen)
     if not enabled() or type(screen) ~= "table" then return result end
@@ -361,6 +362,20 @@ return function(mod)
     local player = screen:activeMon("player")
     local enemyStatus = enemy and screen:statusTag(enemy, "enemy")
     local playerStatus = player and screen:statusTag(player, "player")
+    if mod.options:get("enemy_hp_counter")==true and enemy and screen.showEnemyHud
+        and (not screen.hudCleared or not screen:hudCleared("enemy")) then
+      local M=MeterText
+      local hp=screen:hudHp(enemy,"enemy")
+      local maximum=enemy.maxHp or (enemy.stats and enemy.stats.hp) or 1
+      local offset=screen.modernBattleSceneOffset or 0
+      local G=love.graphics
+      -- Native Gen 2 has a three-pixel bar: replace that row with the
+      -- suite's seven-pixel meter so the five-pixel digits stay inside it.
+      G.setColor(1,1,1,1)
+      G.rectangle("fill",offset+16,16,72,8)
+      M.draw(screen.game.data,{mon={hp=hp,stats={hp=maximum}},shownHP=hp},
+        "HP",offset+32,17,48,true,nil,false)
+    end
     local wasBattle = Font.useBattleExtra(true)
 
     -- The native status tags occupy the level cells. These two free cells are

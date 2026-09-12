@@ -42,7 +42,16 @@ return function(mod)
         { "ORIGINAL", "original" }, { "LEFT", "left" }, { "RIGHT", "right" },
       } },
   }
+  local version=require("src.core.GameVersion")
+  if not version.generation or version.generation()==1 then
+    optionSchema[#optionSchema+1]={key="colored_pokeballs",label="COLORED BALLS",type="toggle",default=false}
+    optionSchema[#optionSchema+1]={key="colored_pokemoves",label="COLORED MOVES",type="toggle",default=false}
+  end
   mod.options:define(optionSchema)
+  if not version.generation or version.generation()==1 then
+    mod:load("colored_pokeballs.lua")(mod)
+    mod:load("colored_pokemoves.lua")(mod)
+  end
 
   local mainLabels = {
     battle_colors = "MOVE BATTLE",
