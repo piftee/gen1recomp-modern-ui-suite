@@ -1,7 +1,7 @@
 {
   "id": "modern_ui_suite",
   "name": "Modern UI Suite",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "api": 2,
   "games": [
     "gen1",
@@ -56,6 +56,6 @@
     "engine_internals"
   ],
   "experimental": false,
-  "description": "Seven modern interfaces and a separate default-off Unlimited PP QoL option in one modular package.",
+  "description": "Seven modern interfaces with optional Highlander gameplay, PokeMoves, controller rumble and full input remapping.",
   "github": "piftee/gen1recomp-modern-ui-suite"
 }

@@ -11,6 +11,9 @@ return function(mod)
   local makeSettings = loadLocal("core/settings.lua")
   local makeScope = loadLocal("core/scope.lua")
   local makeHub = loadLocal("core/hub.lua")
+  local makeHighlander = loadLocal("core/highlander_qol.lua")
+  local makeRematches = loadLocal("core/highlander_rematches.lua")
+  local makeCrystal = loadLocal("core/highlander_crystal.lua")
   local settings = makeSettings(mod, components)
   local state = {
     componentApis = {},
@@ -127,6 +130,9 @@ return function(mod)
   end, 1000)
 
   state.comfort = loadLocal("core/comfort.lua")(mod, settings)
+  state.highlander = makeHighlander(mod, settings)
+  state.rematches = makeRematches(mod, state.highlander)
+  state.crystalIntegration = makeCrystal(mod, state.highlander)
   mod.options:define(settings:aggregateSchema())
   local hub = makeHub(mod, settings, state, components)
 
@@ -138,6 +144,9 @@ return function(mod)
       exports = component.exports,
     }
   end
+  mod.exports.highlander = state.highlander
+  mod.exports.rematches = state.rematches
+  mod.exports.crystalIntegration = state.crystalIntegration
   mod.exports.components = public
   mod.exports.isEnabled = function(id)
     local component = settings.byId[id]

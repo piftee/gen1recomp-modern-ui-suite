@@ -40,15 +40,38 @@ return function(mod, icons)
       { 224, 248, 208 }, { 136, 192, 112 },
       { 52, 104, 86 }, { 8, 24, 32 },
     },
+    green = {
+      { 232, 255, 232 }, { 96, 212, 112 },
+      { 32, 132, 56 }, { 16, 36, 16 },
+    },
+    yellow = {
+      { 255, 252, 210 }, { 255, 214, 56 },
+      { 196, 140, 16 }, { 48, 32, 8 },
+    },
+    gold = {
+      { 255, 244, 214 }, { 232, 176, 64 },
+      { 156, 100, 24 }, { 40, 24, 8 },
+    },
+    silver = {
+      { 236, 244, 248 }, { 168, 184, 200 },
+      { 88, 104, 128 }, { 20, 24, 32 },
+    },
+    crystal = {
+      { 232, 252, 255 }, { 96, 216, 232 },
+      { 32, 120, 168 }, { 8, 24, 48 },
+    },
   }
-  local VALID_THEMES = { map = true, red = true, blue = true, dmg = true }
+  local VALID_THEMES = {
+    red = true, blue = true, dmg = true,
+    green = true, yellow = true, gold = true, silver = true, crystal = true,
+  }
   local POSITION_RATIOS = {
     left = 0, mid_left = 0.25, center = 0.5,
     mid_right = 0.75, right = 1,
   }
   local VALID_CLOCKS = { play = true, device = true }
   local BUILTIN_IDS = {
-    pokedex = true, party = true, bag = true, trainer = true, save = true,
+    pokebox = true, pokedex = true, party = true, bag = true, trainer = true, save = true,
     options = true, link = true, mods = true, quit = true,
     pokemon = true, pack = true, pokegear = true, status = true,
     option = true,
@@ -58,6 +81,7 @@ return function(mod, icons)
     status = "trainer", option = "options",
   }
   local LABEL_IDS = {
+    POKEBOX = "pokebox",
     POKEDEX = "pokedex", DEX = "pokedex",
     POKEMON = "party", PARTY = "party", PKMN = "party",
     ITEM = "bag", ITEMS = "bag", ITENS = "bag", BAG = "bag", PACK = "bag",
@@ -85,7 +109,7 @@ return function(mod, icons)
     end
   end
   local LEGACY_SHORT_LABELS = {
-    pokedex = "DEX", party = "PKMN", bag = "BAG", trainer = "ID",
+    pokebox = "BOX", pokedex = "DEX", party = "PKMN", bag = "BAG", trainer = "ID",
     save = "SAVE", options = "OPT", pokegear = "GEAR", link = "LINK",
     mods = "MODS",
     quit = "QUIT",
@@ -296,6 +320,16 @@ return function(mod, icons)
   end
 
   local function drawIcon(id, x, y, label)
+    if id=="pokebox" then
+      fill(x+1,y+2,12,12,WHITE);fill(x+2,y+3,10,10,INK)
+      fill(x+3,y+4,8,3,LIGHT);fill(x+3,y+8,8,4,DARK)
+      fill(x+7,y+7,9,9,WHITE)
+      fill(x+9,y+8,3,7,INK);fill(x+8,y+9,5,5,INK);fill(x+7,y+10,7,3,INK)
+      fill(x+9,y+9,3,2,LIGHT);fill(x+8,y+10,5,1,LIGHT)
+      fill(x+8,y+12,5,1,WHITE);fill(x+9,y+13,3,1,WHITE)
+      fill(x+9,y+10,3,3,INK);fill(x+10,y+11,1,1,WHITE)
+      return
+    end
     local loaded = loadIconAtlas()
     local quad = loaded and (iconQuads[id] or iconQuads.generic) or nil
     if quad then

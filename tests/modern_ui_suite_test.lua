@@ -54,7 +54,7 @@ T.eq(exports.isEnabled("not_a_component"), false,
   "unknown component ids are rejected by the public toggle query")
 
 local schema = run.loader.optionSchemas.modern_ui_suite or {}
-T.eq(#schema, 49,
+T.eq(#schema, 74,
   "UI, QoL, shared sprite source and component preferences share one schema")
 local schemaByKey = {}
 for _, row in ipairs(schema) do
@@ -80,7 +80,9 @@ T.eq(schemaByKey["start_menu.theme"].label, "START COLOUR",
   "the Start palette setting uses a plain player-facing name")
 T.same(schemaByKey["start_menu.theme"].choices, {
   { "AUTO", "map" }, { "RED", "red" },
-  { "BLUE", "blue" }, { "GREEN", "dmg" },
+  { "BLUE", "blue" }, { "GREEN", "green" },
+  { "YELLOW", "yellow" }, { "GOLD", "gold" }, { "SILVER", "silver" },
+  { "CRYSTAL", "crystal" }, { "DMG", "dmg" },
 }, "clear palette labels preserve every legacy saved value")
 T.eq(run.loader.optionSchemas.modern_party_ui, nil,
   "embedded components do not leak standalone option schemas")
@@ -166,7 +168,7 @@ optionRows[2].activate(game)
 local hub = stack:top()
 T.eq(hub and hub.screenId, "modern_ui_suite:settings",
   "the consolidated row opens the unified settings hub")
-T.eq(hub and #hub.items, 13,
+T.eq(hub and #hub.items, 16,
   "the hub contains components, portrait settings/help and Back")
 T.eq(hub.items[1].id, "enable_all", "Enable All is the first bulk action")
 T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
@@ -178,46 +180,47 @@ T.eq(hub.items[2].id, "disable_all", "Disable All UI is the second bulk action")
 -- the reverse/wrap path for that same individual option.
 local visitedRows = {}
 local expectedPageRows = {
-  modern_start_menu_ui = 8, -- enabled + choices + touch + icon picker + order
+  modern_start_menu_ui = 10, -- enabled + choices + touch + icon picker + order
   modern_party_ui = 13,
   modern_bag_ui = 8,
   modern_pc_ui = 3,
   modern_pokedex_ui = 5,
-  battle_info_hud = 2,
-  typed_move_colors = 11,
-  unlimited_pp = 1,
+  battle_info_hud = 3,
+  typed_move_colors = 13,
+  unlimited_pp = 13,
+  pokemoves=6, controller_rumble=2, full_control=4,
 }
 local function pressPage(page, button)
   input.pressed[button] = true
   page:update(0)
   input.pressed[button] = nil
 end
-hub.index = 11
-T.eq(hub.items[11].id, "menu_sprite_source", "shared sprite setting is in the hub")
+hub.index = 14
+T.eq(hub.items[14].id, "menu_sprite_source", "shared sprite setting is in the hub")
 T.same(schemaByKey.menu_sprite_source.choices, {
   { "BATTLE ART", "battle_art" }, { "CRYSTAL", "crystal" }, { "DEFAULT", "default" },
 }, "sprite schema advertises only the three supported choices")
-T.eq(hub.items[11].right, "BATTLE ART", "menus follow Battle Art by default")
+T.eq(hub.items[14].right, "BATTLE ART", "menus follow Battle Art by default")
 for _, choice in ipairs({ { "CRYSTAL", "crystal" },
     { "DEFAULT", "default" }, { "BATTLE ART", "battle_art" } }) do
   local before = writes
   pressPage(hub, "right")
-  T.eq(hub.items[11].right, choice[1], "source name updates live")
+  T.eq(hub.items[14].right, choice[1], "source name updates live")
   T.eq(run.loader.modOptions.modern_ui_suite.menu_sprite_source, choice[2], "source updates live bucket")
   T.eq(game.save.options.modOptions.modern_ui_suite.menu_sprite_source, choice[2], "source updates save bucket")
   T.check(writes > before, "source is persisted")
 end
 pressPage(hub, "left")
-T.eq(hub.items[11].right, "DEFAULT", "left cycles sources backwards")
-hub.onChoose(hub.items[11], hub)
-T.eq(hub.items[11].right, "BATTLE ART", "A cycles sources forward")
+T.eq(hub.items[14].right, "DEFAULT", "left cycles sources backwards")
+hub.onChoose(hub.items[14], hub)
+T.eq(hub.items[14].right, "BATTLE ART", "A cycles sources forward")
 visitedRows.menu_sprite_source = true
-T.eq(hub.items[12].id, "sprite_help", "sprite help replaces the duplicate icon shortcut")
+T.eq(hub.items[15].id, "sprite_help", "sprite help replaces the duplicate icon shortcut")
 for _, item in ipairs(hub.items) do
   T.check(item.id ~= "party.sprite_source", "icon choice has one home in Party options")
 end
 
-for hubIndex = 3, 10 do
+for hubIndex = 3, 13 do
   local item = hub.items[hubIndex]
   hub.onChoose(item, hub)
   local page = stack:top()
@@ -274,6 +277,11 @@ for hubIndex = 3, 10 do
       row.activate(game)
       T.check(stack:top() ~= page, row.id .. " opens its editor")
       stack:pop()
+    elseif row.id:match("^qol.alias%.") then
+      local before=row.value(game);row.step(game);T.check(row.value(game)~=before,"shared comfort option changes")
+      row.step(game);T.eq(row.value(game),before,"shared comfort option restores")
+    elseif row.id=="fullctl.bindings" then
+      row.activate(game);T.check(stack:top()~=page,"native binding editor opens");stack:pop()
     else
       T.check(false, "unexpected suite settings row: " .. tostring(row.id))
     end
@@ -323,7 +331,7 @@ hub.onChoose(hub.items[2], hub)
 T.eq(exports.isEnabled("unlimited_pp"), false, "Disable All UI preserves default-off QoL")
 hub.onChoose(hub.items[10], hub)
 local qolPage = stack:top()
-T.eq(#qolPage.rows, 1, "QoL has a single toggle, not a master and detail pair")
+T.eq(#qolPage.rows, 13, "QoL exposes independent gameplay and comfort options")
 T.eq(qolPage.rows[1].label, "UNLIMITED PP", "QoL toggle names the actual feature")
 qolPage.rows[1].step(game)
 T.eq(exports.isEnabled("unlimited_pp"), true, "Unlimited PP works with all UI components OFF")
@@ -1312,7 +1320,8 @@ local battleArtId = "BATTLE_ART_VOXEL_FORK"
 local stageStateOverride
 local hudEnabled = true
 local gen2Mod = {
-  options = { get = function() return hudEnabled end },
+  options = { get = function(_,key) return key=="enabled" and hudEnabled or false end },
+  load = function(_,file) return assert(loadfile("mods/modern_ui_suite/components/battle_info_hud/"..file))() end,
   hooks = { wrap = function(_, name, callback)
     gen2Hooks[name] = callback
   end },

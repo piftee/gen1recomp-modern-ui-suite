@@ -85,15 +85,15 @@ press("up")
 eq(menu.index, 4, "wide UP stays in the right card column")
 eq(menu.clock, 6, "the native controller receives every input update")
 
-for _, width in ipairs({160, 192, 195, 196, 256, 320}) do
+for _, width in ipairs({160, 192, 239, 240, 256, 320}) do
   menu.modernPartyLastWideWidth = width
   menu.index = 1
   press("right")
-  eq(menu.index, 2, "RIGHT reaches the drawn second column at width " .. width)
+  eq(menu.index, width < 240 and 1 or 2, "RIGHT matches the columns at width " .. width)
   press("down")
-  eq(menu.index, 4, "DOWN follows the drawn right column at width " .. width)
+  eq(menu.index, width < 240 and 2 or 4, "DOWN follows the visible row at width " .. width)
   press("left")
-  eq(menu.index, 3, "LEFT returns to the drawn left column at width " .. width)
+  eq(menu.index, width < 240 and 2 or 3, "LEFT matches the columns at width " .. width)
 end
 
 menu.itemResult = {text="That Pokémon has fainted!"}

@@ -117,6 +117,15 @@ screenshots/reports-0.1.28/pocket-meds.png
 screenshots/reports-0.1.28/shiny-dex.png
 screenshots/reports-0.1.28/shop-count.png
 
+tests/gen2_party_levels_driver.lua
+
+# Highlander verification stays in the repository.
+tests/highlander_test.lua
+tests/highlander_driver.lua
+tests/highlander_mechanics_driver.lua
+tests/highlander_integration_driver.lua
+tests/highlander_field_driver.lua
+tests/pc_aspect_navigation_driver.lua
+tests/party_exp_summary_driver.lua
 tests/expanded_boxes_test.lua
 tests/expanded_boxes_driver.lua
-tests/pc_aspect_navigation_driver.lua

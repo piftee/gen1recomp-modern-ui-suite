@@ -45,8 +45,8 @@ return function(game)
  opts['party.aspect_ratio']='4:3';clear()
  local party=Screens.push(game,gen2 and 'Gen2PartyMenu' or 'PartyMenu',gen2 and {submenu=true} or {})
  shot('party-4x3')
- party.index=1;press(party,'right');check(party.index==2,'right reaches second card at 4:3')
- press(party,'down');check(party.index==4,'down follows visible two-column grid')
+ party.index=1;press(party,'right');check(party.index==(gen2 and 1 or 2),'right matches the visible columns at 4:3')
+ press(party,'down');check(party.index==(gen2 and 2 or 4),'down follows the visible row')
  local function point(x,y,width)
   if not gen2 then local r=game.renderer:frameRects();return r.uox+x*r.Ux,r.uoy+y*r.Uy end
   local ww,wh=G.getDimensions();local scale=math.min(ww/width,wh/144)
@@ -58,8 +58,8 @@ return function(game)
   game:pointerEvent('released','touch','feedback',x,y,0,0,1)
  end
  party.index=1
- tap(144,32,192);check(party.index==2 and not party.submenu,'first direct touch selects party card')
- tap(144,32,192);check(party.submenu~=nil,'second direct touch opens native actions')
+ tap(gen2 and 40 or 144,gen2 and 44 or 32,192);check(party.index==2 and not party.submenu,'first direct touch selects party card')
+ tap(gen2 and 40 or 144,gen2 and 44 or 32,192);check(party.submenu~=nil,'second direct touch opens native actions')
  local old=party.index;tap(40,32,192);check(party.index==old,'submenu prevents underlying card activation')
  party.submenu=nil
  shot('party-portrait',480,900)

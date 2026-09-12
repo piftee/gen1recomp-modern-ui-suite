@@ -1,13 +1,52 @@
 # Changelog
 
+## [0.1.31] - 2026-09-12
+
+- Publish the complete Highlander QoL integration from the local 0.1.29/0.1.30
+  previews: running, boosted EXP, modern sharing, hidden-item markers, rematches,
+  PokeMoves, Pokebox, cartridge colours, Full Control and optional rumble.
+  These features were omitted from the PC-only 0.1.30 GitHub package.
+- Consolidate Modern EXP Share's nonparticipant awards into one message:
+  "The rest of your party got 300 EXP!" Keep fighters' named announcements,
+  then show native level-ups, stats and move-learning prompts after the summary.
+  Preserve individual EXP calculations, including bonuses, and show an amount
+  range when party members receive different awards.
+- Improve compact Gen 2 party readability and level 100 labels.
+- Describe every QoL feature, its opt-in controls and generation differences.
+  Retain all 0.1.30 expanded-box fixes and native storage safeguards.
+
 ## [0.1.30] - 2026-09-12
 
 - Support Gen 2 Expanded Boxes 0.2.0: scroll through 50 slots per box and all
   50 boxes without drawing over the party. Show a scrollbar and visible slot
   range, and use the companion's live capacity for group transfers and swaps.
 - Keep the PC box above a single six-slot party row at every aspect ratio.
-  Use a full-width grid on narrow screens and text details on wider screens,
-  with grid-edge and SELECT box switching.
+  Remove the large detail sprite, use a full-width grid on narrow screens,
+  and restore Left/Right box switching at grid edges. Retain the optional
+  Box Exclusive behavior and SELECT box selector.
+
+## [0.1.29] - 2026-09-12 (local preview; first published in 0.1.31)
+
+- Integrate Waifu4Life's Project Highlander into the current modular suite.
+  Add 2x running (hold/toggle B), boosted EXP, full/half modern EXP sharing,
+  display-only word casing, hidden-item sparkles and optional trainer/gym rematches.
+  Scale rematches to the weakest party member, recomputing species, moves and
+  stats without repeating first-victory story rewards. Keep native link EXP rules.
+- Add PokeMoves: optional HM forgetting in field and battle, reusable TMs,
+  contextual A/SELECT field shortcuts, badge/owned-HM/compatibility-based field
+  use without teaching, and relearning eligible moves from previous evolutions.
+- Add Full Control with the native binding editor, independent left/right
+  sticks, freely assignable Start/Back and removal of fixed controller display
+  chords while enabled. Add timed controller rumble with an intensity control.
+- Add START Pokebox storage access, Green/Gold/Silver/Crystal palettes and
+  per-game or per-save colour storage. Add enemy HP counters to both generations.
+  Add Gen 1 coloured ball/move animations, unlimited Safari steps and Yellow's
+  optional standard Pikachu cry. Gen 2 keeps native animation colours.
+- Add Red/Leaf and Gold/Kris new-game choice when Crystal Animated Sprites is
+  enabled. Force only the required provider settings after a choice; restore
+  previous choices when Force Crystal is disabled. Retain Crystal's native intro.
+- Keep earlier shop-count, area-name and low-HP alert options, with convenient
+  QoL aliases. Preserve existing suite settings and keep new gameplay toggles off.
 
 ## [0.1.28] - 2026-09-11
 

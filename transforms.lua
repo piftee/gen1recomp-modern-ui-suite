@@ -2,6 +2,8 @@
 -- No ROM pixels are included in the package; trainer rows keep their sheet.
 return function(ctx)
   if not ctx.exists("battle/balls.png") then return end
+  -- Keep the optional ball-row palette source in the suite's derived cache.
+  ctx.writeImage(ctx.readImage("battle/balls.png"), "battle/highlander_balls.png")
   local marker = ctx.blank(8, 8)
   ctx.blit(marker, ctx.readImage("battle/balls.png"), 0, 0, 0, 0, 8, 8)
   ctx.writeImage(marker, "battle/caught_ball_mono.png")

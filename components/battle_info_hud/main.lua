@@ -18,6 +18,7 @@ return function(mod)
       choices = { { "FILL", "fill" }, { "16:9", "16:9" }, { "4:3", "4:3" } },
     }
   end
+  optionSchema[#optionSchema+1]={key="enemy_hp_counter",label="ENEMY HP COUNTER",type="toggle",default=false}
   mod.options:define(optionSchema)
 
   local function setOption(game, value)

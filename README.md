@@ -1,9 +1,10 @@
 # Modern UI Suite
 
 
-**0.1.30 — Expanded PC storage:** Use Gen 2 Expanded Boxes 0.2.0 with 50 boxes
-of 50 Pokémon. Scroll through box contents and the box picker, with the party
-kept below the grid and expanded limits respected by transfers and group swaps.
+**0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
+party summary, reusable TMs, field-HM options, move relearning, rematches, Pokebox,
+controller settings and rumble are now included alongside expanded PC storage.
+See the [Highlander feature guide](HIGHLANDER.md) for options and defaults.
 
 **[Browse all seven interfaces and setup examples](GALLERY.md)**
 
@@ -19,7 +20,8 @@ The layouts respond to the space available instead of simply stretching the
 Game Boy screen. They can stay compact at the original 160×144 aspect ratio,
 spread out across a desktop window, or reorganize for a tall phone-shaped
 view. The seven interface components keep native battle and progression rules.
-A separate, optional Unlimited PP gameplay setting is OFF by default.
+Highlander gameplay features are separate options and default OFF. Unlimited PP
+retains its own switch. Enabling all UI components does not enable gameplay cheats.
 
 **[Download the latest installable release](https://github.com/piftee/gen1recomp-modern-ui-suite/releases/latest)**
 
@@ -58,7 +60,7 @@ A separate, optional Unlimited PP gameplay setting is OFF by default.
 - **A Pokédex built for browsing** — caught and seen progress, filters, artwork,
   and dedicated information, stats, evolution-family, and move views make the
   Pokédex feel like a research tool rather than a long list.
-  Native Gen 2 PC/Pokédex portraits use exact-image guarded background cutouts
+  Native Gen 2 Pokédex portraits use exact-image guarded background cutouts
   that preserve white markings and skip different replacement artwork.
 - **More informative battles** — colored HP and EXP bars with compact white
   readouts inside them in Gen 1. Status, level, gender, and caught indicators
@@ -140,8 +142,8 @@ The existing Party/Pokédex **WIDESCREEN OFF** setting and the game's **Faithful
 Ratio** keep their native-size behavior. On Gen 1, a party picker opened from
 the Bag inherits the Bag's surface to avoid a size jump during item use.
 
-**SPRITE** selects the artwork used by the Pokédex, Pokémon stat screen and
-large PC detail portrait. It never replaces the small icons. Use Left/Right
+**SPRITE** selects the artwork used by the Pokédex and Pokémon stat screen.
+It never replaces the small icons. Use Left/Right
 or A to cycle the saved portrait choice:
 
 | Choice | Menu artwork |
@@ -184,7 +186,7 @@ items. Cartridge `.sav` export still has the original cartridge limits.
 
 All seven UI components are enabled by default. **Disable All UI** preserves each
 component's detailed preferences so they return unchanged when re-enabled.
-Both bulk UI actions leave the independent **QOL** setting unchanged.
+Both bulk UI actions leave QoL, PokeMoves, Rumble and Full Control unchanged.
 
 **QOL → UNLIMITED PP** is a single On/Off toggle, OFF on a fresh install.
 When On, eligible player moves can be selected and used even at zero PP,
@@ -332,7 +334,7 @@ luajit mods/modern_ui_suite/tests/gen2_party_navigation_test.lua
 python3 tools/modkit.py validate mods/modern_ui_suite --base auto
 python3 tools/modkit.py lint mods/modern_ui_suite
 python3 tools/modkit.py pack mods/modern_ui_suite \
-  -o build/modern_ui_suite-0.1.28.zip
+  -o build/modern_ui_suite-0.1.30.zip
 ```
 
 The live settings sweep opens every component page, drives the persisted

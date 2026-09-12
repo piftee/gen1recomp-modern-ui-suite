@@ -72,7 +72,7 @@ return {
     short = "MOVE COLORS",
     version = "0.5.2",
     installOrder = 4,
-    files = { "main.lua", "ui.lua", "gen2.lua" },
+    files = { "main.lua", "ui.lua", "gen2.lua", "colored_pokeballs.lua", "colored_pokemoves.lua" },
   },
   {
     id = "unlimited_pp",
@@ -87,5 +87,20 @@ return {
     enabledLabel = "UNLIMITED PP",
     managerEnabledLabel = "QOL UNLIMITED PP",
     files = { "main.lua" },
+  },
+  {
+    id="pokemoves", key="pokemoves", name="PokeMoves", short="POKEMOVES",
+    version="0.1.0", installOrder=9, bulkUI=false,
+    files={"main.lua","gen2.lua"},
+  },
+  {
+    id="controller_rumble", key="rumble", name="Controller Rumble", short="RUMBLE",
+    version="0.1.0", installOrder=10, bulkUI=false, enabledOption="enabled",
+    defaultEnabled=false, files={"main.lua"},
+  },
+  {
+    id="full_control", key="fullctl", name="Full Control", short="FULL CONTROL",
+    version="0.1.0", installOrder=11, bulkUI=false, enabledOption="enabled",
+    defaultEnabled=false, files={"main.lua"},
   },
 }

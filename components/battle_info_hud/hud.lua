@@ -113,7 +113,7 @@ return function(mod)
   end
 
   local function drawEnemyMeter(battle, ink, markColor, dx, dy)
-    Meters.draw(battle.data, battle.enemy, "HP", 32 + (dx or 0), 17 + (dy or 0), 48, false, ink, markColor)
+    Meters.draw(battle.data, battle.enemy, "HP", 32 + (dx or 0), 17 + (dy or 0), 48, mod.options:get("enemy_hp_counter") == true, ink, markColor)
   end
 
   local function hudVisible(battle)
@@ -342,7 +342,7 @@ return function(mod)
       Font.draw(enemyName, 8, 8)
       drawLevel(battler, 88, 8)
       drawStatusAfterLevel(battle, battler, 96, 8, 144)
-      Meters.draw(battle.data, battle.enemy, "HP", 24, 17, 104, false)
+      Meters.draw(battle.data, battle.enemy, "HP", 24, 17, 104, mod.options:get("enemy_hp_counter") == true)
       if isCaught(battle, battle.enemy) then
         local x = caughtBallX(enemyName, 8)
         local drawn, color = drawCaughtBall(x, 8)
