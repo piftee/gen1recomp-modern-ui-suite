@@ -58,6 +58,25 @@ T.eq(resolver(game,mon,true,'dex'),nil,'retired HGSS selection keeps fallback')
 T.eq(calls,count,'excluded cases never query the provider')
 source = 'default'
 T.eq(resolver(game,mon,true,'dex'),first,'Default honours the native Dex provider')
+source = 'battle_art'
+options.dex_sprites = false
+T.eq(resolver(game,mon,true,'summary'),first,'summary works with Dex sprites off')
+T.eq(received.kind,'summary','summary context is explicit')
+T.eq(received.mon.shiny,true,'summary preserves shiny variant')
+T.eq(received.mon.gender,'female','summary preserves female variant')
+T.check(received.mon ~= mon,'provider receives a presentation copy')
+received.mon.__providerDebug = true
+T.eq(mon.__providerDebug,nil,'provider diagnostic writes cannot mutate saved mon')
+options.summary_sprites = false
+T.eq(resolver(game,mon,true,'summary'),nil,'summary sprites off keeps native art')
+options.summary_sprites = nil
+provider.exports.drawSummaryFrame = function() end
+T.eq(resolver(game,mon,true,'summary'),nil,'new G9 uses its shadow-free summary painter')
+provider.exports.drawSummaryFrame = nil
+result = false
+image,pending = resolver(game,mon,true,'summary')
+T.eq(image,nil,'pending summary has no image');T.eq(pending,true,'pending summary suppresses placeholder')
+options.dex_sprites = nil
 hook = function() error('provider unavailable') end
 T.eq(resolver(game,mon,true,'dex'),nil,'provider failure cannot crash the Dex')
 T.finish('suite_national_dex_portraits')

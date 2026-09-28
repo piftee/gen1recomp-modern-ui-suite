@@ -353,7 +353,7 @@ return function(mod)
     if not d then return end
     card(d.x, d.y, d.w, d.h, INK)
     local mon = screen.held and screen.held.mon or screen:modernPCSelected()
-    if not mon then return text("EMPTY SLOT", d.x + 5, d.y + 10, d.w - 10, LIGHT) end
+    if not mon then return text(Strings("EMPTY SLOT"), d.x + 5, d.y + 10, d.w - 10, LIGHT) end
     local item = mon.item and screen.game.data.items[mon.item]
     local itemName = (item and item.name) or mon.item or "NO ITEM"
     local x, y, width = d.x + 4, d.y + 8, d.w - 8
@@ -387,7 +387,7 @@ return function(mod)
       text(mon and name(mon) or "STORAGE", 4, 4, bx - 8, WHITE)
     else
       if layout.detail and not layout.portrait then
-        text("STORAGE", 4, 4, layout.detail.w, WHITE)
+        text(Strings("STORAGE"), 4, 4, layout.detail.w, WHITE)
       end
       boxLabel = ("%s %d/%d"):format(boxLabel, #box, Boxes.MONS_PER_BOX)
     end

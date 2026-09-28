@@ -46,6 +46,7 @@ return function(parent, settings, state, component)
       add = state.touch.add,
     },
     battlePortrait = state.battlePortrait,
+    summaryPortrait = state.summaryPortrait,
     summaryExtensions = state.summaryExtensions,
     shinyDex = state.shinyDex,
     drawMenuIcon = state.drawMenuIcon,

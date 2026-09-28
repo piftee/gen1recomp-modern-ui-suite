@@ -21,6 +21,7 @@ return function(mod)
     screenTouches = {},
     bootErrors = {},
     battlePortrait = loadLocal("core/battle_portraits.lua")(mod),
+    summaryPortrait = loadLocal("core/summary_portraits.lua")(mod),
     drawMenuIcon = loadLocal("core/menu_icons.lua")(mod),
     uiSurfaces = loadLocal("core/ui_surfaces.lua")(mod, settings),
     touch = loadLocal("core/touch.lua")(mod),

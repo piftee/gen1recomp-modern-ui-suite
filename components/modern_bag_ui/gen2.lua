@@ -6,6 +6,7 @@ return function(mod, shared)
   local Bag = require("src.inventory.Bag")
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+  local Strings = require("src.core.Strings")
   local PackMenu = require("src.ui.gen2.PackMenu")
   local ItemPcMenu = require("src.ui.gen2.ItemPcMenu")
 
@@ -623,14 +624,14 @@ return function(mod, shared)
       setColor(BLUE_DARK)
       G.setLineWidth(2)
       chamfer("line", x + 1, y + 1, w - 2, h - 2, 3)
-      drawInk("SORT BY", x + 9, y + 6, w - 18, INK_BLACK)
+      drawInk(Strings("SORT BY"), x + 9, y + 6, w - 18, INK_BLACK)
       for i, choice in ipairs(sort.rows or SORT_CHOICES) do
         local rowY = y + 17 + (i - 1) * 14
         if i == sort.index then
           setColor(BLUE_DARK)
           G.rectangle("fill", x + 5, rowY, w - 10, 13)
         end
-        drawInk(choice.label, x + 14, rowY + 3, w - 21,
+        drawInk(Strings(choice.label), x + 14, rowY + 3, w - 21,
           i == sort.index and INK_WHITE or INK_BLACK)
         if i == sort.index then
           setColor(INK_WHITE)
@@ -1019,7 +1020,7 @@ return function(mod, shared)
     G.rectangle("fill", x, y, w, h)
     setColor({ 0.52, 0.88, 0.64 })
     G.rectangle("line", x + 1.5, y + 1.5, w - 3, h - 3)
-    if title then drawInk(title, x + 6, y + 5, w - 12,
+    if title then drawInk(Strings(title), x + 6, y + 5, w - 12,
       { 0.55, 0.95, 0.68 }) end
     local lineHeight = h <= 32 and 8 or 10
     local maxLines = math.max(1, math.floor((h - 14) / lineHeight))
@@ -1075,7 +1076,7 @@ return function(mod, shared)
     G.rectangle("fill", 0, 0, width, 16)
     setColor({ 0.52, 0.88, 0.64 })
     G.rectangle("fill", 0, 14, width, 2)
-    drawInk("ITEM PC", 5, 4, 80, INK_WHITE)
+    drawInk(Strings("ITEM PC"), 5, 4, 80, INK_WHITE)
     drawInkRight(tostring(self.phase or "menu"):upper(), width - 5, 4, 64,
       INK_WHITE)
 
@@ -1096,7 +1097,7 @@ return function(mod, shared)
               color)
           end
         elseif i == self:listTotal() then
-          drawInk("CANCEL", 12, y + 5, 100, color)
+          drawInk(Strings("CANCEL"), 12, y + 5, 100, color)
         end
       end
       local row = self.rows and self.rows[self.listIndex]

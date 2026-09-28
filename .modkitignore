@@ -132,3 +132,7 @@ tests/expanded_boxes_driver.lua
 tests/bag_reports_driver.lua
 tests/national_dex_portraits_test.lua
 tests/national_dex_portraits_driver.lua
+
+tests/summary_portraits_test.lua
+tests/summary_portraits_driver.lua
+tests/translation_compat_driver.lua

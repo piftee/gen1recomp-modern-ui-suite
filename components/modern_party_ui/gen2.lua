@@ -5,6 +5,7 @@ return function(mod)
   local touch = mod.suite and mod.suite.touch
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+  local Strings = require("src.core.Strings")
   local GbcPalette = require("src.render.GbcPalette")
   local HpBar = require("src.battle.gen2.HpBar")
   local Mon = require("src.battle.gen2.Mon")
@@ -79,7 +80,7 @@ return function(mod)
   end
 
   local function drawInk(text, x, y, maxWidth, color)
-    text = fitText(text, maxWidth)
+    text = tostring(text or "")
     local palette, drawGlyph, finish = Chrome.paletteGlyphs(
       inkPalette(color), false, true)
     if not palette then
@@ -89,8 +90,10 @@ return function(mod)
     end
     local pen = math.floor(x)
     for _, code in ipairs(Font.encode(text)) do
+      local advance = Font.advanceOf(code)
+      if maxWidth and pen + advance > math.floor(x) + maxWidth then break end
       drawGlyph(code, pen, math.floor(y))
-      pen = pen + Font.advanceOf(code)
+      pen = pen + advance
     end
     finish()
     return pen - math.floor(x)
@@ -243,7 +246,7 @@ return function(mod)
     setColor(MODAL_DARK)
     love.graphics.setLineWidth(2)
     chamfer("line", x + 1, y + 1, w - 2, h - 2, 4)
-    drawInk("ACTIONS", x + 8, y + 5, w - 16, INK_WHITE)
+    drawInk(Strings("ACTIONS"), x + 8, y + 5, w - 16, INK_WHITE)
     for i, item in ipairs(items) do
       local rowY = y + 18 + (i - 1) * rowStep
       local selected = i == menu.index
@@ -310,7 +313,7 @@ return function(mod)
     setColor(HEADER_LIGHT)
     G.rectangle("fill", 0, 14, width, 2)
     drawInk(("%d/6"):format(#self.party), 4, 4, 32, INK_WHITE)
-    drawInkCentered("POKéMON", math.floor((width - 64) / 2), 3, 64,
+    drawInkCentered(Strings("POKéMON"), math.floor((width - 64) / 2), 3, 64,
       INK_WHITE)
     local selectedMon = self.party[self.index]
     if selectedMon then
@@ -409,7 +412,7 @@ return function(mod)
           drawMeter(x + 5, y + h - 4, w - 11, expFraction(self, mon), "exp")
         end
       else
-        drawInkCentered("EMPTY", x + 10, y + (compact and 4 or 10), w - 22, INK_BLACK)
+        drawInkCentered(Strings("EMPTY"), x + 10, y + (compact and 4 or 10), w - 22, INK_BLACK)
       end
     end
 
@@ -422,7 +425,7 @@ return function(mod)
     if self:isCancel() then
       setColor(MODAL_DARK)
       chamfer("fill", 4, footerY + (compact and 2 or 4), 72, compact and 8 or 16, 3)
-      drawInk("CANCEL", 16, footerY + (compact and 2 or 8), 54, INK_WHITE)
+      drawInk(Strings("CANCEL"), 16, footerY + (compact and 2 or 8), 54, INK_WHITE)
       setColor(INK_WHITE)
       G.rectangle("fill", 9, footerY + (compact and 3 or 10), 3, 5)
     else
@@ -454,7 +457,7 @@ return function(mod)
         y = y + 12
       end
       if not result.auto then
-        drawInkRight("A/B CONTINUE", width - 8, 131, width - 16, INK_LIGHT)
+        drawInkRight(Strings("A/B CONTINUE"), width - 8, 131, width - 16, INK_LIGHT)
       end
     end
     G.setColor(1, 1, 1, 1)
@@ -557,7 +560,7 @@ return function(mod)
     local mon = self.mon or {}
     drawInk(mon.nickname or mon.name or mon.species or "POKéMON",
       34, 4, width - 82, INK_WHITE)
-    drawInkRight(title, width - 4, 4, 40, INK_LIGHT)
+    drawInkRight(Strings(title), width - 4, 4, 40, INK_LIGHT)
   end
 
   local function drawSummaryFooter(self, text)
@@ -611,8 +614,10 @@ return function(mod)
   local function drawSummarySprite(self, x, y)
     local mon = self.mon
     if not mon then return end
-    local selected = mod.suite and mod.suite.battlePortrait
-      and mod.suite.battlePortrait(self.game, mon)
+    local selected, pending
+    if mod.suite and mod.suite.battlePortrait then
+      selected, pending = mod.suite.battlePortrait(self.game, mon, true, "summary")
+    end
     if selected then
       local w, h = selected:getDimensions()
       local scale = math.min(1, 56 / w, 56 / h)
@@ -623,6 +628,10 @@ return function(mod)
       love.graphics.pop()
       return
     end
+    if pending then return end
+    local painter = mod.suite and mod.suite.summaryPortrait
+      and mod.suite.summaryPortrait(self.game, mon)
+    if painter then painter(x, y, 1); return end
     local colors = self.palettes and Palettes.monColors(self.palettes,
       mon.isEgg and "EGG" or mon.species, mon.shiny)
     if mon.isEgg then
@@ -697,9 +706,9 @@ return function(mod)
     setColor({ 0.10, 0.11, 0.15 })
     if not layout.expandedPortrait then G.rectangle("fill", 6, 77, railW - 10, 1) end
     if mon.isEgg then
-      drawInkCentered("EGG", 7, 86, railW - 12, INK_BLACK)
+      drawInkCentered(Strings("EGG"), 7, 86, railW - 12, INK_BLACK)
       drawInkCentered("???", 7, 101, railW - 12, INK_BLACK)
-      drawInkCentered("HATCH", 7, 119, railW - 12, INK_BLACK)
+      drawInkCentered(Strings("HATCH"), 7, 119, railW - 12, INK_BLACK)
       return
     end
     local def = self.speciesDef and self:speciesDef()
@@ -708,12 +717,13 @@ return function(mod)
       setColor({r, g, b})
       chamfer("fill", layout.mainX, 18, layout.mainW, 20, 3)
       drawInk(("No.%03d"):format(def and def.dex or 0), layout.mainX + 5, 21, layout.mainW - 10, INK_BLACK)
-      local label = tostring(t1 or "---"):upper()
-      if t2 and t2 ~= t1 then label = label .. " / " .. tostring(t2):upper() end
-      if Font.width(label) > layout.mainW - 10 then
-        label = tostring(t1 or "---"):sub(1,3):upper() .. (t2 and t2 ~= t1 and "/" .. tostring(t2):sub(1,3):upper() or "")
-      end
-      drawInk(label, layout.mainX + 5, 29, layout.mainW - 10, INK_BLACK)
+      local typeX, typeY, typeW = layout.mainX + 5, 29, layout.mainW - 10
+      if t2 and t2 ~= t1 then
+        local half = math.floor((typeW - Font.width(" / ")) / 2)
+        drawInk(tostring(t1):upper(), typeX, typeY, half, INK_BLACK)
+        drawInk(" / ", typeX + half, typeY, Font.width(" / "), INK_BLACK)
+        drawInk(tostring(t2):upper(), typeX + half + Font.width(" / "), typeY, half, INK_BLACK)
+      else drawInk(tostring(t1 or "---"):upper(), typeX, typeY, typeW, INK_BLACK) end
     else
       drawInk(("No.%03d"):format(def and def.dex or 0), 7, 81, railW - 12, INK_BLACK)
       drawInk(tostring(t1 or "---"):upper(), 7, 91, railW - 12, INK_BLACK)
@@ -750,7 +760,7 @@ return function(mod)
     chamfer("fill", x, top, w, 31, 3)
     drawInk("LV" .. tostring(mon.level or 1), x + 6, top + 5, 46, INK_BLACK)
     drawInkRight(row.status or "OK", x + w - 7, top + 5, 38, INK_BLACK)
-    drawInk("HP", x + 6, top + 17, 20, INK_BLACK)
+    drawInk(Strings("HP"), x + 6, top + 17, 20, INK_BLACK)
     drawInkRight(("%d/%d"):format(mon.hp or 0, maxHp), x + w - 6, top + 16, 70,
       INK_BLACK)
     drawMeter(x + 24, top + 27, w - 31, hpFraction(mon), "hp")
@@ -758,7 +768,7 @@ return function(mod)
       local y = top + 33 + (i - 1) * step
       setColor(i % 2 == 1 and MODAL_DARK or HEADER)
       chamfer("fill", x, y, w, step - 1, 2)
-      drawInk(entry[1], x + 6, y + 2, w - 44, INK_WHITE)
+      drawInk(Strings(entry[1]), x + 6, y + 2, w - 44, INK_WHITE)
       drawInkRight(tostring(entry[2]), x + w - 7, y + 2, 34, INK_WHITE)
     end
   end
@@ -793,7 +803,7 @@ return function(mod)
         drawInkRight(("%d/%d"):format(move.pp or 0,
           move.maxPp or move.pp or 0), x + cardW - 6, infoY, 42, INK_BLACK)
       else
-        drawInkCentered("EMPTY", x + 4, y + math.floor((cardH - 8) / 2),
+        drawInkCentered(Strings("EMPTY"), x + 4, y + math.floor((cardH - 8) / 2),
           cardW - 8, INK_BLACK)
       end
     end
@@ -806,7 +816,7 @@ return function(mod)
     local mon = self.mon or {}
     setColor(MODAL)
     chamfer("fill", x, 18, w, 39, 3)
-    drawInk("TRAINER", x + 6, 23, w - 12, INK_BLACK)
+    drawInk(Strings("TRAINER"), x + 6, 23, w - 12, INK_BLACK)
     drawInk("OT " .. tostring(self.otName and self:otName() or "---"),
       x + 6, 35, w - 12, INK_BLACK)
     drawInk(("ID %05d"):format(self.otId and self:otId() or 0),
@@ -816,7 +826,7 @@ return function(mod)
       local y = 59 + (i - 1) * 14
       setColor(i % 2 == 1 and HEADER or MODAL_DARK)
       chamfer("fill", x, y, w, 12, 2)
-      drawInk(entry[1], x + 6, y + 2, w - 44, INK_WHITE)
+      drawInk(Strings(entry[1]), x + 6, y + 2, w - 44, INK_WHITE)
       drawInkRight(tostring(entry[2]), x + w - 7, y + 2, 34, INK_WHITE)
     end
   end
@@ -827,8 +837,8 @@ return function(mod)
     local x, w = layout.mainX, layout.mainW
     setColor(MODAL)
     chamfer("fill", x, 18, w, 39, 3)
-    drawInk("EGG INFO", x + 6, 24, w - 12, INK_BLACK)
-    drawInk("KIND ???", x + 6, 38, w - 12, INK_BLACK)
+    drawInk(Strings("EGG INFO"), x + 6, 24, w - 12, INK_BLACK)
+    drawInk(Strings("KIND ???"), x + 6, 38, w - 12, INK_BLACK)
     setColor({ 0.08, 0.09, 0.12 })
     chamfer("fill", x, 61, w, 69, 3)
     local lines = {
@@ -883,7 +893,7 @@ return function(mod)
         drawInkRight(("%d/%d"):format(move.pp or 0,
           move.maxPp or move.pp or 0), x + cardW - 7, infoY, 42, ink)
       else
-        drawInkCentered("EMPTY", x + 7, y + math.floor((cardH - 8) / 2),
+        drawInkCentered(Strings("EMPTY"), x + 7, y + math.floor((cardH - 8) / 2),
           cardW - 14, ink)
       end
     end
@@ -892,7 +902,7 @@ return function(mod)
     setColor({ 0.08, 0.09, 0.12 })
     chamfer("fill", 5, 109, width - 10, 25, 3)
     if self.swapFrom then
-      drawInkCentered("WHERE SHOULD IT MOVE?", 10, 117, width - 20,
+      drawInkCentered(Strings("WHERE SHOULD IT MOVE?"), 10, 117, width - 20,
         INK_WHITE)
     elseif def then
       drawInk(("%s  POWER %s"):format(tostring(def.type or "---"):upper(),
@@ -926,8 +936,8 @@ return function(mod)
     end
     drawModernBackdrop(self)
     local title = extra and "INFO" or self.mon and self.mon.isEgg and "EGG"
-      or self.page == SummaryMenu.GREEN_PAGE and "MOVE"
-      or self.page == SummaryMenu.BLUE_PAGE and "OT" or "STAT"
+      or self.page == SummaryMenu.GREEN_PAGE and "MOVES"
+      or self.page == SummaryMenu.BLUE_PAGE and "OT" or "STATS"
     drawSummaryHeader(self, title)
     drawSummaryProfile(self)
     if extra then
@@ -936,11 +946,11 @@ return function(mod)
       setColor(MODAL)
       chamfer("fill", x, 18, w, 41, 3)
       drawInk("GENDER " .. tostring(extra.gender or "-----"), x + 5, 23, w - 10, INK_BLACK)
-      drawInk("ITEM", x + 5, 35, w - 10, INK_BLACK)
+      drawInk(Strings("ITEM"), x + 5, 35, w - 10, INK_BLACK)
       drawInk(extra.heldItem or "-----", x + 5, 47, w - 10, INK_BLACK)
       setColor(MODAL_DARK)
       chamfer("fill", x, 61, w, 72, 3)
-      drawInk("ABILITY", x + 5, 66, w - 10, INK_LIGHT)
+      drawInk(Strings("ABILITY"), x + 5, 66, w - 10, INK_LIGHT)
       drawInk(extra.ability or "-----", x + 5, 78, w - 10, INK_WHITE)
       local lines = extensions.lines(extra.description, w - 10)
       local key = tostring(self.mon) .. tostring(extra.ability) .. extra.description
@@ -1024,7 +1034,7 @@ return function(mod)
     end
     setColor(HEADER)
     G.rectangle("fill", 0, 136, width, 8)
-    drawInkCentered("A TYPE B DEL START", 2, 136, width - 4, INK_WHITE)
+    drawInkCentered(Strings("A TYPE B DEL START"), 2, 136, width - 4, INK_WHITE)
     G.setColor(1, 1, 1, 1)
   end
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.34 — 2026-09-28
+
+- Fix missing G9 portraits on the party Stats and Moves screens in Gen 1 and
+  Gen 2. Preserve animation, shiny/female forms, source priority and the
+  provider's master, summary, animation and summary-size settings. Pending
+  images no longer flash a placeholder; unavailable art keeps native fallback.
+- Use G9's current summary renderer when available, keeping battle shadows
+  out of menu portraits, with compatibility for older G9 releases.
+- Look up additional party, Pokédex, Bag and PC interface labels in the active
+  translation catalog. Draw each summary type separately so Translation Mod
+  Generator can translate it, and fit those translated glyphs without slicing
+  the original English string at Japanese byte offsets.
+- Preserve Japanese nickname endings when Gender Mod is installed, and retain
+  translated stat labels on compact cards instead of switching to English
+  abbreviations. Labels absent from the translation catalog stay in English.
+
 ## 0.1.33 — 2026-09-17
 
 - Display G9 Battle Sprites in the modern Pokédex index and entry pages,
