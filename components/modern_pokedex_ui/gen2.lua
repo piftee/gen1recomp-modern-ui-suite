@@ -8,6 +8,7 @@ return function(mod)
   local PokedexMenu = require("src.ui.gen2.PokedexMenu")
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+  local Strings = require("src.core.Strings")
   local GbcPalette = require("src.render.GbcPalette")
   local Assets = require("src.render.Assets")
   local Palettes = require("src.world.gen2.Palettes")
@@ -152,11 +153,11 @@ return function(mod)
     title = title or "POKéDEX"
     local _, caught = menu:totals()
     if title == "POKéDEX" then
-      drawInk(title, 4, 5, 74, INK_WHITE)
+      drawInk(Strings(title), 4, 5, 74, INK_WHITE)
       drawInkRight(("C %03d/%03d"):format(caught,
         menu.modernDexCount or #(menu.rows or {})), width - 4, 5, 76, INK_WHITE)
     else
-      drawInk(title, 4, 5, 112, INK_WHITE)
+      drawInk(Strings(title), 4, 5, 112, INK_WHITE)
       if showCount ~= false then
         drawInkRight(("C%d"):format(caught), width - 4, 5, 40, INK_WHITE)
       end
@@ -589,7 +590,7 @@ return function(mod)
         setColor(INK_WHITE)
         G.rectangle("fill", x + 5, y + 5, 3, wide and 21 or 8)
       end
-      drawInk(shortLabel[row.mode] or row.label, x + 13, y + 5, cardW - 20,
+      drawInk(Strings(shortLabel[row.mode] or row.label), x + 13, y + 5, cardW - 20,
         selected and INK_WHITE or INK_BLACK)
     end
     local current = rows[menu.optionIndex]
@@ -648,7 +649,7 @@ return function(mod)
     love.graphics.rectangle("fill", 0, 0, width, 18)
     setColor(ORANGE)
     love.graphics.rectangle("fill", 0, 16, width, 2)
-    drawInk(title, 4, 5, width - 8, INK_WHITE)
+    drawInk(Strings(title), 4, 5, width - 8, INK_WHITE)
     if menu.view == "area" then
       drawFooter(menu, "L/R MAP", "A/B BACK")
     else
@@ -682,8 +683,8 @@ return function(mod)
       4, 30, railW - 4, INK_WHITE)
     drawInkCentered(menu.view == "area" and "MAP" or "A-Z",
       width - railW, 30, railW - 4, INK_WHITE)
-    drawInkCentered("L/R", 4, 113, railW - 4, INK_LIGHT)
-    drawInkCentered("BACK", width - railW, 113, railW - 4, INK_LIGHT)
+    drawInkCentered(Strings("L/R"), 4, 113, railW - 4, INK_LIGHT)
+    drawInkCentered(Strings("BACK"), width - railW, 113, railW - 4, INK_LIGHT)
     drawToolFrame(menu)
     G.setColor(1, 1, 1, 1)
   end

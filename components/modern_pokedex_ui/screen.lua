@@ -1249,7 +1249,7 @@ return function(mod, compatibility)
     gray(BLACK)
     chamfer("fill", rect.x + 2, rect.y + 2, rect.w, rect.h, 4)
     insetSurface(rect.x, rect.y, rect.w, rect.h, 4, WHITE)
-    drawCentered("SEARCH", rect.x + 5, rect.y + 5, rect.w - 10, DARK)
+    drawCentered(Strings("SEARCH"), rect.x + 5, rect.y + 5, rect.w - 10, DARK)
     for field, label in ipairs({ "LETTER", "TYPE" }) do
       local y = rect.y + 18 + (field - 1) * 15
       local selected = field == screen.modernDexSearchCursor
@@ -1257,23 +1257,23 @@ return function(mod, compatibility)
         gray(DARK)
         chamfer("fill", rect.x + 5, y - 2, rect.w - 10, 13, 2)
       end
-      drawText(label, rect.x + 10, y, 48, selected and WHITE or BLACK)
+      drawText(Strings(label), rect.x + 10, y, 48, selected and WHITE or BLACK)
       drawRight(searchValue(screen, field), rect.x + rect.w - 10, y,
         math.max(24, rect.w - 70), selected and WHITE or DARK)
     end
-    drawCentered("A APPLY", rect.x + 5, rect.y + rect.h - 12,
+    drawCentered(Strings("A APPLY"), rect.x + 5, rect.y + rect.h - 12,
       rect.w - 10, DARK)
 
     gray(DARK)
     love.graphics.rectangle("fill", 0, layout.footerY,
       layout.width, SCREEN_H - layout.footerY)
     if layout.wide then
-      drawText("UP/DOWN FIELD", 5, layout.footerY + 2, 104, WHITE)
-      drawRight("L/R CHANGE B BACK", layout.width - 5,
+      drawText(Strings("UP/DOWN FIELD"), 5, layout.footerY + 2, 104, WHITE)
+      drawRight(Strings("L/R CHANGE B BACK"), layout.width - 5,
         layout.footerY + 2, 136, LIGHT)
     else
-      drawText("U/D", 5, layout.footerY + 2, 24, WHITE)
-      drawRight("L/R PICK B", layout.width - 5,
+      drawText(Strings("U/D"), 5, layout.footerY + 2, 24, WHITE)
+      drawRight(Strings("L/R PICK B"), layout.width - 5,
         layout.footerY + 2, 80, LIGHT)
     end
   end
@@ -1302,7 +1302,7 @@ return function(mod, compatibility)
 
   local function drawList(screen, layout, regions)
     if #(screen.modernDexEntries or {}) == 0 then
-      drawCentered("NO MATCHES", layout.list.x + 4,
+      drawCentered(Strings("NO MATCHES"), layout.list.x + 4,
         layout.list.y + math.floor((layout.list.h - 8) / 2),
         layout.list.w - 8, DARK)
       return
@@ -1410,7 +1410,7 @@ return function(mod, compatibility)
         or ("SHINY %03d"):format(shinyCount(screen))
       drawCentered(center, 84,
         layout.footerY + 2, layout.width - 168, LIGHT)
-      drawRight("B BACK", layout.width - 5, layout.footerY + 2, 56, WHITE)
+      drawRight(Strings("B BACK"), layout.width - 5, layout.footerY + 2, 56, WHITE)
     else
       local filtered = screen.modernDexLetter or screen.modernDexType
       local seenLabel = screen.modernDexShinyOnly and "LR ALL" or "LR SHINY"
@@ -1435,7 +1435,7 @@ return function(mod, compatibility)
     gray(BLACK)
     chamfer("fill", rect.x + 2, rect.y + 2, rect.w, rect.h, 4)
     insetSurface(rect.x, rect.y, rect.w, rect.h, 4, WHITE)
-    drawCentered("ACTIONS", rect.x + 4, rect.y + 4,
+    drawCentered(Strings("ACTIONS"), rect.x + 4, rect.y + 4,
       rect.w - 8, DARK)
     for index, item in ipairs(menu.items) do
       local y = rect.y + 7 + index * 14
@@ -1762,11 +1762,11 @@ return function(mod, compatibility)
           love.graphics.rectangle("fill", x + 3, HEADER_H - 4, w - 6, 2)
         end
         local label = not layout.wide and page.shortLabel or page.label
-        drawCentered(label or page.id or "DATA", x + 2, 4, w - 4,
+        drawCentered(Strings(label or page.id or "DATA"), x + 2, 4, w - 4,
           selected and WHITE or LIGHT)
       end
     else
-      drawText("POKéDEX DATA", 5, 4, 96, WHITE)
+      drawText(Strings("POKéDEX DATA"), 5, 4, 96, WHITE)
       drawRight(state.def.name or "?", layout.width - 5, 4,
         layout.width - 108, WHITE)
     end
@@ -1833,7 +1833,7 @@ return function(mod, compatibility)
       drawCollectionMark(state.game, state.def.id, layout.info.x + layout.info.w - 10,
         layout.info.y + 9)
     else
-      drawRight("SEEN", layout.info.x + layout.info.w - 6,
+      drawRight(Strings("SEEN"), layout.info.x + layout.info.w - 6,
         layout.info.y + 5, 40, DARK)
     end
     if not layout.wide then
@@ -1915,7 +1915,7 @@ return function(mod, compatibility)
         math.max(40, descW - measureW - 8), DARK)
       y, maxLines = layout.description.y + 15, 4
     else
-      drawText("NOTES", descX, layout.description.y + 14, 48, DARK)
+      drawText(Strings("NOTES"), descX, layout.description.y + 14, 48, DARK)
       y, maxLines = layout.description.y + 25, layout.wide and 3 or 3
     end
     local lines = wrappedLines(notes, descW)
@@ -2571,7 +2571,7 @@ return function(mod, compatibility)
     drawText(heading,
       layout.content.x + 6, layout.content.y + 5,
       layout.content.w - 42, DARK)
-    drawRight("PP",
+    drawRight(Strings("PP"),
       layout.content.x + layout.content.w - 6, layout.content.y + 5,
       24, DARK)
     local y = layout.content.y + 18
@@ -2669,7 +2669,7 @@ return function(mod, compatibility)
     local detailH = layout.content.y + layout.content.h - detailY - 4
     if detail and detailH >= 16 then
       insetSurface(x + 1, detailY, w - 2, detailH, 2, WHITE)
-      drawText("EFFECT", x + 6, detailY + 3, 48, DARK)
+      drawText(Strings("EFFECT"), x + 6, detailY + 3, 48, DARK)
       local lines = wrappedLines(detail, w - 12,
         math.max(1, math.floor((detailH - 12) / 9)))
       local lineY = detailY + 12
@@ -2904,10 +2904,10 @@ return function(mod, compatibility)
       drawText(hasMore and "A MORE  B CLOSE" or "A/B CLOSE",
         5, layout.footerY + 2, hasMore and 112 or 80, WHITE)
       if layout.wide and not hasMore then
-        drawRight("MODERN RESEARCH FILE", layout.width - 5,
+        drawRight(Strings("MODERN RESEARCH FILE"), layout.width - 5,
           layout.footerY + 2, 152, LIGHT)
       elseif not hasMore then
-        drawRight("RESEARCH", layout.width - 5,
+        drawRight(Strings("RESEARCH"), layout.width - 5,
           layout.footerY + 2, 64, LIGHT)
       end
     end

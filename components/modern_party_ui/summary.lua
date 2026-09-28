@@ -5,6 +5,7 @@
 -- summary opened from the party, a PC box or another mod behaves identically.
 return function(mod, genderExports, compatibility)
   local Font = require("src.render.Font")
+  local Strings = require("src.core.Strings")
   local Growth = require("src.pokemon.Growth")
   local PaletteFX = require("src.render.PaletteFX")
   local Renderer = require("src.render.Renderer")
@@ -226,7 +227,6 @@ return function(mod, genderExports, compatibility)
     text = tostring(text or "")
     if not genderExports then return text end
     local plain = text:gsub("\226\153[\128\130]%s*$", "")
-    if plain == text then plain = text:gsub("[♂♀]%s*$", "") end
     return plain
   end
 
@@ -273,7 +273,15 @@ return function(mod, genderExports, compatibility)
   end
 
   local function drawText(text, x, y, maxWidth, shade)
-    text = fitText(text, maxWidth or Font.width(tostring(text or "")))
+    -- Fit encoded glyphs: a translation may replace text inside Font.split,
+    -- so its byte offsets need not refer to the original English string.
+    local codes, width = Font.encode(tostring(text or "")), 0
+    local count = 0
+    for i, code in ipairs(codes) do
+      local advance = Font.advanceOf(code)
+      if maxWidth and width + advance > maxWidth then break end
+      width, count = width + advance, i
+    end
     love.graphics.push("all")
     local shader = shaderForInk()
     if shader then
@@ -282,9 +290,13 @@ return function(mod, genderExports, compatibility)
     else
       gray(BLACK)
     end
-    Font.draw(text, math.floor(x), math.floor(y))
+    local pen = math.floor(x)
+    for i = 1, count do
+      Font.drawCode(codes[i], pen, math.floor(y))
+      pen = pen + Font.advanceOf(codes[i])
+    end
     love.graphics.pop()
-    return Font.width(text)
+    return width
   end
 
   local function drawTextRight(text, right, y, maxWidth, shade)
@@ -464,7 +476,7 @@ return function(mod, genderExports, compatibility)
       3, maxName, WHITE)
     local pageTitle = summary.modernKantoPage == summary.page and "INFO" or summary.page == 1 and "STATS"
       or summary.page == 2 and "MOVES" or "DVS"
-    drawTextRight(pageTitle,
+    drawTextRight(Strings(pageTitle),
       layout.width - 4, 4, 48, WHITE)
   end
 
@@ -475,9 +487,15 @@ return function(mod, genderExports, compatibility)
     local mon = summary.mon
     local species = mon and mon.species
     if not species then return nil, false end
-    local selected = mod.suite and mod.suite.battlePortrait
-      and mod.suite.battlePortrait(summary.game, mon)
+    local selected, pending
+    if mod.suite and mod.suite.battlePortrait then
+      selected, pending = mod.suite.battlePortrait(summary.game, mon, true, "summary")
+    end
+    summary.modernPortraitPending = pending
+    summary.modernPortraitPainter = not selected and mod.suite and mod.suite.summaryPortrait
+      and mod.suite.summaryPortrait(summary.game, mon) or nil
     if selected then return selected, true end
+    if pending or summary.modernPortraitPainter then return nil, true end
     local path, trueColor = Sprites.path(summary.game.data, species, "front",
       { mon = mon, kind = "battle" })
     if summary.modernBattleSpriteSpecies ~= species
@@ -503,6 +521,9 @@ return function(mod, genderExports, compatibility)
   local function spriteGeometry(summary, layout)
     local source = refreshBattleSprite(summary)
       or summary.modernBattleSprite or summary.sprite
+    if summary.modernPortraitPainter then
+      source = {getDimensions=function() return 56, 56 end}
+    elseif summary.modernPortraitPending then return nil end
     if not source then return nil end
     local sw, sh = source:getDimensions()
     local areaH = layout.expandedPortrait and (layout.railH - 34) or 56
@@ -655,25 +676,29 @@ return function(mod, genderExports, compatibility)
       chamfer("fill", protectedFace.x, protectedFace.y,
         protectedFace.w, protectedFace.h, 3)
 
-      local image, paletteBaked = profileSprite(summary)
-      local shader
-      if not summary.spriteTrueColor and not paletteBaked then
-        -- Pixel reads are unavailable only in reduced/headless runtimes. Keep
-        -- their previous safe keyed draw as a compatibility fallback.
-        shader = PaletteFX.keyedShader()
-        if shader then
-          love.graphics.setShader(shader)
-          local artPalette = transformedArtPalette(summary,
-            portraitArtPalette(summary.game.data, mon.species)
-              or primaryPalette(summary))
-          PaletteFX.sendColors(shader, artPalette)
+      if summary.modernPortraitPainter then
+        summary.modernPortraitPainter(x, y, spriteScale)
+      else
+        local image, paletteBaked = profileSprite(summary)
+        local shader
+        if not summary.spriteTrueColor and not paletteBaked then
+          -- Pixel reads are unavailable only in reduced/headless runtimes. Keep
+          -- their previous safe keyed draw as a compatibility fallback.
+          shader = PaletteFX.keyedShader()
+          if shader then
+            love.graphics.setShader(shader)
+            local artPalette = transformedArtPalette(summary,
+              portraitArtPalette(summary.game.data, mon.species)
+                or primaryPalette(summary))
+            PaletteFX.sendColors(shader, artPalette)
+          end
         end
+        love.graphics.setColor(1, 1, 1, 1)
+        -- The original status screen mirrors the front sprite. Preserve that
+        -- presentation detail and the live sprite supplied by other mods.
+        love.graphics.draw(image, x + sw, y, 0, -spriteScale, spriteScale)
+        if shader then love.graphics.setShader() end
       end
-      love.graphics.setColor(1, 1, 1, 1)
-      -- The original status screen mirrors the front sprite. Preserve that
-      -- presentation detail and the live sprite supplied by other mods.
-      love.graphics.draw(image, x + sw, y, 0, -spriteScale, spriteScale)
-      if shader then love.graphics.setShader() end
     end
 
     local compact = layout.railW < 72
@@ -686,9 +711,13 @@ return function(mod, genderExports, compatibility)
       drawCard(layout.mainX, layout.railY, layout.mainW, 26, true)
       drawText(("No.%03d"):format(def.dex or 0), layout.mainX + 5, layout.railY + 3, layout.mainW - 10, BLACK)
       local t1, t2 = displayType(types[1]), types[2] ~= types[1] and types[2] and displayType(types[2])
-      local label = t1 .. (t2 and " / " .. t2 or "")
-      if Font.width(label) > layout.mainW - 10 then label = t1:sub(1, 3) .. (t2 and "/" .. t2:sub(1, 3) or "") end
-      drawText(label, layout.mainX + 5, layout.railY + 12, layout.mainW - 10, BLACK)
+      local typeX, typeY, typeW = layout.mainX + 5, layout.railY + 12, layout.mainW - 10
+      if t2 then
+        local half = math.floor((typeW - Font.width(" / ")) / 2)
+        drawText(t1, typeX, typeY, half, BLACK)
+        drawText(" / ", typeX + half, typeY, Font.width(" / "), BLACK)
+        drawText(t2, typeX + half + Font.width(" / "), typeY, half, BLACK)
+      else drawText(t1, typeX, typeY, typeW, BLACK) end
       infoY = layout.railY + layout.railH - 58
     else
       drawText(("No.%03d"):format(def.dex or 0), textX, infoY, textW, BLACK)
@@ -736,7 +765,7 @@ return function(mod, genderExports, compatibility)
     drawTextRight(tostring(status), x + w - 5, y + 5, 40, BLACK)
     local maxHP = mon.stats and mon.stats.hp or math.max(1, mon.hp or 1)
     local barX, barY, barW = x + 25, y + 18, w - 30
-    drawText("HP", x + 5, barY, 16, BLACK)
+    drawText(Strings("HP"), x + 5, barY, 16, BLACK)
     drawMeter((mon.hp or 0) / math.max(1, maxHP), barX, barY + 1, barW)
     drawTextRight(("%d/%d"):format(mon.hp or 0, maxHP),
       x + w - 5, y + 29, w - 10, BLACK)
@@ -840,11 +869,11 @@ return function(mod, genderExports, compatibility)
       local x, y, w, h = statGeometry(layout, i, #items)
       drawCard(x, y, w, h, false)
       local valueText = tostring(math.floor(tonumber(stats[item[2]]) or 0))
-      local label = item[1]
+      local label = Strings(item[1])
       local gap = 4
       local groupWidth = Font.width(label) + gap + Font.width(valueText)
-      if groupWidth > w - 8 then
-        label = item[3]
+      if groupWidth > w - 8 and label == item[1] then
+        label = Strings(item[3])
         groupWidth = Font.width(label) + gap + Font.width(valueText)
       end
 
@@ -939,7 +968,7 @@ return function(mod, genderExports, compatibility)
     local w, h = layout.mainW, layout.mainH - 40
     drawCard(x, y, w, h, false)
     if not (move and def) then
-      drawTextCentered("EMPTY MOVE SLOT", x + 5,
+      drawTextCentered(Strings("EMPTY MOVE SLOT"), x + 5,
         y + math.floor((h - 8) / 2), w - 10, WHITE)
       return
     end
@@ -983,7 +1012,7 @@ return function(mod, genderExports, compatibility)
       local move = moves[i]
       local def = move and summary.game.data.moves[move.id]
       if not (move and def) then
-        drawTextCentered("EMPTY", x + 5, y + math.floor((h - 8) / 2),
+        drawTextCentered(Strings("EMPTY"), x + 5, y + math.floor((h - 8) / 2),
           w - 10, selected and BLACK or WHITE)
       else
         local name = fitText(def.name or move.id, w - 10)
@@ -1139,13 +1168,13 @@ return function(mod, genderExports, compatibility)
       drawCard(cx, cy, cw, ch, false)
       local dv = tostring(dvs[item[2]] or 0)
       local stat = tostring(statExp[item[2]] or 0)
-      local label = item[1]
+      local label = Strings(item[1])
       if columns == 1 and split then
         local joined = item[3] .. dv .. "/" .. compactStatExp(stat)
         drawTextCentered(joined, cx + 4,
           cy + math.floor((ch - 8) / 2), cw - 8, WHITE)
       else
-        if Font.width(label .. " DV" .. dv) > cw - 8 then label = item[3] end
+        if Font.width(label .. " DV" .. dv) > cw - 8 then label = Strings(item[3]) end
         local first = label .. " DV" .. dv
         local second = "EXP " .. stat
         local firstY = cy + math.max(2, math.floor((ch - 17) / 2))
@@ -1213,10 +1242,10 @@ return function(mod, genderExports, compatibility)
       local x, y, w, h = layout.mainX, layout.mainY, layout.mainW, layout.mainH
       drawCard(x, y, w, 40, true)
       drawText("GENDER " .. tostring(extra.gender or "-----"), x + 5, y + 5, w - 10, BLACK)
-      drawText("ITEM", x + 5, y + 16, w - 10, BLACK)
+      drawText(Strings("ITEM"), x + 5, y + 16, w - 10, BLACK)
       drawText(extra.heldItem or "-----", x + 5, y + 27, w - 10, BLACK)
       drawCard(x, y + 42, w, h - 42, false)
-      drawText("ABILITY", x + 5, y + 47, w - 10, WHITE)
+      drawText(Strings("ABILITY"), x + 5, y + 47, w - 10, WHITE)
       drawText(extra.ability or "-----", x + 5, y + 58, w - 10, WHITE)
       local lines = extensions.lines(extra.description, w - 10)
       local count = math.max(1, math.floor((h - 74) / 11))

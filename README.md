@@ -1,5 +1,8 @@
 # Modern UI Suite
 
+**0.1.34 — Compatibility fixes:** G9 party portraits, Japanese nickname safety,
+and additional translation lookups. See [release notes](RELEASE_NOTES.md).
+
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
 party summary, reusable TMs, field-HM options, move relearning, rematches, Pokebox,

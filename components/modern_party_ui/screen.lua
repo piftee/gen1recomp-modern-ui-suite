@@ -8,6 +8,7 @@ return function(mod, genderExports, compatibility)
   compatibility = compatibility or {}
   local PartyMenu = require("src.ui.PartyMenu")
   local Font = require("src.render.Font")
+  local Strings = require("src.core.Strings")
   local Growth = require("src.pokemon.Growth")
   local PaletteFX = require("src.render.PaletteFX")
   local Assets = require("src.render.Assets")
@@ -368,7 +369,6 @@ return function(mod, genderExports, compatibility)
     -- renderer is active. Its screen wrapper is deliberately replaced here,
     -- so retain that presentation detail locally without mutating the mon.
     local plain = text:gsub("\226\153[\128\130]%s*$", "")
-    if plain == text then plain = text:gsub("[♂♀]%s*$", "") end
     return plain
   end
 
@@ -517,7 +517,7 @@ return function(mod, genderExports, compatibility)
     love.graphics.rectangle("fill", 0, HEADER_H - 2, layout.width, 2)
 
     drawText(('%d/%d'):format(#party, capacityOf(menu)), 4, 4, 32, 1, WHITE)
-    drawText("POKéMON", (layout.width - 56) / 2, 3, 56, 1, WHITE)
+    drawText(Strings("POKéMON"), (layout.width - 56) / 2, 3, 56, 1, WHITE)
 
     local mon = party[menu.index]
     local def = definition(menu, mon)
@@ -718,7 +718,7 @@ return function(mod, genderExports, compatibility)
   local function drawEmptyCard(layout, index)
     local x, y, width, height = slotGeometry(layout, index)
     drawCardFrame(x, y, width, height, false, layout.portrait)
-    drawText("EMPTY", x + 23, y + (height - 8) / 2,
+    drawText(Strings("EMPTY"), x + 23, y + (height - 8) / 2,
       width - 30, 1, WHITE)
     gray(LIGHT)
     love.graphics.rectangle("line", x + 5, y + (height - 14) / 2, 13, 13)
@@ -1602,7 +1602,7 @@ return function(mod, genderExports, compatibility)
         width - 8, 1, ink)
     else
       drawHealthBar(shown, x, y, width, height)
-      drawText("HP", x + 2, hpY, 16, 1, ink)
+      drawText(Strings("HP"), x + 2, hpY, 16, 1, ink)
       local _, _, barX, barW = meterGeometry(x, y, width, height)
       drawMeterDetail(hpDetail(shown), hpY, barX, barW)
       if setting("exp_strip", true) then
@@ -1662,7 +1662,7 @@ return function(mod, genderExports, compatibility)
     gray(DARK)
     chamfer("fill", x + 2, y + 2, w - 4, h - 4, 4)
 
-    drawText("ACTIONS", x + 8, y + 4, w - 16, 1, WHITE)
+    drawText(Strings("ACTIONS"), x + 8, y + 4, w - 16, 1, WHITE)
     for i, entry in ipairs(menu.subItems or {}) do
       local rowY = y + 14 + (i - 1) * 12
       local selected = i == menu.subIndex
