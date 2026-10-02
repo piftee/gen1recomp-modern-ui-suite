@@ -1,6 +1,7 @@
 # Modern UI Suite
 
-**0.1.34 — Compatibility fixes:** G9 party portraits, Japanese nickname safety,
+**0.1.35 — Compatibility fixes:** G9/Battle Art summary overlap, Gen 1 move
+rearranging and validation on Gen1recomp 0.3.47. Retains G9 party portraits, Japanese nickname safety,
 and additional translation lookups. See [release notes](RELEASE_NOTES.md).
 
 
@@ -366,3 +367,15 @@ POKEPORT_IDENTITY=modern-ui-suite-gen2 love .
 
 See `COMPONENTS.md` for the imported snapshot versions and
 `THIRD_PARTY_NOTICES.md` for asset attribution.
+
+## Summary move order and optional load ordering
+
+On Gen 1's modern summary Moves page, Select picks up the highlighted move;
+arrow keys choose a destination and A swaps the entries. B or Select cancels.
+A continues to open move information when no move is held. Gen 2 retains its
+native Select move-management screen and A pick/place controls.
+
+Recent Gen1recomp versions display optional load-order notes. Kanto Ribbons
+is optional: installing it is not required. If enabled, it loads before the
+suite so its summary controller can be composed with the modern presentation.
+This ordering declaration remains compatible with older engines.
