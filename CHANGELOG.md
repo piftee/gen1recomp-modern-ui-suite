@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.35 — 2026-10-02
+
+- Fix Battle Art restoring its original summary picture beneath G9's animated
+  portrait when the modern party component is disabled. Preserve fallback
+  pictures, provider toggles and Battle Art's explicit interface-art ownership.
+- Add move rearranging to Gen 1's modern summary Moves page: Select picks up
+  a move, arrows choose its destination, A swaps and B/Select cancels. Swap
+  complete entries so PP, PP Ups and companion metadata stay with each move.
+- Verify summary artwork and move controls in both generations on Gen1recomp
+  0.3.47. Document the launcher's optional Kanto Ribbons load-order note.
+
 ## 0.1.34 — 2026-09-28
 
 - Fix missing G9 portraits on the party Stats and Moves screens in Gen 1 and

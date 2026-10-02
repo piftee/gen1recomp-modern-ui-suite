@@ -1009,6 +1009,10 @@ return function(mod, genderExports, compatibility)
       local x, y, w, h = moveGeometry(layout, i)
       local selected = i == selectedIndex
       drawCard(x, y, w, h, selected)
+      if summary.modernSwapFrom == i then
+        gray(BLACK)
+        love.graphics.rectangle("line", x + 2, y + 2, w - 4, h - 4)
+      end
       local move = moves[i]
       local def = move and summary.game.data.moves[move.id]
       if not (move and def) then
@@ -1190,6 +1194,8 @@ return function(mod, genderExports, compatibility)
     local hint
     if summary.page == 1 then
       hint = "A/B MOVES"
+    elseif summary.page == 2 and summary.modernSwapFrom then
+      hint = "A SWAP  B CANCEL"
     elseif summary.page == 2 and summary.modernMoveDetail then
       hint = "A/B BACK"
     elseif summary.page == 2 and summary.modernKantoPage and not dvTracker then
@@ -1204,6 +1210,10 @@ return function(mod, genderExports, compatibility)
       hint = "A/B RIBBONS"
     else
       hint = "A/B BACK"
+    end
+    if summary.page == 2 and not summary.modernMoveDetail
+        and not summary.modernSwapFrom then
+      hint = "SEL SWAP  A INFO  B"
     end
     drawText(hint, (layout.width - Font.width(hint)) / 2,
       layout.footerY, layout.width - 8, WHITE)
@@ -1352,6 +1362,7 @@ return function(mod, genderExports, compatibility)
         local input = self.game and self.game.input
         if self.page ~= 2 then
           self.modernMoveDetail = false
+          self.modernSwapFrom = nil
           if self.modernKantoPage == self.page and kantoRibbons
               and input and (input:wasPressed("a") or input:wasPressed("b")) then
             return SummaryMenu.update(self, dt)
@@ -1371,7 +1382,19 @@ return function(mod, genderExports, compatibility)
         local columns = layoutFor(self).moveColumns
         local index = math.max(1, math.min(4,
           tonumber(self.modernMoveIndex) or 1))
-        if input:wasPressed("left") then
+        if input:wasPressed("b") and self.modernSwapFrom then
+          self.modernMoveIndex = self.modernSwapFrom
+          self.modernSwapFrom = nil
+          return
+        elseif input:wasPressed("select") then
+          if self.modernSwapFrom then
+            self.modernMoveIndex = self.modernSwapFrom
+            self.modernSwapFrom = nil
+          elseif (self.mon.moves or {})[index] then
+            self.modernSwapFrom = index
+          end
+          return
+        elseif input:wasPressed("left") then
           index = columns == 1 and index
             or (index % columns == 1 and index + columns - 1 or index - 1)
         elseif input:wasPressed("right") then
@@ -1385,7 +1408,16 @@ return function(mod, genderExports, compatibility)
           if index > 4 then index = index - 4 end
         elseif input:wasPressed("a") then
           local move = (self.mon.moves or {})[index]
-          if move and self.game.data.moves[move.id] then
+          if self.modernSwapFrom then
+            local moves = self.mon.moves or {}
+            local from = self.modernSwapFrom
+            if moves[from] and move then
+              -- Keep the entire entry together: PP, PP Ups and companion
+              -- metadata belong to the move rather than the slot.
+              moves[from], moves[index] = moves[index], moves[from]
+              self.modernSwapFrom = nil
+            end
+          elseif move and self.game.data.moves[move.id] then
             self.modernMoveDetail = true
           end
           return

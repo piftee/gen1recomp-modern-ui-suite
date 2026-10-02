@@ -58,4 +58,36 @@ api.frontArt=function() return {} end
 api.drawSummaryFrame=function() error('provider draw failed') end
 T.eq(resolve(game,mon)(0,0,1),false,'provider failure cannot crash the summary')
 T.eq(depth,0,'error also restores graphics state')
+
+local interfaceMode, seen, fail = 'modded', nil, false
+local native = {draw=function(screen)
+  seen=screen.__battleArtOriginalSprite
+  if fail then error('native draw failed') end
+end}
+package.loaded['src.core.GameVersion']={generation=function() return 1 end}
+package.loaded['src.ui.SummaryMenu']=native
+local handle={exports={lib={require=function() return {setting={get=function() return interfaceMode end}} end}}}
+dofile('mods/modern_ui_suite/core/summary_portraits.lua')({
+  options={get=function() return 'default' end},
+  find=function(id) return id=='BATTLE_ART_VOXEL_FORK' and handle
+    or id=='g9-battle-sprites' and {exports=api} end,
+})
+local original={}
+local screen={game=game,mon=mon,__battleArtOriginalCaptured=true,
+  __battleArtOriginalSprite=original,__battleArtOriginalTrueColor=true}
+native.draw(screen)
+T.eq(seen,nil,'native Battle Art cache cannot draw under G9')
+T.eq(screen.__battleArtOriginalSprite,original,'cache restored after managed draw')
+T.eq(screen.__battleArtOriginalTrueColor,true,'cache colour flag restored')
+options.summary_sprites=false; native.draw(screen)
+T.eq(seen,original,'summary off retains original cache')
+options.summary_sprites=nil;interfaceMode='battle_art';native.draw(screen)
+T.eq(seen,original,'explicit Battle Art interface ownership retained')
+interfaceMode='modded';screen.modernPartySummary=true;native.draw(screen)
+T.eq(seen,original,'modern presenter retains its own sprite ownership')
+screen.modernPartySummary=nil;api.frontArt=function() return nil,false end
+native.draw(screen);T.eq(seen,original,'unavailable G9 art retains original')
+api.frontArt=function() return {} end;fail=true
+T.eq(pcall(native.draw,screen),false,'native draw errors propagate')
+T.eq(screen.__battleArtOriginalSprite,original,'native error restores cache')
 T.finish('suite_summary_portraits')

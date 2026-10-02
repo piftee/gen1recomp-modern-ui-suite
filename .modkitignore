@@ -136,3 +136,5 @@ tests/national_dex_portraits_driver.lua
 tests/summary_portraits_test.lua
 tests/summary_portraits_driver.lua
 tests/translation_compat_driver.lua
+tests/summary_move_order_driver.lua
+tests/native_summary_overlap_driver.lua
