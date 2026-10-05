@@ -911,7 +911,7 @@ return function(mod)
       local description = tostring(def.description or ""):gsub("<NEXT>.*", "")
       drawInk(description, 11, 122, width - 22, INK_WHITE)
     end
-    drawSummaryFooter(self, "A MOVE  SEL SWAP  B")
+    drawSummaryFooter(self, self.swapFrom and "A SWAP  B CANCEL" or "A PICK  B BACK")
   end
 
   local function modernSummaryPanel(self)
@@ -969,7 +969,8 @@ return function(mod)
     else
       drawSummaryStats(self)
     end
-    drawSummaryFooter(self, "L/R PAGE  B BACK")
+    drawSummaryFooter(self, self.page == SummaryMenu.GREEN_PAGE
+      and not (self.mon and self.mon.isEgg) and "SEL SWAP L/R B" or "L/R PAGE  B BACK")
     Font.useBattleExtra(wasBattle)
     love.graphics.setColor(1, 1, 1, 1)
   end
@@ -1138,6 +1139,23 @@ return function(mod)
     menu.modernPartyGeneration = 2
     menu.classicGen2SummaryPanel = nativePanel
     menu.drawPanel = modernSummaryPanel
+    local nativeUpdate = menu.update
+    menu.update = function(self, dt)
+      local input = self.game and self.game.input
+      local pickOnSelect = not self.moveDetail
+        and not (self.mon and self.mon.isEgg)
+        and self.page == SummaryMenu.GREEN_PAGE
+        and input and input:wasPressed("select")
+      local result = nativeUpdate(self, dt)
+      -- Match Gen 1: the Select press that opens the editor also picks up
+      -- its highlighted move. Native A/B handling still owns swaps/cancel.
+      if pickOnSelect and self.moveDetail then
+        local moves = self.moveList and self:moveList()
+          or (self.mon and self.mon.moves) or {}
+        if moves[self.moveIndex or 1] then self.swapFrom = self.moveIndex or 1 end
+      end
+      return result
+    end
     local nativeUpdateMoveDetail = menu.updateMoveDetail
     if type(nativeUpdateMoveDetail) == "function" then
       menu.classicGen2UpdateMoveDetail = nativeUpdateMoveDetail

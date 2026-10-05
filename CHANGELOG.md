@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.36 — 2026-10-05
+
+- Make Select pick up the highlighted move when entering the modern Gen 2
+  summary move editor, matching Gen 1. Arrows choose the destination, A swaps
+  and B cancels. Clarify the prompts for picking, swapping and cancellation.
+- Verify Gold, Silver and Crystal on Gen1recomp 0.3.52, including Kanto Ribbons,
+  save persistence, eggs, empty moves and the party MOVE action.
+
 ## 0.1.35 — 2026-10-02
 
 - Fix Battle Art restoring its original summary picture beneath G9's animated
