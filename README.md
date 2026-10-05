@@ -1,8 +1,9 @@
 # Modern UI Suite
 
-**0.1.35 — Compatibility fixes:** G9/Battle Art summary overlap, Gen 1 move
-rearranging and validation on Gen1recomp 0.3.47. Retains G9 party portraits, Japanese nickname safety,
-and additional translation lookups. See [release notes](RELEASE_NOTES.md).
+**0.1.36 — Move controls:** Select picks up a move immediately in modern
+Gen 1 and Gen 2 summaries. Clearer pick/swap prompts; verified on Gen1recomp
+0.3.52. Retains the Battle Art/G9 summary and translation fixes.
+See [release notes](RELEASE_NOTES.md).
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
@@ -370,10 +371,11 @@ See `COMPONENTS.md` for the imported snapshot versions and
 
 ## Summary move order and optional load ordering
 
-On Gen 1's modern summary Moves page, Select picks up the highlighted move;
+On the modern summary Moves page in Gen 1 and Gen 2, Select picks up a move;
 arrow keys choose a destination and A swaps the entries. B or Select cancels.
-A continues to open move information when no move is held. Gen 2 retains its
-native Select move-management screen and A pick/place controls.
+Gen 1 opens move information with A when no move is held. In Gen 2, A picks
+a move again after a swap or cancellation; the party MOVE action retains its
+native A pick/place controls.
 
 Recent Gen1recomp versions display optional load-order notes. Kanto Ribbons
 is optional: installing it is not required. If enabled, it loads before the

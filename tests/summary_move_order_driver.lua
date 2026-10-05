@@ -20,10 +20,7 @@ return function(game)
     return menu
   end
   local function press(menu, key)
-    local input, previous = game.input, game.input.wasPressed
-    input.wasPressed = function(_, candidate) return candidate == key end
-    menu:update(1/60)
-    input.wasPressed = previous
+    U.tap(game,key)
     U.wait(30)
   end
   local function index(menu) return gen2 and menu.moveIndex or menu.modernMoveIndex end
@@ -32,7 +29,6 @@ return function(game)
     love.window.setMode(size[1],size[2],{resizable=true,vsync=0})
     local menu = open(); U.wait(30)
     press(menu,'select')
-    if gen2 then press(menu,'a') end
     check(held(menu)==1, size[3]..' picks first move')
     local horizontal = gen2 and (menu.modernPartyWideWidth or menu.modernPartyLastWideWidth or 160)>=196
       or not gen2 and menu:modernSummaryLayoutInfo().moveColumns==2
@@ -69,6 +65,22 @@ return function(game)
     menu.modernMoveIndex=1; press(menu,'a')
     check(menu.modernMoveDetail,'A still opens move information')
     press(menu,'b'); check(not menu.modernMoveDetail,'B returns from information')
+  end
+  if gen2 then
+    local menu=open(); U.wait(10)
+    press(menu,'select'); check(held(menu)==1,'Select both opens and picks')
+    press(menu,'select'); check(not held(menu) and menu.moveDetail,'Select cancels held move')
+    press(menu,'b'); check(not menu.moveDetail,'B returns to summary after cancellation')
+    menu=open(); mon.moves={}; U.wait(10); press(menu,'select')
+    check(not held(menu),'empty moves cannot create held slot')
+    mon.moves={first,second}; menu=open(); mon.isEgg=true; U.wait(10)
+    press(menu,'select'); check(not held(menu) and not menu.moveDetail,'egg ignores rearranging')
+    mon.isEgg=nil
+    while game.stack:top() do game.stack:pop() end
+    menu=Screens.push(game,'Gen2SummaryMenu',{save=game.save,mon=mon,party=game.save.party,moveScreen=true})
+    U.wait(10); check(menu.moveDetail and not held(menu),'party MOVE retains native entry')
+    press(menu,'a'); check(held(menu)==1,'party MOVE still picks with A')
+    press(menu,'b'); check(not held(menu) and menu.moveDetail,'party MOVE cancels without closing')
   end
   local raw = assert(require('src.link.Json').decode(assert(love.filesystem.read('mods/modern_ui_suite/manifest.json'))))
   local manifest = require('src.mods.Manifest').validate(raw,'mods/modern_ui_suite')
