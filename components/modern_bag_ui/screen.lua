@@ -199,6 +199,15 @@ return function(mod, compatibility)
     return text:sub(1, spans[count].to) .. "."
   end
 
+  local function textMetrics()
+    if mod.suite and mod.suite.textMetrics then return mod.suite.textMetrics() end
+    return 0, 8
+  end
+  local function lineStep()
+    local _, height = textMetrics()
+    return math.max(9, height + 1)
+  end
+
   local function drawTextRaw(text, x, y, shade)
     text = tostring(text or "")
     love.graphics.push("all")
@@ -209,7 +218,9 @@ return function(mod, compatibility)
     else
       gray(BLACK)
     end
-    Font.draw(text, math.floor(x), math.floor(y))
+    local offset, height = textMetrics()
+    offset = math.min(offset, 3)
+    Font.draw(text, math.floor(x), math.floor(y) + offset)
     love.graphics.pop()
     return Font.width(text)
   end
@@ -314,7 +325,7 @@ return function(mod, compatibility)
       maxWidth, maxLines, shade)
     text = tostring(text or "")
     maxWidth = math.max(8, math.floor(maxWidth or 8))
-    maxLines = math.max(1, math.floor(maxLines or 1))
+    maxLines = math.max(1, math.floor((maxLines or 1) * 9 / lineStep()))
     local lines = allWrappedLines(text, maxWidth)
     local fits = #lines <= maxLines
     for _, line in ipairs(lines) do
@@ -329,7 +340,7 @@ return function(mod, compatibility)
     if fits then
       state.offset, state.travel = 0, 0
       for index, line in ipairs(lines) do
-        drawText(line, x, y + (index - 1) * 9, maxWidth, shade)
+        drawText(line, x, y + (index - 1) * lineStep(), maxWidth, shade)
       end
       return false
     end
@@ -343,7 +354,7 @@ return function(mod, compatibility)
       end
     end
     for index = 1, staticCount do
-      drawText(lines[index], x, y + (index - 1) * 9, maxWidth, shade)
+      drawText(lines[index], x, y + (index - 1) * lineStep(), maxWidth, shade)
     end
     local tail = {}
     for index = staticCount + 1, #lines do tail[#tail + 1] = lines[index] end
@@ -365,10 +376,12 @@ return function(mod, compatibility)
     state.offset, state.travel = offset, travel
     state.tailText, state.staticLines = tailText, staticCount
 
-    local lineY = y + staticCount * 9
+    local lineY = y + staticCount * lineStep()
     if love.graphics.setScissor then
       love.graphics.push("all")
-      love.graphics.setScissor(math.floor(x), math.floor(lineY), maxWidth, 9)
+      local fontOffset, inkHeight = textMetrics()
+      local inkTop = math.floor(lineY) + math.min(fontOffset, 3) - fontOffset
+      love.graphics.setScissor(math.floor(x), inkTop, maxWidth, math.max(9, inkHeight))
       drawTextRaw(tailText, x - offset, lineY, shade)
       love.graphics.pop()
     else
@@ -582,7 +595,9 @@ return function(mod, compatibility)
     local tabsY = headerH
     local contentY = tabsY + TABS_H
     local expandedFooter = menu and (menu.modernPCUI or menu.modernBagPrompt)
-    local footerH = stacked and 20 or (expandedFooter and 16 or FOOTER_H)
+    local _, textHeight = textMetrics()
+    local footerH = math.max(stacked and 20 or (expandedFooter and 16 or FOOTER_H),
+      textHeight > 8 and textHeight + (stacked and textHeight + 2 or 2) or 0)
     local footerY = height - footerH
     local listY = contentY + 3
 
@@ -1380,7 +1395,7 @@ return function(mod, compatibility)
         or (config and config.emptyName) or pocket.label
       local nameLines = wrappedLines(name, textW, 2)
       for index, line in ipairs(nameLines) do
-        drawText(line, textX, layout.detailY + 24 + (index - 1) * 9,
+        drawText(line, textX, layout.detailY + 24 + (index - 1) * lineStep(),
           textW, BLACK)
       end
       local description = item and itemDescription(menu, item.value)
@@ -1398,7 +1413,7 @@ return function(mod, compatibility)
         for index, line in ipairs(wrappedLines(
             description, descriptionW, maxLines)) do
           drawText(line, layout.detailX + 6,
-            descriptionY + (index - 1) * 9, descriptionW, DARK)
+            descriptionY + (index - 1) * lineStep(), descriptionW, DARK)
         end
       end
       return
@@ -1432,11 +1447,11 @@ return function(mod, compatibility)
       for index, line in ipairs(nameLines) do
         drawText(line,
           layout.detailX + (layout.detailW - Font.width(line)) / 2,
-          layout.detailY + 45 + (index - 1) * 9,
+          layout.detailY + 45 + (index - 1) * lineStep(),
           layout.detailW - 12, WHITE)
       end
       local descriptionY = layout.detailY + 58
-        + math.max(0, #nameLines - 1) * 9
+        + math.max(0, #nameLines - 1) * lineStep()
       local descriptionLines
       if config then
         descriptionLines = math.max(1, math.floor(
@@ -1456,7 +1471,7 @@ return function(mod, compatibility)
           layout.detailW - 12, descriptionLines)
         for index, line in ipairs(lines) do
           drawText(line, layout.detailX + 6,
-            descriptionY + (index - 1) * 9,
+            descriptionY + (index - 1) * lineStep(),
             layout.detailW - 12, LIGHT)
         end
       end
@@ -1470,7 +1485,7 @@ return function(mod, compatibility)
       clearDescriptionScroll(menu)
       for index, line in ipairs(lines) do
         drawText(line, layout.detailX + 6,
-          layout.detailY + 58 + (index - 1) * 9,
+          layout.detailY + 58 + (index - 1) * lineStep(),
           layout.detailW - 12, LIGHT)
       end
     end
@@ -1494,7 +1509,7 @@ return function(mod, compatibility)
         lines = { Strings("L/R POCKET"), Strings("A SELECT  B BACK") }
       end
       if #lines == 0 then lines = { "" } end
-      local step = 8
+      local _, step = textMetrics()
       local y = layout.footerY
         + math.max(0, math.floor((layout.footerH - #lines * step) / 2))
       for index, line in ipairs(lines) do
@@ -1516,7 +1531,7 @@ return function(mod, compatibility)
       line1 = fitText(line1, layout.width - 8)
       line2 = fitText(line2, layout.width - 8)
       drawText(line1, (layout.width - Font.width(line1)) / 2,
-        layout.footerY + 1, layout.width - 8, WHITE)
+        layout.footerY, layout.width - 8, WHITE)
       drawText(line2, (layout.width - Font.width(line2)) / 2,
         layout.footerY + 11, layout.width - 8, WHITE)
       return
@@ -1797,7 +1812,7 @@ return function(mod, compatibility)
     else
       clearDescriptionScroll(menu)
       for index, line in ipairs(wrappedLines(text, textW, maxLines)) do
-        drawText(line, textX, textY + (index - 1) * 9, textW, BLACK)
+        drawText(line, textX, textY + (index - 1) * lineStep(), textW, BLACK)
       end
     end
   end

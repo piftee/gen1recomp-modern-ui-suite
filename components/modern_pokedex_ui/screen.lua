@@ -133,6 +133,23 @@ return function(mod, compatibility)
     return text:sub(1, spans[count].to) .. "."
   end
 
+  local function textMetrics()
+    if mod.suite and mod.suite.textMetrics then
+      local offset, height = mod.suite.textMetrics()
+      FOOTER_H = math.max(12, height + 4)
+      return offset, height
+    end
+    return 0, 8
+  end
+  local function entryFooterY()
+    local _, height = textMetrics()
+    return SCREEN_H - (height > 8 and FOOTER_H or 10)
+  end
+  local function lineStep()
+    local _, height = textMetrics()
+    return math.max(9, height + 1)
+  end
+
   local function drawRawText(text, x, y, maxWidth, shade)
     text = tostring(text or "")
     if compatibility.formatText then text = compatibility.formatText(text) end
@@ -146,7 +163,9 @@ return function(mod, compatibility)
     else
       gray(ink)
     end
-    Font.draw(text, math.floor(x), math.floor(y))
+    local offset, height = textMetrics()
+    offset = (y < 8 or y >= SCREEN_H - FOOTER_H) and math.min(offset, 3) or 0
+    Font.draw(text, math.floor(x), math.floor(y) + offset)
     love.graphics.pop()
     return Font.width(text)
   end
@@ -279,6 +298,7 @@ return function(mod, compatibility)
   end
 
   local function layoutFor(width)
+    textMetrics()
     width = math.max(160, math.floor(tonumber(width) or select(1, uiSize())))
     local wide = width >= 240
     local listX, listY = 4, HEADER_H + 3
@@ -1679,23 +1699,25 @@ return function(mod, compatibility)
     width = math.max(160, math.floor(width or 160))
     local wide = width >= 240
     local profileW = wide and 96 or 58
-    local profile = { x = 4, y = 21, w = profileW, h = 109 }
+    local footerY = entryFooterY()
+    local contentH = footerY - 25
+    local profile = { x = 4, y = 21, w = profileW, h = contentH }
     local infoProfile = wide and profile
       or { x = 4, y = 21, w = 52, h = 52 }
     local statsProfile = wide and profile
       or { x = 4, y = 21, w = 52, h = 52 }
     return {
-      width = width, wide = wide, footerY = 134,
-      content = { x = 4, y = 21, w = width - 8, h = 109 },
+      width = width, wide = wide, footerY = footerY,
+      content = { x = 4, y = 21, w = width - 8, h = contentH },
       profile = profile,
       infoProfile = infoProfile,
       statsProfile = statsProfile,
       statsSummary = wide and nil
         or { x = 60, y = 21, w = width - 64, h = 52 },
       statsMain = wide and nil
-        or { x = 4, y = 77, w = width - 8, h = 53 },
+        or { x = 4, y = 77, w = width - 8, h = footerY - 81 },
       main = { x = 8 + profileW, y = 21,
-        w = width - profileW - 12, h = 109 },
+        w = width - profileW - 12, h = contentH },
       info = wide and { x = 8 + profileW, y = 21,
         w = width - profileW - 12, h = 49 }
         or { x = 60, y = 21, w = width - 64, h = 52 },
@@ -1705,7 +1727,7 @@ return function(mod, compatibility)
         -- Compact INFO has four 8px note rows. Let the card use the small
         -- gap above the footer so the fourth row stays inside its inner face
         -- instead of being bisected by the lower frame.
-        h = 56 },
+        h = math.min(56, footerY - (wide and 74 or 77) - 1) },
     }
   end
 
@@ -1799,7 +1821,7 @@ return function(mod, compatibility)
       for _, line in ipairs(metadata) do
         drawText(line, profile.x + 5, y,
           profile.w - 10, DARK)
-        y = y + 10
+        y = y + math.max(10, lineStep())
       end
     end
   end
@@ -1918,6 +1940,7 @@ return function(mod, compatibility)
       drawText(Strings("NOTES"), descX, layout.description.y + 14, 48, DARK)
       y, maxLines = layout.description.y + 25, layout.wide and 3 or 3
     end
+    maxLines = math.max(1, math.floor(maxLines * 10 / math.max(10, lineStep())))
     local lines = wrappedLines(notes, descW)
     state.modernInfoLines = lines
     state.modernInfoVisible = maxLines
@@ -1929,7 +1952,7 @@ return function(mod, compatibility)
         math.min(#lines, state.modernInfoScroll + maxLines) do
       local line = lines[index]
       drawText(line, descX, y, descW, BLACK)
-      y = y + 10
+      y = y + math.max(10, lineStep())
     end
     if state.modernInfoScroll > 0 then
       gray(darkTheme() and LIGHT or DARK)
@@ -2828,9 +2851,10 @@ return function(mod, compatibility)
     if renderer and renderer.uiSize then
       width = select(1, renderer:uiSize()) or width
     end
+    textMetrics()
     local layout = entryLayout(width)
     local regions = {}
-    backdrop({ width = layout.width, height = SCREEN_H, footerY = 134 })
+    backdrop({ width = layout.width, height = SCREEN_H, footerY = entryFooterY() })
     drawEntryHeader(state, layout)
     local page = entryPage(state)
     if page.id == "stats" then

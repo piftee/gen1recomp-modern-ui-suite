@@ -9,6 +9,28 @@ return function(game)
   local gen2=require('src.core.GameVersion').generation()==2
   local Mon=require(gen2 and 'src.battle.gen2.Mon' or 'src.pokemon.Pokemon')
   local checks,lookups,seen,invalid=0,{},{},{}
+  local draw = F.draw
+  local inkTop, inkBottom
+  local probe = love.graphics.newCanvas(160,48)
+  love.graphics.push('all');love.graphics.setCanvas(probe);love.graphics.origin()
+  love.graphics.setScissor();love.graphics.setShader();love.graphics.clear(0,0,0,0)
+  love.graphics.setColor(1,1,1,1);draw('Agテスト',8,16);love.graphics.pop()
+  local pixels=probe:newImageData()
+  for y=0,47 do for x=0,159 do
+    local _,_,_,a=pixels:getPixel(x,y)
+    if a>0 then inkTop=math.min(inkTop or y,y);inkBottom=math.max(inkBottom or y,y) end
+  end end
+  inkTop,inkBottom=inkTop-16,inkBottom-16
+  pixels:release();probe:release()
+  local clippedMarquee=false
+  F.draw=function(text,x,y,...)
+    local sx,sy,sw,sh=love.graphics.getScissor()
+    if sx and text:find('Restores',1,true) then
+      -- Shared Bag descriptions render into an untransformed private canvas.
+      if y+inkTop < sy or y+inkBottom >= sy+sh then clippedMarquee=true end
+    end
+    return draw(text,x,y,...)
+  end
   local function check(ok,label) assert(ok,label);checks=checks+1 end
   local function clear() while game.stack:top() do game.stack:pop() end end
   local originalLookup,originalEncode=Strings.lookup,F.encode
@@ -67,12 +89,16 @@ return function(game)
     Screens.push(game,gen2 and 'Gen2PartyMenu' or 'PartyMenu',gen2 and {save=game.save} or {})
     capture(size[1]..'-party')
     check(seen['テストダ'],'party preserves entire Japanese nickname')
-    clear();Screens.push(game,gen2 and 'Gen2PackMenu' or 'BagMenu',gen2 and {save=game.save,world={}} or {})
+    clear();local bag=Screens.push(game,gen2 and 'Gen2PackMenu' or 'BagMenu',gen2 and {save=game.save,world={}} or {})
+    if gen2 then
+      bag.description=function()return 'Restores test HP. テストテストテストテストテストテストテストテストテストテストテストテストテスト' end
+    end
     capture(size[1]..'-bag')
     check(seen['テストテスト'],'localized item names reach the font')
+    check(not clippedMarquee,'description scissor retains complete translation glyphs')
     clear();Screens.push(game,gen2 and 'Gen2PokedexMenu' or 'PokedexMenu')
     capture(size[1]..'-dex')
   end
-  F.encode=originalEncode;Strings.lookup=originalLookup
+  F.draw=draw;F.encode=originalEncode;Strings.lookup=originalLookup
   print('[DISCORD QA] PASS '..checks..' translation compatibility checks');love.event.quit(0)
 end

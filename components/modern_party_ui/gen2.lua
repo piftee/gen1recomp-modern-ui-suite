@@ -275,7 +275,12 @@ return function(mod)
   }
   local function partyDetail(mon, data)
     if data.status then return data.status, Font.width(data.status), false end
-    if option("hp_text", "bar") == "percent" and not mon.isEgg then
+    local mode = option("hp_text", "bar")
+    if mode == "values" and not mon.isEgg then
+      local text = ("%d/%d"):format(mon.hp or 0, mon.maxHp or 0)
+      return text, Font.width(text), false
+    end
+    if mode == "percent" and not mon.isEgg then
       local digits = tostring(math.floor(hpFraction(mon) * 100))
       return digits, Font.width(digits) + 6, true
     end
