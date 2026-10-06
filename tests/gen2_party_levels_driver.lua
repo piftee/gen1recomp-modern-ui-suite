@@ -73,6 +73,9 @@ return function(game)
       check(name, "complete species name fits without touching level")
       local detail = data.status
       local percent = not detail and opts["party.hp_text"] == "percent"
+      if not detail and opts["party.hp_text"] == "values" then
+        detail = ("%d/%d"):format(mon.hp, mon.maxHp)
+      end
       if percent then detail = tostring(math.floor(mon.hp / mon.maxHp * 100)) end
       if detail then
         local other = find(detail, left, right, y + (compact and 9 or 13))
@@ -93,8 +96,8 @@ return function(game)
     end
     canvas:release()
   end
-  for _, mode in ipairs({"healthy", "percent", "status"}) do
-    opts["party.hp_text"] = mode == "healthy" and "bar" or "percent"
+  for _, mode in ipairs({"healthy", "values", "percent", "status"}) do
+    opts["party.hp_text"] = mode == "healthy" and "bar" or (mode == "values" and "values" or "percent")
     for i, mon in ipairs(game.save.party) do
       mon.status, mon.hp = nil, mon.maxHp
       if mode == "status" then

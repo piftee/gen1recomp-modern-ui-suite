@@ -13,7 +13,8 @@ return function(mod, settings)
   end
   mod.hooks:wrap("battle.low_health_alarm", function(next, ctx)
     if type(ctx) ~= "table" then return next(ctx) end
-    local mode = enabled("battle_info_hud", "low_hp_beep")
+    -- Sound comfort remains active when the visual HUD is disabled.
+    local mode = settings:get("battle_info_hud", "low_hp_beep")
     local battle, on = ctx.battle, ctx.on
     if battle then
       if mode ~= "reduce" or not on then chirps[battle] = nil

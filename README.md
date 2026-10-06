@@ -1,9 +1,8 @@
 # Modern UI Suite
 
-**0.1.36 — Move controls:** Select picks up a move immediately in modern
-Gen 1 and Gen 2 summaries. Clearer pick/swap prompts; verified on Gen1recomp
-0.3.52. Retains the Battle Art/G9 summary and translation fixes.
-See [release notes](RELEASE_NOTES.md).
+**0.1.37 — Discord fixes:** Gen 2 party HP values, independent low-HP
+alarm controls, and taller translation fonts in the Bag and Pokédex.
+Verified on Gen1recomp 0.3.55; includes the earlier move rearranging fixes.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single

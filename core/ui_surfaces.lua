@@ -2,6 +2,35 @@
 return function(mod, settings)
   local Surface = {}
 
+  -- Measure the active font's ink once. TTF baselines can place ink above
+  -- the cartridge's eight-pixel cell; keep that ink and reserve its height.
+  local measuredFont, measured
+  function Surface.textMetrics()
+    local Font = require("src.render.Font")
+    if not Font.ttfActive or not Font.ttfActive() then return 0, 8 end
+    local game = settings.activeGame
+    local def = game and game.data and game.data.font and game.data.font.ttf
+    if measured and measuredFont == def then return measured[1], measured[2] end
+    local G = love.graphics
+    local canvas = G.newCanvas(160, 48)
+    G.push("all"); G.setCanvas(canvas); G.origin(); G.setScissor(); G.setShader()
+    G.clear(0,0,0,0); G.setColor(1,1,1,1)
+    Font.draw("Agテスト", 8, 16)
+    G.pop()
+    local pixels = canvas:newImageData()
+    local top, bottom = 48, -1
+    for y = 0, 47 do
+      for x = 0, 159 do
+        local _, _, _, a = pixels:getPixel(x, y)
+        if a > 0 then top = math.min(top,y); bottom = math.max(bottom,y) end
+      end
+    end
+    pixels:release(); canvas:release()
+    local height = bottom >= top and bottom-top+1 or 8
+    measuredFont, measured = def, {height > 8 and 16-top or 0, math.max(8,height)}
+    return measured[1], measured[2]
+  end
+
   function Surface.fixedSize(component)
     local game = settings.activeGame
     local options = game and game.save and game.save.options

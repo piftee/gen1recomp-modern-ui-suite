@@ -50,6 +50,7 @@ return function(parent, settings, state, component)
     summaryExtensions = state.summaryExtensions,
     shinyDex = state.shinyDex,
     drawMenuIcon = state.drawMenuIcon,
+    textMetrics = state.uiSurfaces.textMetrics,
     fixedUISize = function() return state.uiSurfaces.fixedSize(component) end,
     isNativeEvolution = state.uiSurfaces.isNativeEvolution,
     guardWideDraw = state.uiSurfaces.guardWideDraw,
