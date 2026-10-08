@@ -427,7 +427,7 @@ return function(mod)
     local g = love.graphics
     if classicHudLayer then return classicHudLayer end
     if type(g.newCanvas) ~= "function" then return nil end
-    local ok, layer = pcall(g.newCanvas, 160, 144)
+    local ok, layer = pcall(g.newCanvas, 160, 144, {dpiscale=1})
     if not ok or not layer then return nil end
     if type(layer.setFilter) == "function" then
       layer:setFilter("nearest", "nearest")
@@ -869,7 +869,7 @@ return function(mod)
       -- The authored icon is 8x8. Dramatic Shape can add a one-pixel shadow
       -- down/right while baking the HUD, so retain that ninth edge too.
       local okCanvas, canvas = pcall(g.newCanvas,
-        STAGED_GENDER_CAPTURE_SIZE, STAGED_GENDER_CAPTURE_SIZE)
+        STAGED_GENDER_CAPTURE_SIZE, STAGED_GENDER_CAPTURE_SIZE, {dpiscale=1})
       if not okCanvas or not canvas then return nil end
       if type(canvas.setFilter) == "function" then
         canvas:setFilter("nearest", "nearest")

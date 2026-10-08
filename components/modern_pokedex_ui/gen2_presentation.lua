@@ -157,7 +157,8 @@ return function(mod, source)
     local canvas = menu.modernGen2DexCanvas
     if not canvas or canvas:getWidth() ~= w then
       if canvas and canvas.release then canvas:release() end
-      canvas = G.newCanvas(w,144);canvas:setFilter("nearest","nearest")
+      -- Cartridge pixels must stay 1:1 on fractional-DPI mobile displays.
+      canvas = G.newCanvas(w,144,{dpiscale=1});canvas:setFilter("nearest","nearest")
       menu.modernGen2DexCanvas = canvas
     end
     local previous = G.getCanvas()

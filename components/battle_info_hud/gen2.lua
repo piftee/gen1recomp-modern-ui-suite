@@ -301,7 +301,7 @@ return function(mod)
     end
 
     if not screen.modernBattleCanvas then
-      screen.modernBattleCanvas = G.newCanvas(160, 144)
+      screen.modernBattleCanvas = G.newCanvas(160, 144, {dpiscale=1})
       screen.modernBattleCanvas:setFilter("nearest", "nearest")
     end
     local previous = G.getCanvas()

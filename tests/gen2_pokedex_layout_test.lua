@@ -3,6 +3,14 @@ package.path = "./?.lua;./?/init.lua;" .. package.path
 
 local T = require("tests.modkit")
 local Font = require("src.render.Font")
+local createCanvas = love.graphics.newCanvas
+local canvasAllocations = 0
+love.graphics.newCanvas = function(w, h, options)
+  canvasAllocations = canvasAllocations + 1
+  T.eq(options and options.dpiscale, 1,
+    "Pokédex keeps one texel per cartridge pixel on fractional-DPI screens")
+  return createCanvas(w, h, options)
+end
 Font.load(T.fixtures.fresh())
 
 local savedModules = {}
@@ -168,4 +176,6 @@ T.check(text:find("CAUGHT 006/007",1,true)~=nil,"search keeps global caught tota
 T.check(text:find("FOUND 001",1,true)~=nil,"search footer reports matched count")
 Font.draw=originalDraw
 for name,value in pairs(savedModules) do package.loaded[name]=value end
+T.check(canvasAllocations >= 4, "DPI contract covers resized Pokédex buffers")
+love.graphics.newCanvas = createCanvas
 T.finish("modern_ui_suite shared Gen 2 Pokedex")
