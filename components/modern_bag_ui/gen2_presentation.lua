@@ -119,7 +119,8 @@ return function(mod, source)
     local canvas=menu.modernGen2BagCanvas
     if not canvas or canvas:getWidth()~=l.width or canvas:getHeight()~=l.canvasHeight then
       if canvas and canvas.release then canvas:release() end
-      canvas=G.newCanvas(l.width,l.canvasHeight);canvas:setFilter('nearest','nearest')
+      -- Cartridge pixels must stay 1:1 on fractional-DPI mobile displays.
+      canvas=G.newCanvas(l.width,l.canvasHeight,{dpiscale=1});canvas:setFilter('nearest','nearest')
       menu.modernGen2BagCanvas=canvas
     end
     local previous=G.getCanvas()

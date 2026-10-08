@@ -1,14 +1,17 @@
-# 0.1.37
+# 0.1.38
 
-- Restore numeric HP values on Gold, Silver and Crystal party cards. Verify
-  values, percentages, status labels and level 100 at compact and wide sizes.
-- Apply LOW HP BEEP reductions/muting even when the visual Battle HUD is off.
-  Verify the native Crystal alarm loop, its initial alert budget and rearming.
-- Fix taller translation-font clipping in the shared Bag and Pokédex layouts.
-  Measure the active glyph height, retain full scrolling-description strokes,
-  and give headers, footers and wrapped text enough space.
-- Verify on Gen1recomp 0.3.55, with Japanese Fusion Pixel 8px/10px and the
-  translation generator's fallback Plain Pixel font. Recheck move rearranging.
+- Fix fractional-DPI rendering in the Gen 2 Bag and Pokédex. Their internal
+  buffers now retain one texel per cartridge pixel, preventing uneven text
+  strokes and distorted glyphs on high-density mobile displays.
+- Apply the same pixel sizing rule to Gen 1/Gen 2 Battle HUD buffers and
+  translation-font measurements.
+- Retain the HP values, low-HP alarm controls, translation clipping and move
+  rearranging fixes from 0.1.35–0.1.37.
 
-Includes the move rearranging and Battle Art/G9 compatibility fixes from
-0.1.35–0.1.36. Translation fonts and provider artwork remain separate installs.
+Adds ROM-free regressions for fractional display density, resized Pokédex
+buffers and compact/wide/portrait Bag layouts. All 1,726 headless checks
+pass against the official Gen1recomp 0.3.62 source. The new DPI checks fail
+against 0.1.37 and pass with this fix. Native visual confirmation was unavailable
+because the test workstation was locked.
+
+No ROM data, translation fonts or provider artwork is included.

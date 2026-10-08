@@ -12,7 +12,7 @@ return function(mod, settings)
     local def = game and game.data and game.data.font and game.data.font.ttf
     if measured and measuredFont == def then return measured[1], measured[2] end
     local G = love.graphics
-    local canvas = G.newCanvas(160, 48)
+    local canvas = G.newCanvas(160, 48, {dpiscale=1})
     G.push("all"); G.setCanvas(canvas); G.origin(); G.setScissor(); G.setShader()
     G.clear(0,0,0,0); G.setColor(1,1,1,1)
     Font.draw("Agテスト", 8, 16)

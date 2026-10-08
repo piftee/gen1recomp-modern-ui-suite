@@ -1,8 +1,8 @@
 # Modern UI Suite
 
-**0.1.37 — Discord fixes:** Gen 2 party HP values, independent low-HP
-alarm controls, and taller translation fonts in the Bag and Pokédex.
-Verified on Gen1recomp 0.3.55; includes the earlier move rearranging fixes.
+**0.1.38 — Display density fix:** Gen 2 Bag and Pokédex buffers now keep
+one texel per cartridge pixel on fractional-DPI screens. Battle HUD buffers
+and translation-font measurements use the same pixel sizing rule.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single

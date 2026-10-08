@@ -475,10 +475,18 @@ for screenId, marker in pairs(smokeMarkers) do
     screenId .. " keeps its imported modern presentation marker")
 end
 
-local StartMenu = require("src.ui.StartMenu")
-local modernStart = StartMenu.new(game)
+local function openStart()
+  -- Released engines decorate START through screen.pushed; newer engines
+  -- may also expose the presentation hook. Exercise the real lifecycle.
+  local previous = game.stack
+  game.stack = setmetatable({states={}}, {__index=require("src.core.StateStack")})
+  local menu = require("src.ui.Screens").push(game, "StartMenu")
+  game.stack = previous
+  return menu
+end
+local modernStart = openStart()
 T.eq(modernStart.modernStartMenuUI, true,
-  "the enabled Start presentation hook decorates a newly built controller")
+  "the enabled Start presentation decorates the native screen lifecycle")
 local startPresentation = exports.components.modern_start_menu_ui.exports.presentation
 
 -- AUTO is not a white preset: it follows the nearest active field palette.
@@ -594,11 +602,22 @@ do
   T.eq(fallbackCalls, 1, "unknown summary page delegates to its inherited renderer")
   summary.modernNativeDraw = nativeExtraDraw
   summary.page = 2
+  -- Current engines briefly hold the native summary open/close transitions.
+  -- Wait through those frames rather than sending B while input is held.
+  for _ = 1, 120 do
+    if (summary.whiteHold or 0) <= 0 then break end
+    summary:update(1/60)
+  end
   input.pressed.b = true
   summary:update(0)
   input.pressed.b = nil
+  for _ = 1, 120 do
+    local top = stack:top()
+    if top == party or type(top.update) ~= "function" then break end
+    top:update(1/60)
+  end
   T.eq(stack:top(), party,
-    "backing out of Summary returns directly to the existing Party screen")
+    "backing out of Summary returns to the existing Party after native transitions")
   T.same({ party:uiSize() }, { summaryW, summaryH },
     "the Summary-to-Party return keeps one continuous render surface")
   stack.states = {}
@@ -608,7 +627,7 @@ do
 end
 
 suiteOptions["start_menu.enabled"] = false
-local nativeStart = StartMenu.new(game)
+local nativeStart = openStart()
 T.check(nativeStart.modernStartMenuUI ~= true,
   "disabling a hook component takes effect on its next invocation")
 T.eq(modernStart.modernStartMenuUI, true,
