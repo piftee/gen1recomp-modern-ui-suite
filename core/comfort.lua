@@ -100,10 +100,33 @@ return function(mod, settings)
     return game and game.phase == "play" and game.world and game.world.map
       and not game.world.textbox and not game.world.mapSetup
   end
+  local function sameArea(a, b)
+    local function key(text)
+      return type(text) == "string" and text:upper():gsub("[^%w]", "") or nil
+    end
+    return key(a) ~= nil and key(a) == key(b)
+  end
+  local function anotherAreaBanner(game, name, mapId)
+    if game.world and game.world.mapSign then return true end
+    if type(mod.find) ~= "function" then return false end
+    local ok, provider = pcall(mod.find, "qol_toggles")
+    local api = ok and provider and provider.exports
+    if type(api) ~= "table" or type(api.autoRepelToastText) ~= "function" then return false end
+    local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
+    local got, text = pcall(api.autoRepelToastText, now)
+    -- The shared QoL slot also carries repel notices. Yield only when it
+    -- actually names this area; never hide a map name for an unrelated toast.
+    return got and (sameArea(text, name) or sameArea(text, mapId))
+  end
   function C.areaVisible(game)
+    if toast and toast.game == game
+        and anotherAreaBanner(game, toast.text, toast.mapId) then
+      -- Give up the entire entry, so our paused timer cannot display a
+      -- second name after the native/companion banner has disappeared.
+      toast = nil
+    end
     return toast and toast.game == game and toast.left > 0
       and enabled("modern_start_menu_ui", "area_names") and C.overworldVisible(game)
-      and not (game.world and game.world.mapSign)
   end
   mod.events:on("game.ready", function(event)
     activeGame = event and (event.game or event)
@@ -114,12 +137,12 @@ return function(mod, settings)
     if not enabled("modern_start_menu_ui", "area_names") or type(event) ~= "table"
         or event.via == "boot" or event.via == "continue" then return end
     local game = event.game or activeGame
-    -- Crystal already presents a native sign for many outdoor transitions.
-    -- Yield for the entire entry, even if that sign is dismissed early.
-    if not game or game.world and game.world.mapSign then return end
+    if not game then return end
     local name = C.areaName(event.mapId, event.map)
-    if name then toast = {game=game, text=name, left=2} end
-  end)
+    if name and not anotherAreaBanner(game, name, event.mapId) then
+      toast = {game=game, text=name, mapId=event.mapId, left=2}
+    end
+  end, -1000)
   mod.hooks:wrap("input.step", function(next, game, dt)
     activeGame = game or activeGame
     if toast and (not enabled("modern_start_menu_ui", "area_names") or toast.game ~= game) then

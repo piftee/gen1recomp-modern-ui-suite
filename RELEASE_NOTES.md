@@ -1,19 +1,23 @@
-# 0.1.39
+# 0.1.40
 
-- Restore the level-up stat confirmation in Gold, Silver and Crystal when
-  Battle HUD is enabled. The native box was hidden by the widescreen battle
-  renderer even though the battle still waited for its A/B confirmation.
-- Display Attack, Defense, Special Attack, Special Defense and Speed using
-  the game's own stat renderer and current values. Keep the box aligned with
-  the centred battle scene at wide, compact, native and portrait sizes.
-- Preserve native A/B dismissal, the HUD-off path and subsequent battle menus.
+- Make the Gen 2 HUD readable over Voxel battle scenery with light text and a
+  thin dark outline. Keep the terrain visible without large backing panels,
+  and remove the cartridge frame rules during an active 3D battle.
+- Restore a visible blue EXP track in Gen 2 Voxel battles. Follow the native
+  animated EXP value, including filling the bar, leveling up and resetting
+  for the next level. Keep ordinary 2D battles and HUD-off rendering native.
+- Put Special Stat Split's selected move category in the move details strip
+  instead of drawing its fixed badge over the move cards. Show physical,
+  special and status categories, and keep the full SCRATCH name visible.
+- Show one area label when QoL Toggles already announces the current map.
+  Discard the pending Suite label so it cannot appear again after the first
+  notification expires. Crystal's native entry signs retain priority.
 
-Verified on the official Gen1recomp 0.3.89 runtime: 570 native level-up checks
-across Gold, Silver and Crystal, plus regressions for move learning, move
-rearranging and the party EXP summary. All 1,743 headless checks pass against
-the matching official engine source. The reported missing box was reproduced
-before the fix and visually verified after it.
+Verified on the official Gen1recomp 0.3.89 runtime with Battle Art Voxel Gen2
+2.1.0: 129 native layout/EXP checks across Gold, Silver and Crystal, 156 3D
+composition/toggle checks, and 13 area-label checks with QoL Toggles 1.30.8.
+The EXP checks inspect the rendered GPU pixels and run a real EXP award across
+a level-up. All 1,803 headless checks pass, including scope restoration after
+render errors and native fallback paths. Tests ran muted in background windows.
 
-Includes the earlier fractional-DPI, HP display, low-HP alarm, translation
-clipping and move-selection fixes. No ROM data, fonts or provider artwork
-is bundled.
+No ROM data, fonts or provider artwork is bundled.
