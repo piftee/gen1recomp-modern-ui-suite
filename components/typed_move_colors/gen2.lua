@@ -851,6 +851,11 @@ return function(mod)
       end
       return unpack(results, 2)
     end
+    -- Keep the HUD's text scope outside these alignment/palette adapters,
+    -- so captured printers still see the same outlined dialogue ink.
+    if type(screen.modernBattleOutlineBottom) == "function" then
+      draw = screen.modernBattleOutlineBottom(draw)
+    end
     screen.typedMoveColorsBottomDraw = draw
     screen.drawBottom = draw
   end
