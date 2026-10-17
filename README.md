@@ -1,9 +1,9 @@
 # Modern UI Suite
 
-**0.1.41 — Consistent Gen 2 battle text:** Dialogue, battle commands and
-Yes/No prompts now use the same light text and dark outline as the Voxel HUD.
-Native text reveal, page advancement, controls and box-fill choices remain
-intact. Verified on Gen1recomp 0.3.89.
+**0.1.42 — Readable Gen 2 battle popups:** Stat confirmations and switch
+prompts have solid backgrounds over Voxel scenery. Enemy HP digits remain
+white at low health, and the caught marker matches the outlined HUD text.
+Verified on Gen1recomp 0.3.89.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
