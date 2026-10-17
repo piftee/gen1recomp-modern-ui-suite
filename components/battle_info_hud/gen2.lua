@@ -191,6 +191,15 @@ return function(mod)
       printInkPx("▼", width - 14, 132)
     end
     drawChoices(screen, width)
+    -- The native bottom pass also paints the level-up stat confirmation
+    -- above the dialogue. Keep its renderer and A/B-controlled lifetime.
+    if screen.phase == "stats-box" and screen.statsBoxMon
+        and type(screen.drawStatsBox) == "function" then
+      G.push("all")
+      G.translate(math.floor((width - 160) / 2), 0)
+      screen:drawStatsBox(screen.statsBoxMon, 0)
+      G.pop()
+    end
     -- drawWideBattle suppresses the native bottom pass, which also owns the
     -- four-slot forget list above the dialogue. Restore that native list:
     -- otherwise A confirms an invisible cursor (initially slot one).

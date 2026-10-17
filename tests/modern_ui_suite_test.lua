@@ -1465,6 +1465,37 @@ gen2Mod.suite = {
 T.eq(battleArtBattle:drawWidescreen(800, 720), "battle-art",
   "HUD yields to native move list when the enabled move component uses Text Only")
 
+-- Native level confirmation is part of drawBottom, which the wide HUD
+-- suppresses. Its stat overlay must still render, centred over the scene.
+local statsMon, statsCalls, statsOffset = {}, 0, nil
+local savedTranslate = love.graphics.translate
+local lastTranslation
+love.graphics.translate = function(x,y)
+  lastTranslation = {x,y}
+  return savedTranslate(x,y)
+end
+stageStateOverride, battleArtState, battleArtId = nil, nil, nil
+gen2Mod.suite = nil
+battleArtBattle.phase, battleArtBattle.statsBoxMon = "stats-box", statsMon
+battleArtBattle.bgMode = function() return "white" end
+battleArtBattle.drawSceneBody = function() end
+battleArtBattle.drawStatsBox = function(_, mon, offset)
+  statsCalls, statsOffset = statsCalls + 1, offset
+  T.eq(mon, statsMon, "wide level confirmation retains the native party member")
+end
+for _, size in ipairs({{640,576},{800,720},{1280,720},{480,900}}) do
+  statsCalls = 0
+  battleArtBattle:drawWidescreen(size[1],size[2])
+  T.eq(statsCalls, 1, "wide HUD paints the native stat confirmation once")
+  T.eq(statsOffset, 0, "native stats renderer keeps its own tile geometry")
+  T.same(lastTranslation, {math.floor((battleArtBattle.modernBattleLastWideWidth-160)/2),0},
+    "stats align with the centred native battle scene")
+end
+battleArtBattle.phase = "resolving"; statsCalls = 0
+battleArtBattle:drawWidescreen(1280,720)
+T.eq(statsCalls, 0, "a stale stat target cannot draw outside its confirmation phase")
+love.graphics.translate = savedTranslate
+
 package.loaded["src.ui.gen2.Chrome"] = savedGen2Chrome
 
 T.finish("modern_ui_suite")
