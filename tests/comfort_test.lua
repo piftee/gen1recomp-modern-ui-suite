@@ -1,7 +1,15 @@
 package.path = "./?.lua;./?/init.lua;" .. package.path
 local T=require('tests.modkit')
 local hooks,events,values={},{},{low_hp_beep='reduce',shop_counts=true,area_names=true}
+local otherToast, providerAvailable, providerThrows
+local function find(id)
+ if id=='qol_toggles' and providerAvailable then return {exports={autoRepelToastText=function()
+  if providerThrows then error('toast unavailable') end
+  return otherToast
+ end}} end
+end
 local C=dofile('mods/modern_ui_suite/core/comfort.lua')({
+ find=find,
  hooks={wrap=function(_,key,fn)hooks[key]=fn end},
  events={on=function(_,key,fn)events[key]=fn end},
 },{isEnabled=function()return true end,get=function(_,_,key)return values[key] end})
@@ -41,6 +49,30 @@ game.world.mapSign=nil
 T.check(not C.areaVisible(game),'native Crystal sign owns the entire entry')
 events['map.entered']({mapId='ROUTE_31',via='boot'})
 T.check(not C.areaVisible(game),'loading a save does not announce a transition')
+providerAvailable=true
+otherToast='ROUTE 30'
+events['map.entered']({mapId='ROUTE_30',map={def={name='Route 30'}},via='warp'})
+T.check(not C.areaVisible(game),'QoL area toast owns this entry')
+otherToast=nil
+T.check(not C.areaVisible(game),'no delayed duplicate after companion expires')
+events['map.entered']({mapId='ROUTE_31',via='warp'})
+T.check(C.areaVisible(game),'companion without a live toast leaves Suite available')
+otherToast='Route31'
+T.check(not C.areaVisible(game),'late companion notification cancels pending Suite toast')
+otherToast=nil
+T.check(not C.areaVisible(game),'late ownership cannot resume a second banner')
+otherToast='USED REPEL!'
+events['map.entered']({mapId='ROUTE_32',via='warp'})
+T.check(C.areaVisible(game),'unrelated repel message does not hide area')
+providerThrows=true
+events['map.entered']({mapId='ROUTE_33',via='warp'})
+T.check(C.areaVisible(game),'provider failure leaves area notification usable')
+providerThrows=false;otherToast=nil
+-- A native sign may also be created after the entry event.
+game.world.mapSign={}
+T.check(not C.areaVisible(game),'late native sign takes ownership')
+game.world.mapSign=nil
+T.check(not C.areaVisible(game),'native sign dismissal does not reveal a delayed label')
 values.area_names=false
 events['map.entered']({mapId='ROUTE_32',via='warp'})
 T.check(not C.areaVisible(game),'area names remain optional')

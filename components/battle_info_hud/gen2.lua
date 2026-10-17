@@ -4,6 +4,7 @@
 return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
+  local nativePaletteGlyphs = Chrome.paletteGlyphs
 
   -- Keep native message pages/reveal/input; only make its existing wrapping
   -- split overlong words on real glyph boundaries. The scoped Chrome override
@@ -357,6 +358,124 @@ return function(mod)
   end
 
   local MeterText=mod:load("meters.lua")()
+  local function installStagedHud(screen)
+    local function active()
+      -- Stadium's dedicated compositor already owns its HUD cards.
+      return enabled() and not screen.stadium2ImporterBattleArtUiPass
+        and external3DBattleActive(screen)
+    end
+    -- Keep the terrain visible: only the native HUD's ink gets an outline.
+    -- Fresh glyph closures prevent a shadow shader leaking into the face.
+    local function outlinedGlyphs(palette, invert, raw)
+      local function colors(ink)
+        local out = {}
+        for i, color in ipairs(palette or Chrome.DEFAULT_BOX_PALETTE) do out[i] = color end
+        out[4] = ink
+        return out
+      end
+      local dark, light = colors({0,0,0}), colors({255,255,255})
+      local pal = nativePaletteGlyphs(light, false, true)
+      return pal or light, function(code, x, y)
+        for _, offset in ipairs({{-1,0},{1,0},{0,-1},{0,1}}) do
+          local _, draw, finish = nativePaletteGlyphs(dark, false, true)
+          if draw then draw(code,x+offset[1],y+offset[2]); finish()
+          else
+            love.graphics.setColor(0,0,0,1)
+            Font.drawCode(code,x+offset[1],y+offset[2])
+          end
+        end
+        local _, draw, finish = nativePaletteGlyphs(light, false, true)
+        if draw then draw(code,x,y); finish()
+        else love.graphics.setColor(1,1,1,1); Font.drawCode(code,x,y) end
+      end, function() end
+    end
+    for _, side in ipairs({"enemy","player"}) do
+      local method = side == "enemy" and "drawEnemyHud" or "drawPlayerHud"
+      local native = screen[method]
+      if type(native) == "function" then
+        screen[method] = function(self, ...)
+          local mon = self:activeMon(side)
+          local visible = mon and active() and self:statusHUDVisible()
+            and (side == "enemy" and self.showEnemyHud or side == "player" and self.showPlayerHud)
+            and not self:hudCleared(side)
+          self.modernStagedLevels = self.modernStagedLevels or {}
+          self.modernStagedLevels[side] = false
+          if not visible then return native(self, ...) end
+          local previous, printThrough, printRight = Chrome.paletteGlyphs,
+            Chrome.printThrough, Chrome.printRightThrough
+          Chrome.paletteGlyphs = outlinedGlyphs
+          local function printHud(text, tx, ty, palette, right)
+            local width = Font.width(text)
+            local x = tx*8 - (right and width or 0)
+            local _, glyph, finish = outlinedGlyphs(palette)
+            for _, code in ipairs(Font.encode(text)) do
+              glyph(code,x,ty*8); x=x+Font.advanceOf(code)
+            end
+            finish()
+            return width
+          end
+          -- Current Chrome.printThrough inlines its glyph shader. Scope its
+          -- two public text entry points too, rather than relying on an old
+          -- engine implementation that routed them through paletteGlyphs.
+          Chrome.printThrough = printHud
+          Chrome.printRightThrough = function(text,tx,ty,palette)
+            return printHud(text,tx,ty,palette,true)
+          end
+          love.graphics.push("all")
+          if side == "enemy" then love.graphics.translate(0,2) end
+          local result = {pcall(function(...)
+            local values = {native(self,...)}
+            if self:statusTag(mon,side) then
+              local level = side == "player" and (self.shownLevel or mon.level) or mon.level
+              printInk("<LV>"..tostring(level or 1),10,side == "enemy" and 1 or 8)
+              self.modernStagedLevels[side] = true
+            end
+            return unpack(values)
+          end,...)}
+          love.graphics.pop()
+          Chrome.paletteGlyphs, Chrome.printThrough, Chrome.printRightThrough =
+            previous, printThrough, printRight
+          if not result[1] then error(result[2],0) end
+          self.modernStagedHudOutlined = true
+          return unpack(result,2)
+        end
+      end
+    end
+    local hud = screen.hud
+    if not hud then return end
+    for _, method in ipairs({"drawEnemyFrame","drawPlayerFrame"}) do
+      local native = hud[method]
+      if type(native) == "function" then
+        hud[method] = function(self, ...)
+          if active() then return end
+          return native(self,...)
+        end
+      end
+    end
+    local nativeExp = hud.drawExpBar
+    if type(nativeExp) == "function" then
+      hud.drawExpBar = function(self, fraction, tx, ty, ...)
+        if not active() then
+          screen.modernStagedExpPixels, screen.modernStagedExpBounds = nil, nil
+          return nativeExp(self,fraction,tx,ty,...)
+        end
+        local G = love.graphics
+        local pixels = math.floor(math.max(0,math.min(1,fraction or 0))*64)
+        local x,y = tx*8,ty*8+2
+        G.push("all"); G.setShader()
+        G.setColor(0.16,0.20,0.27,1); G.rectangle("fill",x,y,64,4)
+        G.setColor(0.25,0.65,1,1)
+        if pixels>0 then G.rectangle("fill",x+64-pixels,y+1,pixels,2) end
+        screen.modernStagedExpPixels = pixels
+        local sx,sy = G.transformPoint(x,y)
+        local ex,ey = G.transformPoint(x+64,y+4)
+        screen.modernStagedExpBounds = {x=sx,y=sy,w=ex-sx,h=ey-sy}
+        G.pop()
+        return true
+      end
+    end
+  end
+
   mod.hooks:wrap("battle.overlay", function(next, screen)
     local result = next(screen)
     if not enabled() or type(screen) ~= "table" then return result end
@@ -395,11 +514,13 @@ return function(mod)
     local playerOffset = sceneOffset > 0 and enemyOffset
       or math.floor(wideOffset / 8)
     if enemyStatus and screen.showEnemyHud
+        and not (screen.modernStagedLevels and screen.modernStagedLevels.enemy)
         and (type(screen.hudCleared) ~= "function"
           or not screen:hudCleared("enemy")) then
       printInk("<LV>" .. tostring(enemy.level or 1), 10 + enemyOffset, 1)
     end
     if playerStatus and screen.showPlayerHud
+        and not (screen.modernStagedLevels and screen.modernStagedLevels.player)
         and (type(screen.hudCleared) ~= "function"
           or not screen:hudCleared("player")) then
       printInk("<LV>" .. tostring(
@@ -423,6 +544,7 @@ return function(mod)
     if type(screen) ~= "table" or screen.screenId ~= "Gen2BattleState"
         or screen.modernBattleWideInstalled then return end
     installDialogueWrapping(screen, "battle_hud", enabled)
+    installStagedHud(screen)
     screen.modernBattleDrawChoices = function(self, palette)
       return drawChoices(self, self.modernBattleWideWidth or self.modernBattleLastWideWidth or 160, palette)
     end

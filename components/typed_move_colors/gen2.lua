@@ -116,6 +116,68 @@ return function(mod)
       or type(player and player.moves) == "table" and player.moves or {}
   end
 
+  local function categoryReadout(screen)
+    if type(mod.find) ~= "function" then return nil end
+    local handle = mod.find("special_stat_split")
+    local api = handle and handle.exports
+    if not (api and type(api.getMoveCategory) == "function") then return nil end
+    if type(api.moveCategoryReadoutEnabled) == "function"
+        and not api.moveCategoryReadoutEnabled() then return nil end
+    local moves = playerMoves(screen)
+    local slot = moves[tonumber(screen.moveIndex) or 1]
+    local def = slot and screen.game and screen.game.data.moves[slot.id]
+    if not def then return nil end
+    local ok, category = pcall(api.getMoveCategory, slot.id)
+    if not ok then return nil end
+    category = tostring(category):upper()
+    if category == "PHYSICAL" or category == "SPECIAL" or category == "STATUS" then
+      return category
+    end
+  end
+
+  -- Older Special Stat Split releases paint a fixed badge into the cartridge
+  -- move-box border. Scope its exact legacy primitives to this battle draw;
+  -- the selected-move footer owns the same readout when our grid is active.
+  local function installCategoryScope(screen)
+    for _, method in ipairs({"draw", "drawWidescreen"}) do
+      local native = screen[method]
+      local marker = "typedMoveCategoryScope_" .. method
+      if type(native) == "function" and not screen[marker] then
+        screen[marker] = true
+        screen[method] = function(self, ...)
+          if self.typedMoveCategoryScopeActive or not movePhase(self)
+              or not gridEnabled() or not categoryReadout(self) then
+            return native(self, ...)
+          end
+          local G = love.graphics
+          local rectangle, drawCode = G.rectangle, Font.drawCode
+          self.typedMoveCategoryScopeActive = true
+          G.rectangle = function(mode, x, y, w, h, ...)
+            if mode == "fill" and y == 96 and h == 8 and x >= 64 and x+w <= 144 then
+              self.typedMoveCategoryLegacySuppressed = true
+              return
+            end
+            return rectangle(mode, x, y, w, h, ...)
+          end
+          Font.drawCode = function(code, x, y, ...)
+            -- The 3D compositor replaces Chrome.print itself while drawing,
+            -- but every glyph still reaches this shared font entry point.
+            if (y == 96 or y == 97) and x >= 64 and x < 145 then
+              self.typedMoveCategoryLegacySuppressed = true
+              return
+            end
+            return drawCode(code, x, y, ...)
+          end
+          local result = {pcall(native, self, ...)}
+          G.rectangle, Font.drawCode = rectangle, drawCode
+          self.typedMoveCategoryScopeActive = nil
+          if not result[1] then error(result[2], 0) end
+          return unpack(result, 2)
+        end
+      end
+    end
+  end
+
   local function layoutColumns(screen)
     local width = tonumber(screen and (screen.modernBattleWideWidth
       or screen.modernBattleLastWideWidth)) or 160
@@ -393,7 +455,7 @@ return function(mod)
     -- both the marker and the card margins twice, needlessly dropping one or
     -- two more characters even on layouts that had room.
     if indicator == "double_up" then return width - 28 end
-    if indicator then return width - 25 end
+    if indicator then return width - 24 end
     return width - 14
   end
 
@@ -547,6 +609,8 @@ return function(mod)
       local r, g, b = strength(color)
       local face = { r, g, b }
       local power, current, maximum = moveDetails(def, selected)
+      local category = categoryReadout(screen)
+      screen.typedMoveColorsInfoCategory = category
       local battle = screen.battle
       local ppText = battle and type(battle.modUnlimitedPP) == "function"
           and battle:modUnlimitedPP(battle.player) and "∞"
@@ -562,14 +626,25 @@ return function(mod)
       local ink = { 1, 1, 1 }
       -- Details follow the destination normally; amber remains on the source.
       if sidePanel then
-        printCardInk("POWER", ix + 7, iy + 9, ink)
-        printCardInkRight(power, ix + iw - 7, iy + 9, ink)
-        printCardInk("PP", ix + 7, iy + 23, ink)
-        printCardInkRight(ppText,
-          ix + iw - 7, iy + 23, ink)
+        local powerY, ppY = iy + 9, iy + 23
+        if category then
+          printCardInk(category, ix + 7, iy + 3, ink)
+          powerY, ppY = iy + 15, iy + 27
+        end
+        printCardInk("POWER", ix + 7, powerY, ink)
+        printCardInkRight(power, ix + iw - 7, powerY, ink)
+        printCardInk("PP", ix + 7, ppY, ink)
+        printCardInkRight(ppText, ix + iw - 7, ppY, ink)
         screen.typedMoveColorsInfoMode = "full"
       else
         local line = ("POWER %s  PP %s"):format(power, ppText)
+        if category then
+          line = ("%s POWER %s PP %s"):format(category, power, ppText)
+          if Font.width(line) > iw - 14 then
+            local short = ({PHYSICAL="PHYS",SPECIAL="SPEC",STATUS="STAT"})[category]
+            line = ("%s P%s PP%s"):format(short, power, ppText)
+          end
+        end
         local lineWidth
         if ppText == "∞" then
           local prefix = line:sub(1,-4)
@@ -834,8 +909,11 @@ return function(mod)
     local battleScreen = type(screen) == "table"
       and (screen.screenId == "Gen2BattleState"
         or screen.screenId == "BattleState")
-    if battleScreen then installGridNavigation(screen) end
-  end, 1000)
+    if battleScreen then
+      installGridNavigation(screen)
+      installCategoryScope(screen)
+    end
+  end, -1000)
 
   mod.hooks:wrap("battle.overlay", function(next, screen)
     -- battle.overlay is the one compatibility seam every build that can draw

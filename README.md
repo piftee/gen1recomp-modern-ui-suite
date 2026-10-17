@@ -1,8 +1,9 @@
 # Modern UI Suite
 
-**0.1.39 — Gen 2 level-up stats:** Restore the native stat confirmation
-in Gold, Silver and Crystal battles. All five stat values remain visible
-until A/B confirmation. Verified on Gen1recomp 0.3.89.
+**0.1.40 — Clearer Gen 2 Voxel battles:** Light, outlined HUD text keeps the
+terrain visible, the EXP bar animates correctly, and move-category labels stay
+inside the details strip. Area notifications no longer duplicate QoL Toggles'
+map label. Verified on Gen1recomp 0.3.89.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
