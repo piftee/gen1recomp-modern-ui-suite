@@ -1,9 +1,9 @@
 # Modern UI Suite
 
-**0.1.40 — Clearer Gen 2 Voxel battles:** Light, outlined HUD text keeps the
-terrain visible, the EXP bar animates correctly, and move-category labels stay
-inside the details strip. Area notifications no longer duplicate QoL Toggles'
-map label. Verified on Gen1recomp 0.3.89.
+**0.1.41 — Consistent Gen 2 battle text:** Dialogue, battle commands and
+Yes/No prompts now use the same light text and dark outline as the Voxel HUD.
+Native text reveal, page advancement, controls and box-fill choices remain
+intact. Verified on Gen1recomp 0.3.89.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single

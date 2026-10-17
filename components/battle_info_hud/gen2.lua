@@ -389,6 +389,55 @@ return function(mod)
         else love.graphics.setColor(1,1,1,1); Font.drawCode(code,x,y) end
       end, function() end
     end
+    local function withOutlinedText(draw, self, ...)
+      local previous, printThrough, printRight = Chrome.paletteGlyphs,
+        Chrome.printThrough, Chrome.printRightThrough
+      local function printText(text, tx, ty, palette, right)
+        local width = Font.width(text)
+        local x = tx*8 - (right and width or 0)
+        local _, glyph, finish = outlinedGlyphs(palette)
+        for _, code in ipairs(Font.encode(text)) do
+          glyph(code,x,ty*8); x=x+Font.advanceOf(code)
+        end
+        finish()
+        return width
+      end
+      -- Current Chrome printers inline their glyph shaders. Scope their
+      -- entry points as well as paletteGlyphs so every text path agrees.
+      Chrome.paletteGlyphs = outlinedGlyphs
+      Chrome.printThrough = function(text,tx,ty,palette)
+        return printText(text,tx,ty,palette,false)
+      end
+      Chrome.printRightThrough = function(text,tx,ty,palette)
+        return printText(text,tx,ty,palette,true)
+      end
+      self.modernStagedTextScopeActive = true
+      love.graphics.push("all")
+      local result = {pcall(draw,self,...)}
+      love.graphics.pop()
+      self.modernStagedTextScopeActive = nil
+      Chrome.paletteGlyphs, Chrome.printThrough, Chrome.printRightThrough =
+        previous, printThrough, printRight
+      if not result[1] then error(result[2],0) end
+      return unpack(result,2)
+    end
+    -- Move cards own their ink. Other bottom UI keeps the native controller
+    -- and box renderer, with the same outlined text as the upper HUD.
+    screen.modernBattleOutlineBottom = function(native)
+      return function(self, ...)
+        if self.modernStagedTextScopeActive then return native(self,...) end
+        self.modernStagedDialogueOutlined = nil
+        if not active() or self.phase == "moves" or self.phase == "moveSelect" then
+          return native(self,...)
+        end
+        local result = {withOutlinedText(native,self,...)}
+        self.modernStagedDialogueOutlined = true
+        return unpack(result)
+      end
+    end
+    if type(screen.drawBottom) == "function" then
+      screen.drawBottom = screen.modernBattleOutlineBottom(screen.drawBottom)
+    end
     for _, side in ipairs({"enemy","player"}) do
       local method = side == "enemy" and "drawEnemyHud" or "drawPlayerHud"
       local native = screen[method]
@@ -401,43 +450,18 @@ return function(mod)
           self.modernStagedLevels = self.modernStagedLevels or {}
           self.modernStagedLevels[side] = false
           if not visible then return native(self, ...) end
-          local previous, printThrough, printRight = Chrome.paletteGlyphs,
-            Chrome.printThrough, Chrome.printRightThrough
-          Chrome.paletteGlyphs = outlinedGlyphs
-          local function printHud(text, tx, ty, palette, right)
-            local width = Font.width(text)
-            local x = tx*8 - (right and width or 0)
-            local _, glyph, finish = outlinedGlyphs(palette)
-            for _, code in ipairs(Font.encode(text)) do
-              glyph(code,x,ty*8); x=x+Font.advanceOf(code)
-            end
-            finish()
-            return width
-          end
-          -- Current Chrome.printThrough inlines its glyph shader. Scope its
-          -- two public text entry points too, rather than relying on an old
-          -- engine implementation that routed them through paletteGlyphs.
-          Chrome.printThrough = printHud
-          Chrome.printRightThrough = function(text,tx,ty,palette)
-            return printHud(text,tx,ty,palette,true)
-          end
-          love.graphics.push("all")
-          if side == "enemy" then love.graphics.translate(0,2) end
-          local result = {pcall(function(...)
-            local values = {native(self,...)}
-            if self:statusTag(mon,side) then
-              local level = side == "player" and (self.shownLevel or mon.level) or mon.level
+          local result = {withOutlinedText(function(active, ...)
+            if side == "enemy" then love.graphics.translate(0,2) end
+            local values = {native(active,...)}
+            if active:statusTag(mon,side) then
+              local level = side == "player" and (active.shownLevel or mon.level) or mon.level
               printInk("<LV>"..tostring(level or 1),10,side == "enemy" and 1 or 8)
-              self.modernStagedLevels[side] = true
+              active.modernStagedLevels[side] = true
             end
             return unpack(values)
-          end,...)}
-          love.graphics.pop()
-          Chrome.paletteGlyphs, Chrome.printThrough, Chrome.printRightThrough =
-            previous, printThrough, printRight
-          if not result[1] then error(result[2],0) end
+          end,self,...)}
           self.modernStagedHudOutlined = true
-          return unpack(result,2)
+          return unpack(result)
         end
       end
     end

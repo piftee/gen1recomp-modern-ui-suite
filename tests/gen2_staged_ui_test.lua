@@ -53,6 +53,11 @@ screen={screenId='Gen2BattleState',showEnemyHud=true,showPlayerHud=true,
   self.hud:drawPlayerFrame();self.hud:drawExpBar(0.5,10,11)
   return 'native-result'
  end,
+ drawBottom=function()
+  Chrome.printThrough('FIGHT',10,14,Chrome.DEFAULT_BOX_PALETTE)
+  Chrome.printRightThrough('MSG',18,16,Chrome.DEFAULT_BOX_PALETTE)
+  return 'native-bottom'
+ end,
  drawWidescreen=function()end,
  hud={drawPlayerFrame=function()nativeFrames=nativeFrames+1 end,
   drawEnemyFrame=function()nativeFrames=nativeFrames+1 end,
@@ -74,13 +79,26 @@ T.eq(Chrome.paletteGlyphs,nativeGlyphs,'glyph function is restored')
 T.eq(Chrome.printThrough,printThrough,'print function is restored')
 T.eq(Chrome.printRightThrough,printRight,'right-aligned print is restored')
 T.eq(depth,0,'graphics stack balanced')
+for _,phase in ipairs({'menu','resolving','ask-nickname','choose-forget','stats-box'})do
+ screen.phase=phase;rectangles,glyphs={},{}
+ T.eq(screen:drawBottom(),'native-bottom',phase..' preserves native bottom result')
+ T.eq(#glyphs,40,phase..' uses the same outline as the upper HUD')
+ T.eq(glyphs[5].ink,255,phase..' has a light face')
+ T.eq(#rectangles,0,phase..' text styling adds no backing panel')
+ T.eq(Chrome.printThrough,printThrough,phase..' restores the printer')
+end
+for _,phase in ipairs({'moves','moveSelect'})do
+ screen.phase=phase;glyphs={};screen:drawBottom()
+ T.eq(#glyphs,0,phase..' leaves move ink with its own presenter')
+end
 for _,fraction in ipairs({-1,0,1,2})do
  rectangles={};screen.hud:drawExpBar(fraction,10,11)
  T.eq(screen.modernStagedExpPixels,math.max(0,math.min(64,fraction*64)),'EXP is clamped '..fraction)
 end
 for _,mode in ipairs({'disabled','inactive','stadium'})do
  enabled=mode~='disabled';staged=mode~='inactive';screen.stadium2ImporterBattleArtUiPass=mode=='stadium'
- rectangles={};glyphs={};screen:drawPlayerHud()
+ rectangles={};glyphs={};screen.phase='menu';screen:drawPlayerHud();screen:drawBottom()
+ T.eq(screen.modernStagedDialogueOutlined,nil,mode..' leaves dialogue native')
  T.eq(#rectangles,0,mode..' retains native HUD')
  T.eq(#glyphs,0,mode..' has no styled glyphs')
  T.eq(screen.modernStagedExpPixels,nil,mode..' clears staged EXP ownership')
@@ -93,6 +111,7 @@ local failing={}
 for key,value in pairs(screen)do failing[key]=value end
 failing.modernBattleWideInstalled=nil
 failing.drawPlayerHud=function()Chrome.printThrough('X',0,0,Chrome.DEFAULT_BOX_PALETTE);error('native HUD failure')end
+failing.drawBottom=function()Chrome.printThrough('X',0,0,Chrome.DEFAULT_BOX_PALETTE);error('native bottom failure')end
 screen=failing;pushed({state=screen})
 T.eq(pcall(screen.drawPlayerHud,screen),false,'HUD draw failure propagates')
 T.eq(Chrome.paletteGlyphs,nativeGlyphs,'failure restores glyph function')
@@ -100,6 +119,12 @@ T.eq(Chrome.printThrough,printThrough,'failure restores print function')
 T.eq(Chrome.printRightThrough,printRight,'failure restores alignment function')
 T.eq(depth,0,'failure balances graphics state')
 
+T.eq(pcall(screen.drawBottom,screen),false,'bottom draw failure propagates')
+T.eq(Chrome.paletteGlyphs,nativeGlyphs,'bottom failure restores glyph function')
+T.eq(Chrome.printThrough,printThrough,'bottom failure restores print function')
+T.eq(Chrome.printRightThrough,printRight,'bottom failure restores alignment function')
+T.eq(screen.modernStagedTextScopeActive,nil,'bottom failure clears the scope guard')
+T.eq(depth,0,'bottom failure balances graphics state')
 package.loaded['src.render.GbcPalette']={}
 package.loaded['src.ui.gen2.SummaryMenu']={}
 local options,categoryOn,categoryPresent={battle_colors=true},true,true
