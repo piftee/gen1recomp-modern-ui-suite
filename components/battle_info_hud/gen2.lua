@@ -5,6 +5,7 @@ return function(mod)
   local Chrome = require("src.ui.gen2.Chrome")
   local Font = require("src.render.Font")
   local nativePaletteGlyphs = Chrome.paletteGlyphs
+  local nativeRectangle = love.graphics.rectangle
 
   -- Keep native message pages/reveal/input; only make its existing wrapping
   -- split overlong words on real glyph boundaries. The scoped Chrome override
@@ -389,9 +390,9 @@ return function(mod)
         else love.graphics.setColor(1,1,1,1); Font.drawCode(code,x,y) end
       end, function() end
     end
-    local function withOutlinedText(draw, self, ...)
-      local previous, printThrough, printRight = Chrome.paletteGlyphs,
-        Chrome.printThrough, Chrome.printRightThrough
+    local function withOutlinedText(draw, self, popups, ...)
+      local previous, printThrough, printRight, paletteBox = Chrome.paletteGlyphs,
+        Chrome.printThrough, Chrome.printRightThrough, Chrome.paletteBox
       local function printText(text, tx, ty, palette, right)
         local width = Font.width(text)
         local x = tx*8 - (right and width or 0)
@@ -411,13 +412,28 @@ return function(mod)
       Chrome.printRightThrough = function(text,tx,ty,palette)
         return printText(text,tx,ty,palette,true)
       end
+      if popups and type(paletteBox) == "function" then
+        Chrome.paletteBox = function(tx,ty,tw,th,palette)
+          -- Only transient boxes above the dialogue: stat confirmation,
+          -- Yes/No prompts and the move-forget list. Preserve the user's
+          -- transparency choice for the main dialogue and command panels.
+          if ty < 12 then
+            local G=love.graphics
+            G.push("all"); G.setShader(); G.setColor(0.10,0.12,0.16,1)
+            nativeRectangle("fill",tx*8,ty*8,tw*8,th*8)
+            G.pop()
+            self.modernStagedPopupBounds={x=tx*8,y=ty*8,w=tw*8,h=th*8}
+          end
+          return paletteBox(tx,ty,tw,th,palette)
+        end
+      end
       self.modernStagedTextScopeActive = true
       love.graphics.push("all")
       local result = {pcall(draw,self,...)}
       love.graphics.pop()
       self.modernStagedTextScopeActive = nil
-      Chrome.paletteGlyphs, Chrome.printThrough, Chrome.printRightThrough =
-        previous, printThrough, printRight
+      Chrome.paletteGlyphs, Chrome.printThrough, Chrome.printRightThrough, Chrome.paletteBox =
+        previous, printThrough, printRight, paletteBox
       if not result[1] then error(result[2],0) end
       return unpack(result,2)
     end
@@ -427,10 +443,11 @@ return function(mod)
       return function(self, ...)
         if self.modernStagedTextScopeActive then return native(self,...) end
         self.modernStagedDialogueOutlined = nil
+        self.modernStagedPopupBounds = nil
         if not active() or self.phase == "moves" or self.phase == "moveSelect" then
           return native(self,...)
         end
-        local result = {withOutlinedText(native,self,...)}
+        local result = {withOutlinedText(native,self,true,...)}
         self.modernStagedDialogueOutlined = true
         return unpack(result)
       end
@@ -447,6 +464,9 @@ return function(mod)
           local visible = mon and active() and self:statusHUDVisible()
             and (side == "enemy" and self.showEnemyHud or side == "player" and self.showPlayerHud)
             and not self:hudCleared(side)
+          if side == "enemy" then
+            self.modernStagedEnemyMeter, self.modernStagedCaughtOutlined = nil,nil
+          end
           self.modernStagedLevels = self.modernStagedLevels or {}
           self.modernStagedLevels[side] = false
           if not visible then return native(self, ...) end
@@ -459,14 +479,67 @@ return function(mod)
               active.modernStagedLevels[side] = true
             end
             return unpack(values)
-          end,self,...)}
+          end,self,false,...)}
           self.modernStagedHudOutlined = true
           return unpack(result)
         end
       end
     end
+    local nativeHp = screen.drawHpBar
+    if type(nativeHp) == "function" then
+      screen.drawHpBar = function(self,mon,side,tx,ty,...)
+        local result = nativeHp(self,mon,side,tx,ty,...)
+        if side ~= "enemy" or not active()
+            or mod.options:get("enemy_hp_counter") ~= true then return result end
+        local maximum=mon.maxHp or (mon.stats and mon.stats.hp) or 1
+        local hp=self:hudHp(mon,side)
+        local G=love.graphics
+        local rectangle=G.rectangle
+        G.push("all"); G.setShader()
+        -- Voxel keys out white HUD paper, including one-pixel rectangles.
+        -- Draw the meter's white digits through the original primitive so
+        -- that filter cannot discard their faces and leave only shadows.
+        G.rectangle=nativeRectangle
+        local rendered={pcall(MeterText.draw,self.game.data,
+          {mon={hp=hp,stats={hp=maximum}},shownHP=hp},"HP",
+          (tx+2)*8,ty*8+1,48,true,nil,false,true)}
+        G.rectangle=rectangle; G.pop()
+        if not rendered[1] then error(rendered[2],0) end
+        self.modernStagedEnemyMeter=true
+        return result
+      end
+    end
     local hud = screen.hud
     if not hud then return end
+    local nativeCaught=hud.drawCaughtIcon
+    if type(nativeCaught) == "function" and type(hud.drawTile) == "function" then
+      hud.drawCaughtIcon=function(self,...)
+        if not active() then return nativeCaught(self,...) end
+        local drawTile=self.drawTile
+        self.drawTile=function(owner,key,first,tile,tx,ty,colors,mirror)
+          local G=love.graphics
+          G.push("all")
+          local result={pcall(function()
+            local dark={{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
+            local light={{255,255,255},{255,255,255},{255,255,255},{255,255,255}}
+            for _,offset in ipairs({{-1,0},{1,0},{0,-1},{0,1}})do
+              G.push(); G.translate(offset[1],offset[2])
+              local ok,err=pcall(drawTile,owner,key,first,tile,tx,ty,dark,mirror)
+              G.pop(); if not ok then error(err,0) end
+            end
+            return drawTile(owner,key,first,tile,tx,ty,light,mirror)
+          end)}
+          G.pop()
+          if not result[1] then error(result[2],0) end
+          screen.modernStagedCaughtOutlined=true
+          return unpack(result,2)
+        end
+        local result={pcall(nativeCaught,self,...)}
+        self.drawTile=drawTile
+        if not result[1] then error(result[2],0) end
+        return unpack(result,2)
+      end
+    end
     for _, method in ipairs({"drawEnemyFrame","drawPlayerFrame"}) do
       local native = hud[method]
       if type(native) == "function" then
@@ -515,6 +588,7 @@ return function(mod)
     local enemyStatus = enemy and screen:statusTag(enemy, "enemy")
     local playerStatus = player and screen:statusTag(player, "player")
     if mod.options:get("enemy_hp_counter")==true and enemy and screen.showEnemyHud
+        and not screen.modernStagedEnemyMeter
         and (not screen.hudCleared or not screen:hudCleared("enemy")) then
       local M=MeterText
       local hp=screen:hudHp(enemy,"enemy")

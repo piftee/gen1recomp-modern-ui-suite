@@ -83,7 +83,7 @@ return function()
     return compact(current, true) .. "/" .. compact(maximum, true)
   end
 
-  function M.draw(data, battler, kind, x, y, width, numbers, ink, markColor)
+  function M.draw(data, battler, kind, x, y, width, numbers, ink, markColor, hideLabel)
     local current, maximum, ratio, capped = M.values(data, battler, kind)
     local color = BLUE
     if kind == "HP" then
@@ -111,7 +111,9 @@ return function()
       M.text(text, tx + 1, y + 2, BLACK)
       M.text(text, tx, y + 1, WHITE)
     end
-    M.text(kind == "HP" and "HP" or "XP", x - 15, y + 1, ink or BLACK)
+    if not hideLabel then
+      M.text(kind == "HP" and "HP" or "XP", x - 15, y + 1, ink or BLACK)
+    end
     if markColor ~= false then PaletteFX.markTrueColor(x - 15, y, width + 15, 7) end
   end
   return M
