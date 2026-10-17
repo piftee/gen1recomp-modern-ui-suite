@@ -1,17 +1,19 @@
-# 0.1.38
+# 0.1.39
 
-- Fix fractional-DPI rendering in the Gen 2 Bag and Pokédex. Their internal
-  buffers now retain one texel per cartridge pixel, preventing uneven text
-  strokes and distorted glyphs on high-density mobile displays.
-- Apply the same pixel sizing rule to Gen 1/Gen 2 Battle HUD buffers and
-  translation-font measurements.
-- Retain the HP values, low-HP alarm controls, translation clipping and move
-  rearranging fixes from 0.1.35–0.1.37.
+- Restore the level-up stat confirmation in Gold, Silver and Crystal when
+  Battle HUD is enabled. The native box was hidden by the widescreen battle
+  renderer even though the battle still waited for its A/B confirmation.
+- Display Attack, Defense, Special Attack, Special Defense and Speed using
+  the game's own stat renderer and current values. Keep the box aligned with
+  the centred battle scene at wide, compact, native and portrait sizes.
+- Preserve native A/B dismissal, the HUD-off path and subsequent battle menus.
 
-Adds ROM-free regressions for fractional display density, resized Pokédex
-buffers and compact/wide/portrait Bag layouts. All 1,726 headless checks
-pass against the official Gen1recomp 0.3.62 source. The new DPI checks fail
-against 0.1.37 and pass with this fix. Native visual confirmation was unavailable
-because the test workstation was locked.
+Verified on the official Gen1recomp 0.3.89 runtime: 570 native level-up checks
+across Gold, Silver and Crystal, plus regressions for move learning, move
+rearranging and the party EXP summary. All 1,743 headless checks pass against
+the matching official engine source. The reported missing box was reproduced
+before the fix and visually verified after it.
 
-No ROM data, translation fonts or provider artwork is included.
+Includes the earlier fractional-DPI, HP display, low-HP alarm, translation
+clipping and move-selection fixes. No ROM data, fonts or provider artwork
+is bundled.

@@ -1,8 +1,8 @@
 # Modern UI Suite
 
-**0.1.38 — Display density fix:** Gen 2 Bag and Pokédex buffers now keep
-one texel per cartridge pixel on fractional-DPI screens. Battle HUD buffers
-and translation-font measurements use the same pixel sizing rule.
+**0.1.39 — Gen 2 level-up stats:** Restore the native stat confirmation
+in Gold, Silver and Crystal battles. All five stat values remain visible
+until A/B confirmation. Verified on Gen1recomp 0.3.89.
 
 
 **0.1.31 — Complete QoL update:** Running Shoes, Modern EXP Share with a single
