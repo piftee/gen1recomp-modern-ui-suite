@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.43 — 2026-10-18
+
+- Add item illustrations for all 276 audited named item IDs across Red, Blue, Yellow, Gold, Silver and Crystal. Aliases and shared family templates are explicit; unknown mod items keep their category fallback.
+- Use the approved round capture-ball designs, including distinct variants and a refined Lure Ball. TM/HM discs follow the taught move's current type; item names retain machine/move identity.
+- Keep Gen II CANCEL visible before selection, including empty pockets, and show help without item artwork. Preserve native actions, inventory and navigation; Gen I retains B to exit.
+- Redraw category tabs with a pouch, intact contrasting medicine cap, ball, disc and the approved native 15×9 key. Centre opaque bounds, retain identical selected/unselected geometry, and remove under-icon marks.
+- Include published CC0 Openmon attribution, the CC0 text, final artwork sources, prompts and explicit coverage recipes. New AI-assisted fan art is identified separately from Openmon; no clearance of underlying Pokémon design rights is claimed.
+- Correct Gen II battle move-learning order with QoL Toggles.
+- Attach the optional Battle Art evolution/save source patch separately.
+
+
 ## 0.1.36 — 2026-10-05
 
 - Make Select pick up the highlighted move when entering the modern Gen 2

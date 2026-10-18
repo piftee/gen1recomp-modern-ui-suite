@@ -189,6 +189,13 @@ love = { graphics = {
 local screens = {}
 local skin = "modern"
 local mod = {
+  path = "mods/modern_ui_suite/components/modern_bag_ui",
+  read = function(self, name)
+    -- Controller fixture: the real presenter is covered by native runtime QA.
+    if name == "gen2_presentation.lua" then return "return function() return nil end" end
+    local file = assert(io.open(self.path .. "/" .. name))
+    local text = file:read("*a"); file:close(); return text
+  end,
   options = { get = function(_, key) return key == "skin" and skin or nil end },
   exports = {}, log = { info = function() end },
   content = { screens = {

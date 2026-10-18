@@ -6,6 +6,59 @@
       "license": "CC0-1.0 + MIT (original generic team symbol)",
       "source": "https://nikoichu.itch.io/pixel-icons",
       "notice": "THIRD_PARTY_NOTICES.md"
+    },
+    "components/modern_bag_ui/assets/item_icons/items-12.png": {
+      "sha256": "a6d1ccda2b2b6ce690ba850eca2380ebf8c97edb883c1ed7e9d7ca2c8b8c58cb",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "components/modern_bag_ui/assets/item_icons/items-24.png": {
+      "sha256": "1e1f61a40a5d9c2282ed0446baa06ed7a73bb4ae4822296890e0a7122ea8e94d",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/lure-imagegen.png": {
+      "sha256": "350b43295781a9cd078dec3d7e78f74a4b0b2c5956c15b2627305b8cecebc10c",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/balls-imagegen.png": {
+      "sha256": "be47998b6bed2e737f61b07b7895bb6a913070f91b551a60b799abfccdefdd1e",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/disc-imagegen.png": {
+      "sha256": "900ecf80f6365d1214930eef10915c01bfb05b407dd064972dde76b0d6a43f97",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/openmon.png": {
+      "sha256": "7fc30fd75eb6691aedd6206504ae8c34e3bc7c49551ba788aac1bc0e41f7a8e9",
+      "license": "CC0-1.0 (published Openmon terms)",
+      "source": "https://screensmith.itch.io/item-icon-sprites-set-1-openmon",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/teeth-imagegen.png": {
+      "sha256": "2ad9ca427a831950a48f8b5800bc6adecc44f3985c7f54a40f8cdad6a8993edf",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
+    },
+    "artwork/item_icons/sources/map-imagegen.png": {
+      "sha256": "fe6e7448b6f924955636de82449ff5b25e04e0e6b73dc6c0b46fd6248e863273",
+      "license": "CC0-1.0 to the extent contributor rights exist; underlying third-party rights excluded",
+      "source": "Original and AI-assisted contributions; artwork/item_icons/sources/prompts.json and runtime CREDITS.md",
+      "notice": "components/modern_bag_ui/assets/item_icons/CREDITS.md"
     }
-  }
+  },
+  "required_notices": [
+    "LICENSE",
+    "components/modern_bag_ui/assets/item_icons/CREDITS.md",
+    "components/modern_bag_ui/assets/item_icons/CC0-1.0.txt"
+  ]
 }

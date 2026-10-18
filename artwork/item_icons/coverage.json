@@ -1,0 +1,4932 @@
+{
+  "named_engine_ids": 276,
+  "distinct_frames": 201,
+  "unmapped": [],
+  "machine_type_recipes": {
+    "NORMAL": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 215,
+      "saturation": 0.12
+    },
+    "FIGHTING": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 8,
+      "saturation": 0.72
+    },
+    "FLYING": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 245,
+      "saturation": 0.35
+    },
+    "POISON": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 285,
+      "saturation": 0.65
+    },
+    "GROUND": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 38,
+      "saturation": 0.62
+    },
+    "ROCK": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 47,
+      "saturation": 0.42
+    },
+    "BUG": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 72,
+      "saturation": 0.7
+    },
+    "GHOST": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 258,
+      "saturation": 0.47
+    },
+    "STEEL": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 205,
+      "saturation": 0.18
+    },
+    "FIRE": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 24,
+      "saturation": 0.88
+    },
+    "WATER": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 218,
+      "saturation": 0.72
+    },
+    "GRASS": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 112,
+      "saturation": 0.62
+    },
+    "ELECTRIC": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 51,
+      "saturation": 0.9
+    },
+    "PSYCHIC": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 338,
+      "saturation": 0.65
+    },
+    "ICE": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 180,
+      "saturation": 0.4
+    },
+    "DRAGON": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 254,
+      "saturation": 0.84
+    },
+    "DARK": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 28,
+      "saturation": 0.33
+    },
+    "CURSE_TYPE": {
+      "kind": "generated",
+      "source": "disc",
+      "hue": 170,
+      "saturation": 0.24
+    }
+  },
+  "items": [
+    {
+      "id": "AMULET_COIN",
+      "status": "mapped",
+      "art": [
+        "AMULET_COIN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "amulet"
+        }
+      ]
+    },
+    {
+      "id": "ANTIDOTE",
+      "status": "mapped",
+      "art": [
+        "ANTIDOTE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 275,
+          "badge": "PSN"
+        }
+      ]
+    },
+    {
+      "id": "AWAKENING",
+      "status": "mapped",
+      "art": [
+        "AWAKENING"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 225,
+          "badge": "SLP"
+        }
+      ]
+    },
+    {
+      "id": "BASEMENT_KEY",
+      "status": "mapped",
+      "art": [
+        "BASEMENT_KEY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 46,
+          "hue": 285,
+          "badge": "B"
+        }
+      ]
+    },
+    {
+      "id": "BERRY",
+      "status": "mapped",
+      "art": [
+        "BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 11
+        }
+      ]
+    },
+    {
+      "id": "BERRY_JUICE",
+      "status": "mapped",
+      "art": [
+        "BERRY_JUICE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 24,
+          "hue": 345,
+          "badge": "B"
+        }
+      ]
+    },
+    {
+      "id": "BERSERK_GENE",
+      "status": "mapped",
+      "art": [
+        "BERSERK_GENE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 74,
+          "hue": 350,
+          "badge": "DNA"
+        }
+      ]
+    },
+    {
+      "id": "BICYCLE",
+      "status": "mapped",
+      "art": [
+        "BICYCLE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 43
+        }
+      ]
+    },
+    {
+      "id": "BIG_MUSHROOM",
+      "status": "mapped",
+      "art": [
+        "BIG_MUSHROOM"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 39,
+          "hue": 350,
+          "badge": "L"
+        }
+      ]
+    },
+    {
+      "id": "BIG_PEARL",
+      "status": "mapped",
+      "art": [
+        "BIG_PEARL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 76,
+          "hue": 325,
+          "badge": "L"
+        }
+      ]
+    },
+    {
+      "id": "BIKE_VOUCHER",
+      "status": "mapped",
+      "art": [
+        "BIKE_VOUCHER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 45,
+          "badge": "BIKE"
+        }
+      ]
+    },
+    {
+      "id": "BITTER_BERRY",
+      "status": "mapped",
+      "art": [
+        "BITTER_BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 15
+        }
+      ]
+    },
+    {
+      "id": "BLACKBELT_I",
+      "status": "mapped",
+      "art": [
+        "BLACKBELT_I"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 50,
+          "hue": 215,
+          "badge": "B"
+        }
+      ]
+    },
+    {
+      "id": "BLACKGLASSES",
+      "status": "mapped",
+      "art": [
+        "BLACKGLASSES"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 71
+        }
+      ]
+    },
+    {
+      "id": "BLK_APRICORN",
+      "status": "mapped",
+      "art": [
+        "BLK_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 0,
+          "badge": "K"
+        }
+      ]
+    },
+    {
+      "id": "BLUESKY_MAIL",
+      "status": "mapped",
+      "art": [
+        "BLUESKY_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 252,
+          "emblem": "cloud"
+        }
+      ]
+    },
+    {
+      "id": "BLUE_CARD",
+      "status": "mapped",
+      "art": [
+        "BLUE_CARD"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 220,
+          "badge": "B"
+        }
+      ]
+    },
+    {
+      "id": "BLU_APRICORN",
+      "status": "mapped",
+      "art": [
+        "BLU_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 220,
+          "badge": "B"
+        }
+      ]
+    },
+    {
+      "id": "BRICK_PIECE",
+      "status": "mapped",
+      "art": [
+        "BRICK_PIECE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 65,
+          "hue": 15,
+          "badge": null
+        }
+      ]
+    },
+    {
+      "id": "BRIGHTPOWDER",
+      "status": "mapped",
+      "art": [
+        "BRIGHTPOWDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 55,
+          "badge": "LUCK"
+        }
+      ]
+    },
+    {
+      "id": "BURNT_BERRY",
+      "status": "mapped",
+      "art": [
+        "BURNT_BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 13
+        }
+      ]
+    },
+    {
+      "id": "BURN_HEAL",
+      "status": "mapped",
+      "art": [
+        "BURN_HEAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 12,
+          "badge": "BRN"
+        }
+      ]
+    },
+    {
+      "id": "CALCIUM",
+      "status": "mapped",
+      "art": [
+        "CALCIUM"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 285,
+          "badge": "SPC"
+        }
+      ]
+    },
+    {
+      "id": "CARBOS",
+      "status": "mapped",
+      "art": [
+        "CARBOS"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 160,
+          "badge": "SPD"
+        }
+      ]
+    },
+    {
+      "id": "CARD_KEY",
+      "status": "mapped",
+      "art": [
+        "CARD_KEY_GEN1",
+        "CARD_KEY_GEN2"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 190,
+          "badge": "SILPH"
+        },
+        {
+          "kind": "card",
+          "hue": 190,
+          "badge": "RADIO"
+        }
+      ]
+    },
+    {
+      "id": "CHARCOAL",
+      "status": "mapped",
+      "art": [
+        "CHARCOAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 64
+        }
+      ]
+    },
+    {
+      "id": "CLEANSE_TAG",
+      "status": "mapped",
+      "art": [
+        "CLEANSE_TAG"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 70,
+          "hue": 160,
+          "badge": "C"
+        }
+      ]
+    },
+    {
+      "id": "CLEAR_BELL",
+      "status": "mapped",
+      "art": [
+        "CLEAR_BELL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 53
+        }
+      ]
+    },
+    {
+      "id": "COIN",
+      "status": "mapped",
+      "art": [
+        "COIN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "coin"
+        }
+      ]
+    },
+    {
+      "id": "COIN_CASE",
+      "status": "mapped",
+      "art": [
+        "COIN_CASE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "coin_case"
+        }
+      ]
+    },
+    {
+      "id": "DIRE_HIT",
+      "status": "mapped",
+      "art": [
+        "DIRE_HIT"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 350,
+          "badge": "CRIT"
+        }
+      ]
+    },
+    {
+      "id": "DOME_FOSSIL",
+      "status": "mapped",
+      "art": [
+        "DOME_FOSSIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "dome"
+        }
+      ]
+    },
+    {
+      "id": "DRAGON_FANG",
+      "status": "mapped",
+      "art": [
+        "DRAGON_FANG"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 73,
+          "hue": 270,
+          "badge": "F"
+        }
+      ]
+    },
+    {
+      "id": "DRAGON_SCALE",
+      "status": "mapped",
+      "art": [
+        "DRAGON_SCALE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 18,
+          "hue": 160,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "EGG_TICKET",
+      "status": "mapped",
+      "art": [
+        "EGG_TICKET"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 320,
+          "badge": "EGG"
+        }
+      ]
+    },
+    {
+      "id": "ELIXER",
+      "status": "mapped",
+      "art": [
+        "ELIXER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 325,
+          "badge": "4"
+        }
+      ]
+    },
+    {
+      "id": "ENERGYPOWDER",
+      "status": "mapped",
+      "art": [
+        "ENERGYPOWDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 30,
+          "badge": "HP"
+        }
+      ]
+    },
+    {
+      "id": "ENERGY_ROOT",
+      "status": "mapped",
+      "art": [
+        "ENERGY_ROOT"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 58,
+          "hue": 30,
+          "badge": null
+        }
+      ]
+    },
+    {
+      "id": "EON_MAIL",
+      "status": "mapped",
+      "art": [
+        "EON_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 180,
+          "emblem": "sun"
+        }
+      ]
+    },
+    {
+      "id": "ESCAPE_ROPE",
+      "status": "mapped",
+      "art": [
+        "ESCAPE_ROPE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "rope"
+        }
+      ]
+    },
+    {
+      "id": "ETHER",
+      "status": "mapped",
+      "art": [
+        "ETHER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 210,
+          "badge": "1"
+        }
+      ]
+    },
+    {
+      "id": "EVERSTONE",
+      "status": "mapped",
+      "art": [
+        "EVERSTONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 57,
+          "hue": 200,
+          "badge": "STOP"
+        }
+      ]
+    },
+    {
+      "id": "EXP_ALL",
+      "status": "mapped",
+      "art": [
+        "EXP_ALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "device",
+          "hue": 185,
+          "badge": "ALL"
+        }
+      ]
+    },
+    {
+      "id": "EXP_SHARE",
+      "status": "mapped",
+      "art": [
+        "EXP_SHARE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "device",
+          "hue": 285,
+          "badge": "XP"
+        }
+      ]
+    },
+    {
+      "id": "FAST_BALL",
+      "status": "mapped",
+      "art": [
+        "FAST_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 9,
+          "ball": "FAST_BALL"
+        }
+      ]
+    },
+    {
+      "id": "FIRE_STONE",
+      "status": "mapped",
+      "art": [
+        "FIRE_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 15,
+          "emblem": "flame"
+        }
+      ]
+    },
+    {
+      "id": "FLOWER_MAIL",
+      "status": "mapped",
+      "art": [
+        "FLOWER_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 0,
+          "emblem": "flower"
+        }
+      ]
+    },
+    {
+      "id": "FOCUS_BAND",
+      "status": "mapped",
+      "art": [
+        "FOCUS_BAND"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 50,
+          "hue": 350,
+          "badge": "F"
+        }
+      ]
+    },
+    {
+      "id": "FRESH_WATER",
+      "status": "mapped",
+      "art": [
+        "FRESH_WATER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 23
+        }
+      ]
+    },
+    {
+      "id": "FRIEND_BALL",
+      "status": "mapped",
+      "art": [
+        "FRIEND_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 10,
+          "ball": "FRIEND_BALL"
+        }
+      ]
+    },
+    {
+      "id": "FULL_HEAL",
+      "status": "mapped",
+      "art": [
+        "FULL_HEAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 150,
+          "badge": "CURE"
+        }
+      ]
+    },
+    {
+      "id": "FULL_RESTORE",
+      "status": "mapped",
+      "art": [
+        "FULL_RESTORE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 145,
+          "badge": "ALL"
+        }
+      ]
+    },
+    {
+      "id": "GOLD_BERRY",
+      "status": "mapped",
+      "art": [
+        "GOLD_BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 4
+        }
+      ]
+    },
+    {
+      "id": "GOLD_LEAF",
+      "status": "mapped",
+      "art": [
+        "GOLD_LEAF"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 26,
+          "hue": 45,
+          "badge": null
+        }
+      ]
+    },
+    {
+      "id": "GOLD_TEETH",
+      "status": "mapped",
+      "art": [
+        "GOLD_TEETH"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "teeth"
+        }
+      ]
+    },
+    {
+      "id": "GOOD_ROD",
+      "status": "mapped",
+      "art": [
+        "GOOD_ROD"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 48,
+          "hue": 160,
+          "badge": "2"
+        }
+      ]
+    },
+    {
+      "id": "GORGEOUS_BOX",
+      "status": "mapped",
+      "art": [
+        "GORGEOUS_BOX"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 42,
+          "hue": 285,
+          "badge": "G"
+        }
+      ]
+    },
+    {
+      "id": "GREAT_BALL",
+      "status": "mapped",
+      "art": [
+        "GREAT_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 2,
+          "ball": "GREAT_BALL"
+        }
+      ]
+    },
+    {
+      "id": "GRN_APRICORN",
+      "status": "mapped",
+      "art": [
+        "GRN_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 135,
+          "badge": "G"
+        }
+      ]
+    },
+    {
+      "id": "GS_BALL",
+      "status": "mapped",
+      "art": [
+        "GS_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 14,
+          "ball": "GS_BALL"
+        }
+      ]
+    },
+    {
+      "id": "GUARD_SPEC",
+      "status": "mapped",
+      "art": [
+        "GUARD_SPEC"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 185,
+          "badge": "GD"
+        }
+      ]
+    },
+    {
+      "id": "HARD_STONE",
+      "status": "mapped",
+      "art": [
+        "HARD_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 60,
+          "hue": 35,
+          "badge": null
+        }
+      ]
+    },
+    {
+      "id": "HEAL_POWDER",
+      "status": "mapped",
+      "art": [
+        "HEAL_POWDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 160,
+          "badge": "CURE"
+        }
+      ]
+    },
+    {
+      "id": "HEAVY_BALL",
+      "status": "mapped",
+      "art": [
+        "HEAVY_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 6,
+          "ball": "HEAVY_BALL"
+        }
+      ]
+    },
+    {
+      "id": "HELIX_FOSSIL",
+      "status": "mapped",
+      "art": [
+        "HELIX_FOSSIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "helix"
+        }
+      ]
+    },
+    {
+      "id": "HM_CUT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM01",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_FLASH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM05",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_FLY",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM02",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_STRENGTH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM04",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_SURF",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM03",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_WATERFALL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM07",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HM_WHIRLPOOL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "HM06",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "HP_UP",
+      "status": "mapped",
+      "art": [
+        "HP_UP"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 330,
+          "badge": "HP"
+        }
+      ]
+    },
+    {
+      "id": "HYPER_POTION",
+      "status": "mapped",
+      "art": [
+        "HYPER_POTION"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 77,
+          "hue": 35,
+          "badge": "200"
+        }
+      ]
+    },
+    {
+      "id": "ICE_BERRY",
+      "status": "mapped",
+      "art": [
+        "ICE_BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 7
+        }
+      ]
+    },
+    {
+      "id": "ICE_HEAL",
+      "status": "mapped",
+      "art": [
+        "ICE_HEAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 190,
+          "badge": "ICE"
+        }
+      ]
+    },
+    {
+      "id": "IRON",
+      "status": "mapped",
+      "art": [
+        "IRON"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 210,
+          "badge": "DEF"
+        }
+      ]
+    },
+    {
+      "id": "ITEMFINDER",
+      "status": "mapped",
+      "art": [
+        "ITEMFINDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "device",
+          "hue": 45,
+          "badge": "RAD"
+        }
+      ]
+    },
+    {
+      "id": "KINGS_ROCK",
+      "status": "mapped",
+      "art": [
+        "KINGS_ROCK"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 56,
+          "hue": 45,
+          "badge": "K"
+        }
+      ]
+    },
+    {
+      "id": "LEAF_STONE",
+      "status": "mapped",
+      "art": [
+        "LEAF_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 130,
+          "emblem": "leaf"
+        }
+      ]
+    },
+    {
+      "id": "LEFTOVERS",
+      "status": "mapped",
+      "art": [
+        "LEFTOVERS"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 52
+        }
+      ]
+    },
+    {
+      "id": "LEMONADE",
+      "status": "mapped",
+      "art": [
+        "LEMONADE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 24
+        }
+      ]
+    },
+    {
+      "id": "LEVEL_BALL",
+      "status": "mapped",
+      "art": [
+        "LEVEL_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 7,
+          "ball": "LEVEL_BALL"
+        }
+      ]
+    },
+    {
+      "id": "LIFT_KEY",
+      "status": "mapped",
+      "art": [
+        "LIFT_KEY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 46,
+          "hue": 210,
+          "badge": "L"
+        }
+      ]
+    },
+    {
+      "id": "LIGHT_BALL",
+      "status": "mapped",
+      "art": [
+        "LIGHT_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 54,
+          "hue": 50,
+          "badge": "+"
+        }
+      ]
+    },
+    {
+      "id": "LITEBLUEMAIL",
+      "status": "mapped",
+      "art": [
+        "LITEBLUEMAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 72,
+          "emblem": "snow"
+        }
+      ]
+    },
+    {
+      "id": "LOST_ITEM",
+      "status": "mapped",
+      "art": [
+        "LOST_ITEM"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "toy",
+          "hue": 210
+        }
+      ]
+    },
+    {
+      "id": "LOVELY_MAIL",
+      "status": "mapped",
+      "art": [
+        "LOVELY_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 144,
+          "emblem": "heart"
+        }
+      ]
+    },
+    {
+      "id": "LOVE_BALL",
+      "status": "mapped",
+      "art": [
+        "LOVE_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 12,
+          "ball": "LOVE_BALL"
+        }
+      ]
+    },
+    {
+      "id": "LUCKY_EGG",
+      "status": "mapped",
+      "art": [
+        "LUCKY_EGG"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 34,
+          "hue": 45,
+          "badge": "+"
+        }
+      ]
+    },
+    {
+      "id": "LUCKY_PUNCH",
+      "status": "mapped",
+      "art": [
+        "LUCKY_PUNCH"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 51,
+          "hue": 350,
+          "badge": "+"
+        }
+      ]
+    },
+    {
+      "id": "LURE_BALL",
+      "status": "mapped",
+      "art": [
+        "LURE_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "lure",
+          "ball": "LURE_BALL"
+        }
+      ]
+    },
+    {
+      "id": "MACHINE_PART",
+      "status": "mapped",
+      "art": [
+        "MACHINE_PART"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 38
+        }
+      ]
+    },
+    {
+      "id": "MAGNET",
+      "status": "mapped",
+      "art": [
+        "MAGNET"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 61
+        }
+      ]
+    },
+    {
+      "id": "MASTER_BALL",
+      "status": "mapped",
+      "art": [
+        "MASTER_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 4,
+          "ball": "MASTER_BALL"
+        }
+      ]
+    },
+    {
+      "id": "MAX_ELIXER",
+      "status": "mapped",
+      "art": [
+        "MAX_ELIXER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 325,
+          "badge": "MAX"
+        }
+      ]
+    },
+    {
+      "id": "MAX_ETHER",
+      "status": "mapped",
+      "art": [
+        "MAX_ETHER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 210,
+          "badge": "MAX"
+        }
+      ]
+    },
+    {
+      "id": "MAX_POTION",
+      "status": "mapped",
+      "art": [
+        "MAX_POTION"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 78,
+          "hue": 205,
+          "badge": "MAX"
+        }
+      ]
+    },
+    {
+      "id": "MAX_REPEL",
+      "status": "mapped",
+      "art": [
+        "MAX_REPEL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "spray",
+          "hue": 300,
+          "badge": "3"
+        }
+      ]
+    },
+    {
+      "id": "MAX_REVIVE",
+      "status": "mapped",
+      "art": [
+        "MAX_REVIVE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 35,
+          "hue": 330,
+          "badge": "MAX"
+        }
+      ]
+    },
+    {
+      "id": "METAL_COAT",
+      "status": "mapped",
+      "art": [
+        "METAL_COAT"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 63
+        }
+      ]
+    },
+    {
+      "id": "METAL_POWDER",
+      "status": "mapped",
+      "art": [
+        "METAL_POWDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 215,
+          "badge": "MET"
+        }
+      ]
+    },
+    {
+      "id": "MINT_BERRY",
+      "status": "mapped",
+      "art": [
+        "MINT_BERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 16
+        }
+      ]
+    },
+    {
+      "id": "MIRACLEBERRY",
+      "status": "mapped",
+      "art": [
+        "MIRACLEBERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 10
+        }
+      ]
+    },
+    {
+      "id": "MIRACLE_SEED",
+      "status": "mapped",
+      "art": [
+        "MIRACLE_SEED"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 17,
+          "hue": 130,
+          "badge": "+"
+        }
+      ]
+    },
+    {
+      "id": "MIRAGE_MAIL",
+      "status": "mapped",
+      "art": [
+        "MIRAGE_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 324,
+          "emblem": "star"
+        }
+      ]
+    },
+    {
+      "id": "MOOMOO_MILK",
+      "status": "mapped",
+      "art": [
+        "MOOMOO_MILK"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 21
+        }
+      ]
+    },
+    {
+      "id": "MOON_BALL",
+      "status": "mapped",
+      "art": [
+        "MOON_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 11,
+          "ball": "MOON_BALL"
+        }
+      ]
+    },
+    {
+      "id": "MOON_STONE",
+      "status": "mapped",
+      "art": [
+        "MOON_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 245,
+          "emblem": "moon"
+        }
+      ]
+    },
+    {
+      "id": "MORPH_MAIL",
+      "status": "mapped",
+      "art": [
+        "MORPH_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 216,
+          "emblem": "spiral"
+        }
+      ]
+    },
+    {
+      "id": "MUSIC_MAIL",
+      "status": "mapped",
+      "art": [
+        "MUSIC_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 288,
+          "emblem": "note"
+        }
+      ]
+    },
+    {
+      "id": "MYSTERYBERRY",
+      "status": "mapped",
+      "art": [
+        "MYSTERYBERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 8
+        }
+      ]
+    },
+    {
+      "id": "MYSTERY_EGG",
+      "status": "mapped",
+      "art": [
+        "MYSTERY_EGG"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 34
+        }
+      ]
+    },
+    {
+      "id": "MYSTIC_WATER",
+      "status": "mapped",
+      "art": [
+        "MYSTIC_WATER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 62
+        }
+      ]
+    },
+    {
+      "id": "NEVERMELTICE",
+      "status": "mapped",
+      "art": [
+        "NEVERMELTICE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 69
+        }
+      ]
+    },
+    {
+      "id": "NORMAL_BOX",
+      "status": "mapped",
+      "art": [
+        "NORMAL_BOX"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 42,
+          "hue": 45,
+          "badge": "N"
+        }
+      ]
+    },
+    {
+      "id": "NUGGET",
+      "status": "mapped",
+      "art": [
+        "NUGGET"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "nugget"
+        }
+      ]
+    },
+    {
+      "id": "OAKS_PARCEL",
+      "status": "mapped",
+      "art": [
+        "OAKS_PARCEL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 42,
+          "hue": 30,
+          "badge": "OAK"
+        }
+      ]
+    },
+    {
+      "id": "OLD_AMBER",
+      "status": "mapped",
+      "art": [
+        "OLD_AMBER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "amber"
+        }
+      ]
+    },
+    {
+      "id": "OLD_ROD",
+      "status": "mapped",
+      "art": [
+        "OLD_ROD"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 48,
+          "hue": 30,
+          "badge": "1"
+        }
+      ]
+    },
+    {
+      "id": "PARK_BALL",
+      "status": "mapped",
+      "art": [
+        "PARK_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 13,
+          "ball": "PARK_BALL"
+        }
+      ]
+    },
+    {
+      "id": "PARLYZ_HEAL",
+      "status": "mapped",
+      "art": [
+        "PARLYZ_HEAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 22,
+          "hue": 48,
+          "badge": "PAR"
+        }
+      ]
+    },
+    {
+      "id": "PASS",
+      "status": "mapped",
+      "art": [
+        "PASS"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 145,
+          "badge": "P"
+        }
+      ]
+    },
+    {
+      "id": "PEARL",
+      "status": "mapped",
+      "art": [
+        "PEARL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 76,
+          "hue": 205,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "PINK_BOW",
+      "status": "mapped",
+      "art": [
+        "PINK_BOW"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "bow",
+          "hue": 330
+        }
+      ]
+    },
+    {
+      "id": "PNK_APRICORN",
+      "status": "mapped",
+      "art": [
+        "PNK_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 325,
+          "badge": "P"
+        }
+      ]
+    },
+    {
+      "id": "POISON_BARB",
+      "status": "mapped",
+      "art": [
+        "POISON_BARB"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 73,
+          "hue": 285,
+          "badge": "P"
+        }
+      ]
+    },
+    {
+      "id": "POKEDEX",
+      "status": "mapped",
+      "art": [
+        "POKEDEX"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "device",
+          "hue": 0,
+          "badge": "DEX"
+        }
+      ]
+    },
+    {
+      "id": "POKE_BALL",
+      "status": "mapped",
+      "art": [
+        "POKE_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 1,
+          "ball": "POKE_BALL"
+        }
+      ]
+    },
+    {
+      "id": "POKE_DOLL",
+      "status": "mapped",
+      "art": [
+        "POKE_DOLL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "toy"
+        }
+      ]
+    },
+    {
+      "id": "POKE_FLUTE",
+      "status": "mapped",
+      "art": [
+        "POKE_FLUTE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "flute"
+        }
+      ]
+    },
+    {
+      "id": "POLKADOT_BOW",
+      "status": "mapped",
+      "art": [
+        "POLKADOT_BOW"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "bow",
+          "hue": 285,
+          "dots": true
+        }
+      ]
+    },
+    {
+      "id": "PORTRAITMAIL",
+      "status": "mapped",
+      "art": [
+        "PORTRAITMAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 108,
+          "emblem": "face"
+        }
+      ]
+    },
+    {
+      "id": "POTION",
+      "status": "mapped",
+      "art": [
+        "POTION"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 77,
+          "hue": 290,
+          "badge": "20"
+        }
+      ]
+    },
+    {
+      "id": "PP_UP",
+      "status": "mapped",
+      "art": [
+        "PP_UP"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 45,
+          "badge": "PP"
+        }
+      ]
+    },
+    {
+      "id": "PROTEIN",
+      "status": "mapped",
+      "art": [
+        "PROTEIN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 30,
+          "hue": 18,
+          "badge": "ATK"
+        }
+      ]
+    },
+    {
+      "id": "PRZCUREBERRY",
+      "status": "mapped",
+      "art": [
+        "PRZCUREBERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 2
+        }
+      ]
+    },
+    {
+      "id": "PSNCUREBERRY",
+      "status": "mapped",
+      "art": [
+        "PSNCUREBERRY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 6
+        }
+      ]
+    },
+    {
+      "id": "QUICK_CLAW",
+      "status": "mapped",
+      "art": [
+        "QUICK_CLAW"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 75
+        }
+      ]
+    },
+    {
+      "id": "RAGECANDYBAR",
+      "status": "mapped",
+      "art": [
+        "RAGECANDYBAR"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 36
+        }
+      ]
+    },
+    {
+      "id": "RAINBOW_WING",
+      "status": "mapped",
+      "art": [
+        "RAINBOW_WING"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 67
+        }
+      ]
+    },
+    {
+      "id": "RARE_CANDY",
+      "status": "mapped",
+      "art": [
+        "RARE_CANDY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 33
+        }
+      ]
+    },
+    {
+      "id": "RED_APRICORN",
+      "status": "mapped",
+      "art": [
+        "RED_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 0,
+          "badge": "R"
+        }
+      ]
+    },
+    {
+      "id": "RED_SCALE",
+      "status": "mapped",
+      "art": [
+        "RED_SCALE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 18,
+          "hue": 0,
+          "badge": "R"
+        }
+      ]
+    },
+    {
+      "id": "REPEL",
+      "status": "mapped",
+      "art": [
+        "REPEL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "spray",
+          "hue": 130,
+          "badge": "1"
+        }
+      ]
+    },
+    {
+      "id": "REVIVAL_HERB",
+      "status": "mapped",
+      "art": [
+        "REVIVAL_HERB"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 26,
+          "hue": 140,
+          "badge": "REV"
+        }
+      ]
+    },
+    {
+      "id": "REVIVE",
+      "status": "mapped",
+      "art": [
+        "REVIVE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 35,
+          "hue": 45,
+          "badge": "1"
+        }
+      ]
+    },
+    {
+      "id": "SACRED_ASH",
+      "status": "mapped",
+      "art": [
+        "SACRED_ASH"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 320,
+          "badge": "ASH"
+        }
+      ]
+    },
+    {
+      "id": "SAFARI_BALL",
+      "status": "mapped",
+      "art": [
+        "SAFARI_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 5,
+          "ball": "SAFARI_BALL"
+        }
+      ]
+    },
+    {
+      "id": "SCOPE_LENS",
+      "status": "mapped",
+      "art": [
+        "SCOPE_LENS"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 49
+        }
+      ]
+    },
+    {
+      "id": "SECRETPOTION",
+      "status": "mapped",
+      "art": [
+        "SECRETPOTION"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 77,
+          "hue": 150,
+          "badge": "KEY"
+        }
+      ]
+    },
+    {
+      "id": "SECRET_KEY",
+      "status": "mapped",
+      "art": [
+        "SECRET_KEY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 46,
+          "hue": 45,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "SHARP_BEAK",
+      "status": "mapped",
+      "art": [
+        "SHARP_BEAK"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 73
+        }
+      ]
+    },
+    {
+      "id": "SILPH_SCOPE",
+      "status": "mapped",
+      "art": [
+        "SILPH_SCOPE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "device",
+          "hue": 325,
+          "badge": "EYE"
+        }
+      ]
+    },
+    {
+      "id": "SILVERPOWDER",
+      "status": "mapped",
+      "art": [
+        "SILVERPOWDER"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 200,
+          "badge": "BUG"
+        }
+      ]
+    },
+    {
+      "id": "SILVER_LEAF",
+      "status": "mapped",
+      "art": [
+        "SILVER_LEAF"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 26,
+          "hue": 210,
+          "badge": null
+        }
+      ]
+    },
+    {
+      "id": "SILVER_WING",
+      "status": "mapped",
+      "art": [
+        "SILVER_WING"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 72
+        }
+      ]
+    },
+    {
+      "id": "SLOWPOKETAIL",
+      "status": "mapped",
+      "art": [
+        "SLOWPOKETAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "tail"
+        }
+      ]
+    },
+    {
+      "id": "SMOKE_BALL",
+      "status": "mapped",
+      "art": [
+        "SMOKE_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 54,
+          "hue": 270,
+          "badge": "SM"
+        }
+      ]
+    },
+    {
+      "id": "SODA_POP",
+      "status": "mapped",
+      "art": [
+        "SODA_POP"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 29
+        }
+      ]
+    },
+    {
+      "id": "SOFT_SAND",
+      "status": "mapped",
+      "art": [
+        "SOFT_SAND"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 31,
+          "hue": 35,
+          "badge": "SAND"
+        }
+      ]
+    },
+    {
+      "id": "SPELL_TAG",
+      "status": "mapped",
+      "art": [
+        "SPELL_TAG"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 70,
+          "hue": 275,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "SQUIRTBOTTLE",
+      "status": "mapped",
+      "art": [
+        "SQUIRTBOTTLE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "spray",
+          "hue": 175,
+          "badge": "W"
+        }
+      ]
+    },
+    {
+      "id": "STARDUST",
+      "status": "mapped",
+      "art": [
+        "STARDUST"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "stardust"
+        }
+      ]
+    },
+    {
+      "id": "STAR_PIECE",
+      "status": "mapped",
+      "art": [
+        "STAR_PIECE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "star"
+        }
+      ]
+    },
+    {
+      "id": "STICK",
+      "status": "mapped",
+      "art": [
+        "STICK"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "stick"
+        }
+      ]
+    },
+    {
+      "id": "SUN_STONE",
+      "status": "mapped",
+      "art": [
+        "SUN_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 35,
+          "emblem": "sun"
+        }
+      ]
+    },
+    {
+      "id": "SUPER_POTION",
+      "status": "mapped",
+      "art": [
+        "SUPER_POTION"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 78,
+          "hue": 350,
+          "badge": "50"
+        }
+      ]
+    },
+    {
+      "id": "SUPER_REPEL",
+      "status": "mapped",
+      "art": [
+        "SUPER_REPEL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "spray",
+          "hue": 210,
+          "badge": "2"
+        }
+      ]
+    },
+    {
+      "id": "SUPER_ROD",
+      "status": "mapped",
+      "art": [
+        "SUPER_ROD"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 48,
+          "hue": 270,
+          "badge": "3"
+        }
+      ]
+    },
+    {
+      "id": "SURFBOARD",
+      "status": "mapped",
+      "art": [
+        "SURFBOARD"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "surfboard"
+        }
+      ]
+    },
+    {
+      "id": "SURF_MAIL",
+      "status": "mapped",
+      "art": [
+        "SURF_MAIL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "mail",
+          "hue": 36,
+          "emblem": "wave"
+        }
+      ]
+    },
+    {
+      "id": "S_S_TICKET",
+      "status": "mapped",
+      "art": [
+        "S_S_TICKET_GEN1",
+        "S_S_TICKET_GEN2"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "card",
+          "hue": 200,
+          "badge": "ANNE"
+        },
+        {
+          "kind": "card",
+          "hue": 200,
+          "badge": "AQUA"
+        }
+      ]
+    },
+    {
+      "id": "THICK_CLUB",
+      "status": "mapped",
+      "art": [
+        "THICK_CLUB"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 59
+        }
+      ]
+    },
+    {
+      "id": "THUNDERSTONE",
+      "status": "mapped",
+      "art": [
+        "THUNDER_STONE"
+      ],
+      "alias": "THUNDER_STONE",
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 50,
+          "emblem": "bolt"
+        }
+      ]
+    },
+    {
+      "id": "THUNDER_STONE",
+      "status": "mapped",
+      "art": [
+        "THUNDER_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 50,
+          "emblem": "bolt"
+        }
+      ]
+    },
+    {
+      "id": "TINYMUSHROOM",
+      "status": "mapped",
+      "art": [
+        "TINYMUSHROOM"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 39,
+          "hue": 25,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "TM_ATTRACT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM45",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_BIDE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM34",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_BLIZZARD",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM14",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_BODY_SLAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM08",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_BUBBLEBEAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM11",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_COUNTER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM18",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_CURSE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM03",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DEFENSE_CURL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM40",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DETECT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM43",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DIG",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM28",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DOUBLE_EDGE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM10",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DOUBLE_TEAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM32",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DRAGONBREATH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM24",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DRAGON_RAGE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM23",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DREAM_EATER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM42",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_DYNAMICPUNCH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM01",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_EARTHQUAKE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM26",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_EGG_BOMB",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM37",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ENDURE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM20",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_EXPLOSION",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM47",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_FIRE_BLAST",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM38",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_FIRE_PUNCH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM48",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_FISSURE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM27",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_FRUSTRATION",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM21",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_FURY_CUTTER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM49",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_GIGA_DRAIN",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM19",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_HEADBUTT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM02",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_HIDDEN_POWER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM10",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_HORN_DRILL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM07",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_HYPER_BEAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM15",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ICE_BEAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM13",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ICE_PUNCH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM33",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ICY_WIND",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM16",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_IRON_TAIL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM23",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_MEGA_DRAIN",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM21",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_MEGA_KICK",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM05",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_MEGA_PUNCH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM01",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_METRONOME",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM35",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_MIMIC",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM31",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_MUD_SLAP",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM31",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_NIGHTMARE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM50",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_PAY_DAY",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM16",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_PROTECT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM17",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_PSYCHIC_M",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM29",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_PSYCH_UP",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM09",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_PSYWAVE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM46",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_RAGE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM20",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_RAIN_DANCE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM18",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_RAZOR_WIND",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM02",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_REFLECT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM33",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_REST",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM44",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_RETURN",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM27",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ROAR",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM05",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ROCK_SLIDE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM48",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ROCK_SMASH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM08",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ROLLOUT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM04",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SANDSTORM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM37",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SEISMIC_TOSS",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM19",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SELFDESTRUCT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM36",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SHADOW_BALL",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM30",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SKULL_BASH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM40",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SKY_ATTACK",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM43",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SLEEP_TALK",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM35",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SLUDGE_BOMB",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM36",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SNORE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM13",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SOFTBOILED",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM41",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SOLARBEAM",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM22",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_STEEL_WING",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM47",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SUBMISSION",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM17",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SUBSTITUTE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM50",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SUNNY_DAY",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM11",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SWAGGER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM34",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SWEET_SCENT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM12",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SWIFT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM39",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_SWORDS_DANCE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM03",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_TAKE_DOWN",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM09",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_TELEPORT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM30",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_THIEF",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM46",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_THUNDER",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM25",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_THUNDERBOLT",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM24",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_THUNDERPUNCH",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM41",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_THUNDER_WAVE",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM45",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_TOXIC",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM06",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_TRI_ATTACK",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM49",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_WATER_GUN",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM12",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_WHIRLWIND",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM04",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TM_ZAP_CANNON",
+      "status": "mapped",
+      "art": [
+        "DISC_NORMAL"
+      ],
+      "alias": null,
+      "machine_label": "TM07",
+      "dynamic_move_type": true,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "disc",
+          "hue": 215,
+          "saturation": 0.12
+        }
+      ]
+    },
+    {
+      "id": "TOWN_MAP",
+      "status": "mapped",
+      "art": [
+        "TOWN_MAP"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "map"
+        }
+      ]
+    },
+    {
+      "id": "TWISTEDSPOON",
+      "status": "mapped",
+      "art": [
+        "TWISTEDSPOON"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "spoon"
+        }
+      ]
+    },
+    {
+      "id": "ULTRA_BALL",
+      "status": "mapped",
+      "art": [
+        "ULTRA_BALL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "generated",
+          "source": "balls",
+          "cell": 3,
+          "ball": "ULTRA_BALL"
+        }
+      ]
+    },
+    {
+      "id": "UP_GRADE",
+      "status": "mapped",
+      "art": [
+        "UP_GRADE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 44
+        }
+      ]
+    },
+    {
+      "id": "WATER_STONE",
+      "status": "mapped",
+      "art": [
+        "WATER_STONE"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "gem",
+          "hue": 210,
+          "emblem": "drop"
+        }
+      ]
+    },
+    {
+      "id": "WHT_APRICORN",
+      "status": "mapped",
+      "art": [
+        "WHT_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 0,
+          "badge": "W"
+        }
+      ]
+    },
+    {
+      "id": "X_ACCURACY",
+      "status": "mapped",
+      "art": [
+        "X_ACCURACY"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 50,
+          "badge": "EYE"
+        }
+      ]
+    },
+    {
+      "id": "X_ATTACK",
+      "status": "mapped",
+      "art": [
+        "X_ATTACK"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 15,
+          "badge": "A"
+        }
+      ]
+    },
+    {
+      "id": "X_DEFEND",
+      "status": "mapped",
+      "art": [
+        "X_DEFEND"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 210,
+          "badge": "D"
+        }
+      ]
+    },
+    {
+      "id": "X_SPECIAL",
+      "status": "mapped",
+      "art": [
+        "X_SPECIAL"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 285,
+          "badge": "C"
+        }
+      ]
+    },
+    {
+      "id": "X_SPEED",
+      "status": "mapped",
+      "art": [
+        "X_SPEED"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "openmon",
+          "cell": 28,
+          "hue": 145,
+          "badge": "S"
+        }
+      ]
+    },
+    {
+      "id": "YLW_APRICORN",
+      "status": "mapped",
+      "art": [
+        "YLW_APRICORN"
+      ],
+      "alias": null,
+      "machine_label": null,
+      "dynamic_move_type": false,
+      "recipes": [
+        {
+          "kind": "apricorn",
+          "hue": 50,
+          "badge": "Y"
+        }
+      ]
+    }
+  ]
+}

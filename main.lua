@@ -130,6 +130,7 @@ return function(mod)
     return menuSpeed or inherited
   end, 1000)
 
+  loadLocal("core/move_learning_order.lua")()
   state.comfort = loadLocal("core/comfort.lua")(mod, settings)
   state.highlander = makeHighlander(mod, settings)
   state.rematches = makeRematches(mod, state.highlander)

@@ -29,9 +29,11 @@ return {
     aspectRatio = true,
     name = "Modern Bag UI",
     short = "BAG",
-    version = "0.6.6",
+    version = "0.6.7",
     installOrder = 1,
-    files = { "main.lua", "screen.lua", "inventory.lua", "gen2.lua", "gen2_presentation.lua", "pockets.lua", "sorting.lua" },
+    files = { "main.lua", "screen.lua", "inventory.lua", "gen2.lua", "gen2_presentation.lua", "pockets.lua", "sorting.lua",
+      "item_icons.lua", "item_icon_map.lua", "item_icon_spans.lua", "tab_icons.lua" },
+    assets = { "assets/item_icons/items-24.png", "assets/item_icons/items-12.png" },
     legacyExtras = { "pocket_order" },
   },
   {

@@ -51,11 +51,9 @@ return function(mod, source)
         label=row.tmhmLabel and (row.tmhmLabel..' '..tostring(row.teaches or row.name)) or row.name,
         right=row.showCount and ('x'..tostring(row.count or 0)) or ''}
     end
-    -- B remains the normal exit, matching Gen 1's list. The native terminal
-    -- CANCEL row appears only while selected, preserving its controller.
-    if menu.index==menu:total() and #state.items>0 then
-      state.items[#state.items+1]={label='CANCEL',right=''}
-    end
+    -- Keep the native terminal action visible before selection, including
+    -- empty pockets. Its position remains exactly the controller's total().
+    state.items[#state.items+1]={label='CANCEL',right=''}
     state.index,state.scroll=menu.index,menu.scroll
     local prompt=menu.message or menu.confirm and menu.confirm.prompt
     state.modernBagPrompt=prompt and table.concat(prompt,' '):gsub('{PLAYER}',menu:playerName()) or nil
@@ -132,7 +130,8 @@ return function(mod, source)
     G.push('all');G.setColor(1,1,1,1)
     local shader=Palette.shader();G.setShader(shader)
     for _,zone in ipairs(zones) do
-      if shader then Palette.sendColors(shader,zone.colors) end
+      G.setShader(zone.colors ~= false and shader or nil)
+      if shader and zone.colors ~= false then Palette.sendColors(shader,zone.colors) end
       G.draw(canvas,G.newQuad(zone.x,zone.y,zone.w,zone.h,l.width,l.canvasHeight),zone.x,zone.y)
     end
     G.pop()

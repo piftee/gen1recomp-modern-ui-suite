@@ -10,6 +10,9 @@ return function(mod, shared)
   local PackMenu = require("src.ui.gen2.PackMenu")
   local ItemPcMenu = require("src.ui.gen2.ItemPcMenu")
 
+  -- Item-specific art v1; classic Pack draws directly in full colour.
+  local ItemIcons = assert(load(assert(mod:read("item_icons.lua"))))()(mod)
+
   local INK_BLACK = { 0, 0, 0 }
   local INK_WHITE = { 1, 1, 1 }
   local INK_LIGHT = { 0.68, 0.84, 1 }
@@ -702,13 +705,20 @@ return function(mod, shared)
   end
 
   local function drawClassicPackEnhancements(self)
+    self.modernBagItemIconZones, self.modernBagItemIcon = {}, nil
     local blocked = self.message or self.confirm or self.qtyState
       or self.submenu or self.modernBagSortMenu or self.switching
     local current = self.rows and self.rows[self.index]
     local description = current and self:description()
     if not blocked and description then
       Chrome.box(0, 12, 20, 6)
+      local inset = ItemIcons.draw(self, current.id, 8, 104, 24) and 28 or 0
       drawReadableDescription(self, current.id, description,
+        8 + inset, 104, 144 - inset, 2, INK_BLACK)
+    elseif not blocked and not current and self:isCancel() then
+      -- Cancel help without artwork v1.
+      Chrome.box(0, 12, 20, 6)
+      drawReadableDescription(self, "__cancel", Strings("Return to the previous screen."),
         8, 104, 144, 2, INK_BLACK)
     else
       clearDescriptionScroll(self)

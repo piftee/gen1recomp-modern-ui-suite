@@ -1,5 +1,8 @@
 # Modern UI Suite
 
+Latest update: **0.1.43** — complete item artwork, refined category icons and visible Gen II Cancel. See [release notes](RELEASE_NOTES.md). Fully restart after installing.
+
+
 **0.1.42 — Readable Gen 2 battle popups:** Stat confirmations and switch
 prompts have solid backgrounds over Voxel scenery. Enemy HP digits remain
 white at low health, and the caught marker matches the outlined HUD text.

@@ -147,6 +147,8 @@ jobs:
                  "$staging/tests" "$staging/.modkitignore" \
                  "$staging/screenshots" "$staging/GALLERY.md"
 
+          rm -rf "$staging/artwork" "$staging/compatibility"
+
           python3 - "$staging/manifest.json" "$VERSION" <<'PY'
           import json, sys
           path, version = sys.argv[1], sys.argv[2]
@@ -174,7 +176,11 @@ jobs:
           print(f"manifest.json is at the archive root and reports {version}")
           PY
 
-          (cd "$out" && sha256sum "${MOD_ID}"-*.zip > sha256sums.txt)
+          patch_root="compatibility/battle-art-evolution-save"
+          patch_zip="$out/battle_art_gen2-evolution-save-patch-1.zip"
+          (cd "$patch_root" && zip -q "$patch_zip" apply.py README.md LICENSE)
+          python3 .github/scripts/distribution_guard.py --root "$patch_root" --zip "$patch_zip"
+          (cd "$out" && sha256sum *.zip > sha256sums.txt)
           cat "$out/sha256sums.txt"
 
       - name: Publish GitHub Release
@@ -193,6 +199,7 @@ jobs:
             --title "$VERSION" \
             --notes-file RELEASE_NOTES.md \
             "dist/${MOD_ID}-${VERSION}.zip" \
+            "dist/battle_art_gen2-evolution-save-patch-1.zip" \
             "dist/sha256sums.txt"
 
           echo "Published release $TAG"

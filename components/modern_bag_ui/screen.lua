@@ -19,6 +19,13 @@ return function(mod, compatibility)
   local Theme = require("src.ui.Theme")
   local TouchControls = require("src.core.TouchControls")
 
+  -- Item-specific art v1; category symbols remain for tabs and unknown mod items.
+  local ItemIcons = assert(load(assert(mod:read("item_icons.lua")),
+    "@" .. mod.path .. "/item_icons.lua"))()(mod)
+
+  -- Category tab glyphs v1: separate from selected-item art and legacy rail art.
+  local TabIcons = assert(load(assert(mod:read("tab_icons.lua"))))()()
+
   local SCREEN_W = 160
   local SCREEN_H = 144
   local HEADER_H = 16
@@ -1143,6 +1150,14 @@ return function(mod, compatibility)
     end
   end
 
+  -- Cancel action presentation v1: actions never receive item or category artwork.
+  local function drawItemSymbol(menu, id, category, x, y, size, active, onLight)
+    if not id then return end
+    if not ItemIcons.draw(menu, id, x, y, size) then
+      drawPocketSymbol(category, x, y, size, active, onLight)
+    end
+  end
+
   local function drawBackdrop(layout)
     gray(BLACK)
     love.graphics.rectangle("fill", 0, 0,
@@ -1236,14 +1251,14 @@ return function(mod, compatibility)
         chamfer("fill", x, layout.tabsY + 3,
           tabW, layout.tabsH - 5, 2)
       end
-      local iconSize = math.min(10, tabW - 4)
-      drawPocketSymbol(pocket.key,
-        x + math.floor((tabW - iconSize) / 2), layout.tabsY + 4, iconSize,
-        active)
-      gray(active and WHITE or DARK)
-      local markerW = math.min(tabW - 6, math.max(2, counts[pocket.key] or 0))
-      love.graphics.rectangle("fill", x + math.floor((tabW - markerW) / 2),
-        layout.tabsY + layout.tabsH - 3, markerW, 2)
+      local iconSize = TabIcons.size
+      -- Category tab placement v3: both frame interiors share this centre.
+      local iconX, iconY = TabIcons.position(pocket.key,
+        x + 1, layout.tabsY + 3, tabW - 2, layout.tabsH - 5)
+      if not TabIcons.draw(pocket.key, iconX, iconY) then
+        drawPocketSymbol(pocket.key, iconX, iconY, iconSize, active)
+      end
+      -- Category tab glyphs v2: no count marks below the icons.
     end
   end
 
@@ -1297,8 +1312,10 @@ return function(mod, compatibility)
       drawTextRight(quantity, layout.listX + layout.listW - 8, y + 1,
         qWidth + 8, shade)
       if selected then
-        drawCode(Theme.cursor, layout.listX + 7, y + 1, shade)
-      elseif item.value == swapId(menu) then
+        if layout.showDetails or not ItemIcons.draw(menu, item.value, layout.listX + 4, y - 1, 12) then
+          drawCode(Theme.cursor, layout.listX + 7, y + 1, shade)
+        end
+      elseif item.value and item.value == swapId(menu) then
         drawCode(Theme.cursorHollow, layout.listX + 7, y + 1, BLACK)
       end
     end
@@ -1375,7 +1392,7 @@ return function(mod, compatibility)
       local item = menu.items[menu.index]
       local config = listConfig(menu)
       local caption = config and config.direction
-        or (item and categoryFor(menu.game, item.value) or pocket.key)
+        or (item and (item.value and categoryFor(menu.game, item.value) or "ACTION") or pocket.key)
       drawText(caption:upper(), layout.detailX + 6, layout.detailY + 5,
         layout.detailW - 12, DARK)
       local status = config and type(config.detailStatus) == "function"
@@ -1386,10 +1403,10 @@ return function(mod, compatibility)
       end
 
       local category = item and categoryFor(menu.game, item.value) or pocket.key
-      local iconSize = math.min(28, math.max(20, layout.detailH - 56))
-      drawPocketSymbol(category, layout.detailX + 8, layout.detailY + 20,
+      local iconSize = 24
+      drawItemSymbol(menu, item and item.value, category, layout.detailX + 8, layout.detailY + 20,
         iconSize, false, true)
-      local textX = layout.detailX + iconSize + 14
+      local textX = layout.detailX + (item and not item.value and 6 or iconSize + 14)
       local textW = layout.detailX + layout.detailW - 6 - textX
       local name = item and item.label
         or (config and config.emptyName) or pocket.label
@@ -1432,25 +1449,26 @@ return function(mod, compatibility)
     local item = menu.items[menu.index]
     local config = listConfig(menu)
     local caption = config and config.direction
-      or (item and categoryFor(menu.game, item.value) or pocket.key)
+      or (item and (item.value and categoryFor(menu.game, item.value) or "ACTION") or pocket.key)
     caption = caption:upper()
     drawText(caption, layout.detailX + 6, layout.detailY + 5,
       layout.detailW - 12, LIGHT)
 
     if item then
+      local actionOffset = item.value and 0 or 24
       local category = categoryFor(menu.game, item.value)
       local iconSize = 24
-      drawPocketSymbol(category,
+      drawItemSymbol(menu, item.value, category,
         layout.detailX + math.floor((layout.detailW - iconSize) / 2),
         layout.detailY + 17, iconSize)
       local nameLines = wrappedLines(item.label, layout.detailW - 12, 2)
       for index, line in ipairs(nameLines) do
         drawText(line,
           layout.detailX + (layout.detailW - Font.width(line)) / 2,
-          layout.detailY + 45 + (index - 1) * lineStep(),
+          layout.detailY + 45 - actionOffset + (index - 1) * lineStep(),
           layout.detailW - 12, WHITE)
       end
-      local descriptionY = layout.detailY + 58
+      local descriptionY = layout.detailY + 58 - actionOffset
         + math.max(0, #nameLines - 1) * lineStep()
       local descriptionLines
       if config then
@@ -1751,7 +1769,7 @@ return function(mod, compatibility)
       local qWidth = Font.width(quantity)
       if selected then
         drawCode(Theme.cursor, layout.listX + 8, y, DARK)
-      elseif item.value == swapId(menu) then
+      elseif item.value and item.value == swapId(menu) then
         drawCode(Theme.cursorHollow, layout.listX + 8, y, BLACK)
       end
       drawText(item.label, layout.listX + 20, y,
@@ -1798,6 +1816,11 @@ return function(mod, compatibility)
     local textX = layout.detailX + 10
     local textY = layout.detailY + 10
     local textW = layout.detailW - 20
+    local selected = menu.items[menu.index]
+    if selected and selected.value and not status and not swapId(menu)
+        and ItemIcons.draw(menu, selected.value, layout.detailX + 9, layout.detailY + 8, 24) then
+      textX, textW = textX + 28, textW - 28
+    end
     local maxLines = math.max(2, math.floor((layout.detailH - 18) / 9))
     if config and config.direction then
       drawText(fitText(Strings(config.direction), textW),
@@ -1826,6 +1849,7 @@ return function(mod, compatibility)
   end
 
   local function draw(menu)
+    menu.modernBagItemIconZones, menu.modernBagItemIcon = {}, nil
     confineNativeViewport(menu)
     -- A world-background battle still draws below this opaque surface.
     -- Its RGB opt-out rectangles would otherwise re-blit pieces of the
@@ -1908,7 +1932,7 @@ return function(mod, compatibility)
           w = 12, h = 11,
         }
       end
-      return zones
+      return ItemIcons.zones(menu, zones)
     end
     local pocket = pocketFor(menu)
     local config = listConfig(menu)
@@ -1938,7 +1962,7 @@ return function(mod, compatibility)
         w = layout.listW - 8, h = 13,
       }
     end
-    return zones
+    return ItemIcons.zones(menu, zones)
   end
 
   local function update(menu, dt)
@@ -2194,6 +2218,7 @@ return function(mod, compatibility)
       pockets = POCKETS, layout = layoutFor, size = uiSize, zones = sgbPalettes,
       qol = bagQolInfo,
       draw = function(menu, counts)
+        menu.modernBagItemIconZones, menu.modernBagItemIcon = {}, nil
         local layout = layoutFor(menu)
         drawBackdrop(layout)
         drawHeader(menu, layout)
